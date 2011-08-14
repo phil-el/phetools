@@ -361,3 +361,108 @@ def do_split(mysite, rootname, user, codelang):
 
     return E_OK
 
+
+
+
+
+
+match_queue = []
+split_queue = []
+
+
+def bot_listening(lock):
+
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
+    try:
+        sock.bind(('',12346))
+    except:
+        print "could not start listener : socket already in use"
+        thread.interrupt_main()
+        return
+
+    print date_s(time.time())+ " START"
+    sock.listen(1)
+    sock.settimeout(None)
+
+    # wait for requests
+    try:
+        while True:
+            conn, addr = sock.accept()
+            data = conn.recv(1024)
+            try:
+	        cmd,title,lang,user = eval(data)
+	    except:
+		print "error",data
+		conn.close()
+		continue
+
+	    t = time.time()
+	    user = user.replace(' ','_')
+	    print user
+
+
+
+	    if cmd=="status":
+		lock.acquire()
+		code = 'utf-8'
+		html = '<html>'
+		html += '<meta http-equiv="content-type" content="text/html; charset=%s">' % code
+		html += '<head></head><body>'
+
+		html += "<html><body>the robot is running.<br/><hr/>"
+		html += "<br/>%d jobs in match queue.<br/>"%len(match_queue)
+		for i in match_queue:
+		    html += date_s(i[3])+' '+i[2]+" "+i[1]+" "+i[0]+"<br/>"
+		html += "<br/>%d jobs in split queue.<br/>"%len(split_queue)
+		for i in split_queue:
+		    mtitle = i[0]
+		    mtitle = mtitle.decode('utf-8')
+		    codelang = i[1]
+		    prefix = page_prefixes.get(codelang)
+		    try:
+			    msite = wikipedia.getSite(codelang,fam='wikisource')
+			    page = wikipedia.Page(msite,mtitle)
+			    path = msite.get_address(page.urlname())
+			    url = "http://"+codelang+".wikisource.org"+path
+		    except:
+			    url = ""
+		    html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
+		html += '</body></html>'
+		lock.release()
+
+		conn.send(html)
+		conn.close()
+		continue
+
+	    print date_s(t)+" REQUEST "+user+' '+lang+' '+cmd+' '+title
+            if cmd=="match":
+	       lock.acquire()
+	       match_queue.insert(0,(title,lang,user,t,conn))
+	       lock.release()
+            elif cmd=="split":
+	       lock.acquire()
+	       split_queue.insert(0,(title,lang,user,t,conn))
+	       lock.release()
+	    else:
+		print "error",cmd
+		conn.close()
+
+    finally:
+	sock.close()
+	print "STOP"
+
+	for i in range(len(match_queue)):
+	    title,lang,user,t,conn = match_queue[i]
+	    match_queue[i] = (title,lang,user,t,None)
+	    if conn: conn.close()
+
+	for i in range(len(split_queue)):
+	    title,lang,user,t,conn = split_queue[i]
+	    split_queue[i] = (title,lang,user,t,None)
+	    if conn: conn.close()
+
+	f=open("wsjobs","w")
+	f.write(repr((match_queue,split_queue)))
+	f.close()
+
