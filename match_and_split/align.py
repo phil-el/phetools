@@ -5,8 +5,6 @@
 
 import match_and_split_config as config
 
-import wikipedia, pagegenerators, catlib
-
 import os, re, sys, time, random
 import difflib
 import wikipedia
