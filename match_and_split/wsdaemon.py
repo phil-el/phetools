@@ -17,29 +17,20 @@
 #
 #    copyright thomasv1 at gmx dot de
 
-
-# todo : use urllib2
-
-
 __module_name__ = "wikisourcedaemon"
 __module_version__ = "1.0"
 __module_description__ = "wikisource daemon"
 
+import match_and_split_config as config
 
-
-import sys,os
+import sys
 import socket
-import string
-import re, Queue
-import sre_constants
+import re
 import thread, time
-import simplejson
-import urllib2
 
 import align
 
-sys.path.append("../pywikipedia")
-import wikipedia, pagegenerators, catlib, pywikibot
+import wikipedia, pywikibot
 
 mylock = thread.allocate_lock()
 
@@ -374,7 +365,7 @@ def bot_listening(lock):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
     try:
-        sock.bind(('',12346))
+        sock.bind(('', config.port))
     except:
         print "could not start listener : socket already in use"
         thread.interrupt_main()
@@ -420,7 +411,7 @@ def bot_listening(lock):
 		    codelang = i[1]
 		    prefix = page_prefixes.get(codelang)
 		    try:
-			    msite = wikipedia.getSite(codelang,fam='wikisource')
+			    msite = wikipedia.getSite(codelang,fam=config.family)
 			    page = wikipedia.Page(msite,mtitle)
 			    path = msite.get_address(page.urlname())
 			    url = "http://"+codelang+".wikisource.org"+path
@@ -490,7 +481,7 @@ def match_thread(lock):
             continue
 
         try:
-	    mysite = wikipedia.getSite(codelang,fam='wikisource')
+	    mysite = wikipedia.getSite(codelang,config.family)
 	except:
 	    print "site error", repr(codelang)
 	    mysite = False
@@ -536,7 +527,7 @@ def split_thread(lock):
             continue
 
         try:
-	    mysite = wikipedia.getSite(codelang,fam='wikisource')
+	    mysite = wikipedia.getSite(codelang,config.family)
 	except:
 	    print "site error", repr(codelang)
 	    mysite = False

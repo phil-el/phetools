@@ -3,19 +3,18 @@
 # author : thomasv1 at gmx dot de
 # licence : GPL
 
-import os, string, re, sys, time, random
-import difflib, urllib
+import match_and_split_config as config
 
-sys.path.append("../pywikipedia")
 import wikipedia, pagegenerators, catlib
 
-djvutxtpath = "/opt/ts/bin/djvutxt" #solaris
-#djvutxtpath = "/home/thomasv/djvulibre/tools/djvutxt"
+import os, re, sys, time, random
+import difflib
+import wikipedia
 
 def match_page(target, filename, pagenum):
     d = difflib.Differ()
     s = difflib.SequenceMatcher()
-    cmd = djvutxtpath + " --page=%d \"%s\" "%(pagenum,filename)
+    cmd = config.djvutxtpath + " --page=%d \"%s\" "%(pagenum,filename)
     p = os.popen(cmd.encode("utf8"))
     text1 = p.read()
     p.close()
@@ -47,11 +46,11 @@ def do_match(target, filename, djvuname, number, verbose=False, prefix="Page"):
 	    return ("", "error : could not find a text layer.")
 
         pagenum=i+number
-        c = djvutxtpath +" --page=%d \"%s\" "%(pagenum,filename)
+        c = config.djvutxtpath +" --page=%d \"%s\" "%(pagenum,filename)
         p = os.popen(c.encode("utf8"))
         page1 = p.read()
         p.close()
-        c = djvutxtpath +" --page=%d \"%s\" "%((pagenum+1),filename)
+        c = config.djvutxtpath +" --page=%d \"%s\" "%((pagenum+1),filename)
         p = os.popen(c.encode("utf8"))
         page2 = p.read()
         p.close()
@@ -168,12 +167,14 @@ def do_match(target, filename, djvuname, number, verbose=False, prefix="Page"):
         return (output, "ok")
 
 
+# FIXME: use urllib2 instead of wget
 def get_djvu(mysite, djvuname, check_timestamp=False):
     print "get_djvu", repr(djvuname)
 
     djvuname = djvuname.replace(" ","_")
     filename = "djvu/" + djvuname
     if not os.path.exists(filename): 
+        # FIXME: use a LRU rather to randomly delete a file in the cache
         o = os.listdir("djvu")
         if len(o)>19:
             k = random.randint(0,len(o)-1)
