@@ -323,7 +323,7 @@ def do_split(mysite, rootname, user, codelang):
 				old_text,re.MULTILINE|re.DOTALL)
 		if m :
 		    print "ok, quality 1"
-		    content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m.group(2)+"</noinclude>"+content+"<noinclude>"+m.group(4)+"</noinclude>"
+                    content = "<noinclude><pagequality level=\"1\" user=\"" + m.group(1) + "\" />"+m.group(2)+"</noinclude>"+content+"<noinclude>"+m.group(4)+"</noinclude>"
 		m2 = re.match("<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>", 
 				old_text,re.MULTILINE|re.DOTALL)
 		if m2 :
