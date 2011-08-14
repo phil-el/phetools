@@ -466,3 +466,122 @@ def bot_listening(lock):
 	f.write(repr((match_queue,split_queue)))
 	f.close()
 
+
+
+def date_s(at):
+    t = time.gmtime(at)
+    return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
+
+
+
+def match_thread(lock):
+    while 1:
+	got_it = False
+	lock.acquire()
+        if match_queue != []:
+            title, codelang, user, t, conn = match_queue[-1]
+	    got_it = True
+	lock.release()
+
+	if not got_it:
+	    try:
+	        time.sleep(0.5)
+	    except:
+		break
+            continue
+
+        try:
+	    mysite = wikipedia.getSite(codelang,fam='wikisource')
+	except:
+	    print "site error", repr(codelang)
+	    mysite = False
+	if mysite:
+	    wikipedia.setSite(mysite)
+	    print mysite, title
+            #convert to utf8
+	    title = title.decode('utf-8')
+	    user = user.decode('utf-8')
+
+	    time1 = time.time()
+	    out = do_match(mysite,title,user,codelang)
+	    if conn:
+		    conn.send(out)
+		    conn.close()
+	    time2 = time.time()
+	    if out:
+		    res = " DONE    "
+	    else:
+		    res = " FAILED  "
+	    print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
+	    
+	lock.acquire()
+	match_queue.pop()
+	lock.release()
+
+
+
+def split_thread(lock):
+    while 1:
+	got_it = False
+	lock.acquire()
+        if split_queue != []:
+            title, codelang, user, t, conn = split_queue[-1]
+	    got_it = True
+	lock.release()
+
+        if not got_it:
+	    try:
+	        time.sleep(0.5)
+	    except:
+		break
+            continue
+
+        try:
+	    mysite = wikipedia.getSite(codelang,fam='wikisource')
+	except:
+	    print "site error", repr(codelang)
+	    mysite = False
+	if mysite:
+	    wikipedia.setSite(mysite)
+	    print mysite, title
+	    title = title.decode('utf-8')
+	    user = user.decode('utf-8')
+
+	    time1 = time.time()
+	    out = do_split(mysite,title,user, codelang)
+	    if conn:
+		conn.send(out)
+		conn.close()
+	    time2 = time.time()
+	    if out:
+		    res = " DONE    "
+	    else:
+		    res = " FAILED  "
+	    print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
+	    
+	lock.acquire()
+	split_queue.pop()
+	lock.release()
+
+
+
+
+if __name__ == "__main__":
+
+
+    try:
+	f = open("wsjobs","r")
+	jobs = f.read()
+	f.close()
+	mq, sq = eval(jobs)
+	for i in mq:
+	    match_queue.append(i)
+	for i in sq:
+	    split_queue.append(i)
+    except:
+	pass
+
+    lock = thread.allocate_lock()
+    thread.start_new_thread(match_thread,(lock,))
+    thread.start_new_thread(split_thread,(lock,))
+    bot_listening(lock)
