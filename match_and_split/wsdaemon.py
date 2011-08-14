@@ -106,7 +106,11 @@ def do_match(mysite,maintitle,user,codelang):
 	global pl_dict
 	pl_dict = {}
 	p0 = re.compile("\{\{R2Mondes\|(\d+)\|(\d+)\|(\d+)\}\}\s*\n")
-	new_text = p0.sub(repl,text)
+        try:
+            new_text = p0.sub(repl,text)
+        except wikipedia.NoPage:
+            print "failed to get index page"
+            return "Erreur : impossible de trouver l'index"
 	p = re.compile('==\[\[Page:([^=]+)\]\]==\n')
 	bl= p.split(new_text)
 	for i in range(len(bl)/2):
