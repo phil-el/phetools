@@ -1,4 +1,3 @@
-
 #!/usr/bin/python
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -49,7 +48,7 @@ page_prefixes={ 'en':'Page', 'fr':'Page', 'de':'Seite', 'it':'Pagina', 'la':'Pag
 		'sv':'Sida', 'pl':'Strona', 'hy':'\xd4\xb7\xd5\xbb', 
 		'ru':'\xd1\x81\xd1\x82\xd1\x80\xd0\xb0\xd0\xbd\xd0\xb8\xd1\x86\xd0\xb0', 
                 'hr':'Stranica', 'hu':'Oldal', 'ca':'P\xc3\xa0gina', 'vi':'Trang', 'sl':'Stran', 'zh':'Page',
-                'old':'Page', 'vec':'Pagina' } 
+                'old':'Page', 'vec':'Pagina', 'br' : 'Pajenn' } 
 
 
 
