@@ -178,3 +178,186 @@ def do_match(mysite,maintitle,user,codelang):
 
 
 
+
+
+def safe_put(page,text,comment):
+
+    if re.match("^[\s\n]*$",text):
+        return
+    
+    mylock.acquire()
+    wikipedia.setAction(comment)
+
+    while 1:
+        try:
+            status, reason, data = page.put(text)
+            if reason != u'OK':
+                print "put error", status, reason, data
+                time.sleep(10)
+                continue
+            else:
+                break
+        except wikipedia.LockedPage:
+            print "put error : Page %s is locked?!" % page.aslink().encode("utf8")
+            break
+        except wikipedia.NoPage:
+            print "put error : Page does not exist %s" % page.aslink().encode("utf8")            
+            break
+        except pywikibot.NoUsername:
+            print "put error : No user name on wiki %s" % page.aslink().encode("utf8")            
+            break
+        except:
+            print "put error: unknown exception"
+            time.sleep(5)
+            break
+    mylock.release()
+
+
+
+
+def do_split(mysite, rootname, user, codelang):
+    
+    prefix = page_prefixes.get(codelang)
+    if not prefix:
+        return E_ERROR
+    prefix = prefix.decode('utf-8')
+
+    try:
+        page = wikipedia.Page(mysite,rootname)
+        text = page.get()
+    except:
+        return E_ERROR
+
+    #if text.find("{{R2Mondes")!=-1:
+#	global pl_dict
+#	pl_dict = {}
+#	p0 = re.compile("\{\{R2Mondes\|(\d+)\|(\d+)\|(\d+)\}\}\s*\n")
+#	text = p0.sub(repl,text)
+
+    p = re.compile('==\[\[('+prefix+':[^=]+)\]\]==\n')
+    bl= p.split(text)
+    titles = '\n'
+
+    group = ""
+    do_refs = False
+
+    fromsection=""
+    tosection=""
+
+    for i in range(len(bl)/2):
+
+        title  = bl[i*2+1]
+        content = bl[i*2+2]
+
+        if content.find("<ref") != -1 :
+	    do_refs=True
+
+        #for illegalChar in ['#', '<', '>', '[', ']', '|', '{', '}', '\n', u'\ufffd']:
+        #    if illegalChar in title:
+        #        title = title.replace(illegalChar,'_')
+
+	#always NOPREFIX
+        pagetitle = title
+
+        #remove trailing whitespaces
+        while content[-1:] in ['\n',' ']:
+            content = content[:-1]
+
+        pl = wikipedia.Page(mysite,pagetitle)
+
+	m =  re.match(prefix+':(.*?)/(\d+)',pagetitle)
+	if m:
+	    filename = m.group(1)
+	    pagenum = int(m.group(2))
+	    if not group:
+	        group = filename
+	        pfrom = pagenum; pto = pfrom
+	    else:
+		if filename != group:
+		    titles = titles + "<pages index=\"%s\" from=%d to=%d />\n"%(group,pfrom,pto)
+	            group = filename
+	            pfrom = pagenum; pto = pfrom
+		elif pagenum != pto + 1:
+		    titles = titles + "<pages index=\"%s\" from=%d to=%d />\n"%(group,pfrom,pto)
+	            group = filename
+	            pfrom = pagenum; pto = pfrom
+		else:
+		    pto = pagenum
+	else: 
+	    if group:
+		titles = titles + "<pages index=\"%s\" from=%d to=%d />\n"%(group,pfrom,pto)
+	        group = False
+
+            titles = titles + "{{"+pagetitle+"}}\n"
+
+	#prepend br
+	if content and content[0]=='\n':
+	    content = '<br/>\n'+content
+
+        if pl.exists():
+
+	    old_text = pl.get()
+	    refs = pl.getReferences(onlyTemplateInclusion=True)
+	    numrefs = 0
+	    for ref in refs:
+		numrefs = numrefs + 1
+
+	    #first and last pages : check if they are transcluded
+	    if numrefs > 0 :
+		m = re.match("<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",old_text,re.MULTILINE|re.DOTALL)
+	        if m and ( i==0 or i==(len(bl)/2 -1) ):
+	            print "creating sections"
+    		    old_text = m.group(2)
+		    if i==0:
+			first_part = old_text
+			second_part = content
+			fromsection="fromsection=s2 "
+		    else:
+			first_part = content
+			second_part = old_text
+			tosection="tosection=s1 "
+
+	            content = "<noinclude>"+m.group(1)+"</noinclude><section begin=s1/>"+first_part+"<section end=s1/>\n----\n" \
+				+ "<section begin=s2/>"+second_part+"<section end=s2/><noinclude>"+m.group(3)+"</noinclude>"
+	    else:
+		m = re.match("<noinclude><pagequality level=\"1\" user=\"(.*?)\" />(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>", 
+				old_text,re.MULTILINE|re.DOTALL)
+		if m :
+		    print "ok, quality 1"
+		    content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m.group(2)+"</noinclude>"+content+"<noinclude>"+m.group(4)+"</noinclude>"
+		m2 = re.match("<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>", 
+				old_text,re.MULTILINE|re.DOTALL)
+		if m2 :
+		    print "ok, quality 1"
+		    content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
+
+        safe_put(pl,content,user+": split")
+
+    if group:
+        titles = titles + "<pages index=\"%s\" from=%d to=%d %s%s/>\n"%(group,pfrom,pto,fromsection,tosection)
+
+    if fromsection:
+	rtext = ref.get()
+	m = re.search("<pages index=\"(.*?)\" from=(.*?) to=(.*?) (fromsection=s2 |)/>",rtext)
+	if m and m.group(1)==group:
+	    rtext = rtext.replace(m.group(0), m.group(0)[:-2]+"tosection=s1 />" )
+	    print "new rtext"
+	    safe_put(ref,rtext,user+": split")
+
+    if tosection:
+	rtext = ref.get()
+	m = re.search("<pages index=\"(.*?)\" from=(.*?) to=(.*?) (tosection=s1 |)/>",rtext)
+	if m and m.group(1)==group:
+	    rtext = rtext.replace(m.group(0), m.group(0)[:-2]+"fromsection=s2 />" )
+	    print "new rtext"
+	    safe_put(ref,rtext,user+": split")	
+
+    if do_refs:
+	titles = titles + "----\n<references/>\n"
+
+
+    header = bl[0]
+    safe_put(page,header+titles,user+": split")
+
+    return E_OK
+
