@@ -24,10 +24,10 @@ function send_request( $cmd, $title, $lang, $user, $port ) {
   }
 }
 
-$cmd = $_GET["cmd"];
-$title = $_GET["title"];
-$lang = $_GET["lang"];
-$user = $_GET["user"];
+$cmd = isset($_GET["cmd"]) ? $_GET["cmd"] : FALSE;
+$title = isset($_GET["title"]) ? $_GET["title"] : FALSE; 
+$lang = isset($_GET["lang"]) ? $_GET["lang"] : FALSE;
+$user = isset($_GET["user"]) ? $_GET["user"] : FALSE;
 
 if(!$cmd) {
   $out = send_request("status","",$lang,$user,12346);
