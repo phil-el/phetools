@@ -356,10 +356,6 @@ def do_split(mysite, rootname, user, codelang):
     return E_OK
 
 
-
-
-
-
 match_queue = []
 split_queue = []
 
@@ -484,29 +480,32 @@ def match_thread(lock):
 		break
             continue
 
+        time1 = time.time()
+        out = ''
         try:
 	    mysite = wikipedia.getSite(codelang,fam=config.family)
 	except:
 	    print "site error", repr(codelang)
+            out = "site error: " + repr(codelang)
 	    mysite = False
 	if mysite:
 	    wikipedia.setSite(mysite)
 	    print mysite, title
-            #convert to utf8
-	    title = title.decode('utf-8')
+            title = title.decode('utf-8')
 	    user = user.decode('utf-8')
-
-	    time1 = time.time()
 	    out = do_match(mysite,title,user,codelang)
-	    if conn:
-		    conn.send(out)
-		    conn.close()
-	    time2 = time.time()
-	    if out:
-		    res = " DONE    "
-	    else:
-		    res = " FAILED  "
-	    print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
+
+        if conn:
+            conn.send(out)
+            conn.close()
+
+        if out and mysite:
+            res = " DONE    "
+        else:
+            res = " FAILED  "
+
+        time2 = time.time()
+        print date_s(time2) + res + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)"%(time2-time1) + " " + out
 	    
 	lock.acquire()
 	match_queue.pop()
@@ -530,28 +529,32 @@ def split_thread(lock):
 		break
             continue
 
+        time1 = time.time()
+        out = ''
         try:
 	    mysite = wikipedia.getSite(codelang,fam=config.family)
 	except:
 	    print "site error", repr(codelang)
+            out = "site error: " + repr(codelang)
 	    mysite = False
 	if mysite:
 	    wikipedia.setSite(mysite)
 	    print mysite, title
 	    title = title.decode('utf-8')
 	    user = user.decode('utf-8')
-
-	    time1 = time.time()
 	    out = do_split(mysite,title,user, codelang)
-	    if conn:
-		conn.send(out)
-		conn.close()
-	    time2 = time.time()
-	    if out:
-		    res = " DONE    "
-	    else:
-		    res = " FAILED  "
-	    print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
+
+        if conn:
+            conn.send(out)
+            conn.close()
+
+        if out and mysite:
+            res = " DONE    "
+        else:
+            res = " FAILED  "
+
+        time2 = time.time()
+        print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
 	    
 	lock.acquire()
 	split_queue.pop()
