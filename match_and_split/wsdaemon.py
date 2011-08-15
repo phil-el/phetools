@@ -418,7 +418,7 @@ def bot_listening(lock):
 			    msite = wikipedia.getSite(codelang,fam=config.family)
 			    page = wikipedia.Page(msite,mtitle)
 			    path = msite.get_address(page.urlname())
-			    url = "http://"+codelang+".wikisource.org"+path
+                            url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
 		    except:
 			    url = ""
 		    html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
@@ -485,7 +485,7 @@ def match_thread(lock):
             continue
 
         try:
-	    mysite = wikipedia.getSite(codelang,config.family)
+	    mysite = wikipedia.getSite(codelang,fam=config.family)
 	except:
 	    print "site error", repr(codelang)
 	    mysite = False
@@ -531,7 +531,7 @@ def split_thread(lock):
             continue
 
         try:
-	    mysite = wikipedia.getSite(codelang,config.family)
+	    mysite = wikipedia.getSite(codelang,fam=config.family)
 	except:
 	    print "site error", repr(codelang)
 	    mysite = False
