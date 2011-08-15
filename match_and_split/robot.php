@@ -6,7 +6,8 @@ header('Cache-control: no-cache');
 function send_request( $cmd, $title, $lang, $user, $port ) {
 
   $conn = socket_create( AF_INET, SOCK_STREAM, SOL_TCP );
-  $result = socket_connect($conn, 'nightshade', $port); 
+  $server_name = file_get_contents('./match_and_split.server');
+  $result = socket_connect($conn, $server_name, $port);
   if($result){
     $res = "";
     $line = '("'.$cmd.'","'.$title.'","'.$lang.'","'.$user.'")';

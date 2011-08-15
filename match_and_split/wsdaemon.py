@@ -24,6 +24,7 @@ __module_description__ = "wikisource daemon"
 import match_and_split_config as config
 
 import sys
+import os
 import socket
 import re
 import thread, time
@@ -374,6 +375,18 @@ def bot_listening(lock):
     print date_s(time.time())+ " START"
     sock.listen(1)
     sock.settimeout(None)
+
+    # The other side needs to know the server name where the daemon run to open
+    # the connection. We write it after bind() because we want to ensure than
+    # only one instance of the daemon is running. FIXME: this is not sufficient
+    # if the job is migrated so migration is disabled for this daemon.
+    servername_filename = os.getenv('HOME') + '/public_html/match_and_split.server'
+    if os.path.exists(servername_filename):
+        os.chmod(servername_filename, 0644)
+    fd = open(servername_filename, "w")
+    fd.write(socket.gethostname())
+    fd.close()
+    os.chmod(servername_filename, 0444)
 
     # wait for requests
     try:
