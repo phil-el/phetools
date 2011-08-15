@@ -57,7 +57,7 @@ def get_pl(year,vol):
     if pl != None: return pl
     indexpage = wikipedia.Page(wikipedia.getSite(), "Livre:Revue des Deux Mondes - "+year+" - tome "+vol+".djvu")
     text = indexpage.get()
-    m = re.search("<pagelist (.*?)/>",text)
+    m = re.search("(?ms)<pagelist\s+(.*?)/>",text)
     if m :
 	el = m.group(1).split()
         l = []
@@ -72,19 +72,21 @@ def get_pl(year,vol):
     #print pl_dict
     return pl_dict[k]
 
+def offset_pagenum(pl, page):
+    offset = 0
+    for item in pl :
+        if page >= item[1]:
+            offset = item[0] - item[1]
+    return offset + page
 
 def repl(m):
     year = m.group(1)
     vol = m.group(2)
     page = int(m.group(3))
 
-    offset = 0 
-    pl = get_pl(year,vol)
-    for item in pl :
-        if page >= item[0]:
-            offset = item[0] - item[1]
+    pagenum = offset_pagenum(get_pl(year, vol), page)
 
-    return "==[[Page:Revue des Deux Mondes - "+m.group(1)+" - tome "+m.group(2)+".djvu/%d"%( offset + page )+"]]==\n"
+    return "==[[Page:Revue des Deux Mondes - "+m.group(1)+" - tome "+m.group(2)+".djvu/%d"%( pagenum )+"]]==\n"    
 
 
 
@@ -128,10 +130,7 @@ def do_match(mysite,maintitle,user,codelang):
 	    r = align.match_page(content, filename, int(pagenum))
 	    print "%s %s  : %f"%(filename, pagenum, r)
 	    if r<0.1:
-	        p0 = re.compile("\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
-		bl0 = p0.split(text)
-		title0 = bl0[i*2+1].encode("utf8")
-		return "Erreur : Le texte ne correspond pas, page %s"%title0
+                return "Erreur : Le texte ne correspond pas, page %s"%pagenum
 	#the page is ok
         safe_put(page,new_text,user+": match")
 	lock.acquire()
@@ -322,6 +321,7 @@ def do_split(mysite, rootname, user, codelang):
 		m2 = re.match("<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>", 
 				old_text,re.MULTILINE|re.DOTALL)
 		if m2 :
+                    # FIXME: shouldn't use an hardcoded name here
 		    print "ok, quality 1"
 		    content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
 
@@ -555,7 +555,7 @@ def split_thread(lock):
 
         time2 = time.time()
         print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
-	    
+
 	lock.acquire()
 	split_queue.pop()
 	lock.release()
