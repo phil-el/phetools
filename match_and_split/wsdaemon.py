@@ -359,10 +359,10 @@ def do_split(mysite, rootname, user, codelang):
                     content = "<noinclude><pagequality level=\"1\" user=\"" + m.group(1) + "\" />"+m.group(2)+"</noinclude>"+content+"<noinclude>"+m.group(4)+"</noinclude>"
                     m2 = re.match("<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
                                   old_text,re.MULTILINE|re.DOTALL)
-                if m2 :
-                    # FIXME: shouldn't use an hardcoded name here
-                    print "ok, quality 1"
-                    content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
+                    if m2 :
+                        # FIXME: shouldn't use an hardcoded name here
+                        print "ok, quality 1"
+                        content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
 
         safe_put(pl,content,user+": split")
 
@@ -417,13 +417,12 @@ def bot_listening(lock):
     # the connection. We write it after bind() because we want to ensure than
     # only one instance of the daemon is running. FIXME: this is not sufficient
     # if the job is migrated so migration is disabled for this daemon.
-    servername_filename = os.getenv('HOME') + '/public_html/match_and_split.server'
-    if os.path.exists(servername_filename):
-        os.chmod(servername_filename, 0644)
-    fd = open(servername_filename, "w")
+    if os.path.exists(config.servername_filename):
+        os.chmod(config.servername_filename, 0644)
+    fd = open(config.servername_filename, "w")
     fd.write(socket.gethostname())
     fd.close()
-    os.chmod(servername_filename, 0444)
+    os.chmod(config.servername_filename, 0444)
 
     # wait for requests
     try:
