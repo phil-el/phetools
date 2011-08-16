@@ -25,6 +25,13 @@ def match_page(target, filename, pagenum):
     ratio = s.ratio()
     return ratio
 
+def read_djvu_page(filename, pagenum):
+    c = config.djvutxtpath + " --page=%d '%s'" % (pagenum, filename)
+    p = os.popen(c.encode("utf8"))
+    text = p.read()
+    p.close()
+    return text
+
 # returns result, status
 def do_match(target, filename, djvuname, number, verbose, prefix):
     s = difflib.SequenceMatcher()
@@ -38,14 +45,8 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
             return ("", "error : could not find a text layer.")
 
         pagenum = i + number
-        c = config.djvutxtpath + " --page=%d \"%s\" " % (pagenum, filename)
-        p = os.popen(c.encode("utf8"))
-        page1 = p.read()
-        p.close()
-        c = config.djvutxtpath +" --page=%d \"%s\" " %((pagenum+1), filename)
-        p = os.popen(c.encode("utf8"))
-        page2 = p.read()
-        p.close()
+        page1 = read_djvu_page(filename, pagenum)
+        page2 = read_djvu_page(filename, pagenum + 1)
 
         text1 = page1+page2
         text2 = target[offset:offset+ int(1.5*len(text1))]
