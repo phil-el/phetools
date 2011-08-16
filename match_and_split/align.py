@@ -73,7 +73,7 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         #print i, ccc, ratio
 
         if ratio < 0.1:
-            print "low ratio", low_ratio
+            print "low ratio", ratio
             break
 
         mstr = ""
