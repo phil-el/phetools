@@ -109,7 +109,7 @@ def repl(m):
     vol = m.group(2)
     page = int(m.group(3))
     pagenum = offset_pagenum(get_pl(year, vol), page)
-    return "==[[" + rddm_name(year, vol) + "%d]]==\n" % pagenum
+    return "==[[Page:" + rddm_name(year, vol) + "/%d]]==\n" % pagenum
 
 
 # FIXME: use a real Queue object and avoid polling the queue
@@ -125,7 +125,7 @@ def get_job(lock, queue):
     while not got_it:
         time.sleep(0.5)
         lock.acquire()
-        if match_queue != []:
+        if queue != []:
             title, codelang, user, t, conn = queue[-1]
             got_it = True
         lock.release()
