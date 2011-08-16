@@ -12,10 +12,10 @@ port = 12346
 if socket.gethostname() == 'zaniah':
     sys.path.append("/usr/src/phe/pywikipedia")
     family = 'wikisourcelocal'
-    djvutxtpath = "djvutxt"
+    djvulibre_path = ""
     servername_filename = '/usr/src/phe/botpywi/thomasv/public_html/match_and_split.server'
 else: # toolserver, solaris currently
     sys.path.append("/home/phe/pywikipedia")
     family = 'wikisource'
-    djvutxtpath = "/opt/ts/bin/djvutxt"
+    djvulibre_path = "/opt/ts/bin/"
     servername_filename = os.getenv('HOME') + '/public_html/match_and_split.server'

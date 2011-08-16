@@ -12,11 +12,18 @@ import difflib
 import wikipedia
 
 def read_djvu_page(filename, pagenum):
-    c = config.djvutxtpath + " --page=%d '%s'" % (pagenum, filename)
+    c = config.djvulibre_path + "djvutxt --page=%d '%s'" % (pagenum, filename)
     p = os.popen(c.encode("utf8"))
     text = p.read()
     p.close()
     return text
+
+def get_nr_djvu_pages(filename):
+    c = config.djvulibre_path + "djvused -e n '%s'" % filename
+    p = os.popen(c.encode("utf8"))
+    text = p.read()
+    p.close()
+    return int(text)
 
 def match_page(target, filename, pagenum):
     s = difflib.SequenceMatcher()
@@ -36,14 +43,17 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
     output = ""
     is_poem = False
 
-    for i in range(1000):
+    max_pages = get_nr_djvu_pages(filename)
 
-        if i == 10 and offset == 0:
+    last_page = read_djvu_page(filename, number)
+
+    for pagenum in range(number, min(number + 1000, max_pages)):
+
+        if pagenum - number == 10 and offset == 0:
             return ("", "error : could not find a text layer.")
 
-        pagenum = i + number
-        page1 = read_djvu_page(filename, pagenum)
-        page2 = read_djvu_page(filename, pagenum + 1)
+        page1 = last_page
+        last_page = page2 = read_djvu_page(filename, pagenum + 1)
 
         text1 = page1+page2
         text2 = target[offset:offset+ int(1.5*len(text1))]
