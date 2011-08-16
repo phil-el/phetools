@@ -508,11 +508,10 @@ def date_s(at):
     t = time.gmtime(at)
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
-# FIXME match_thread() and split_thread() code are identical, except the used
-# queue and the function to apply on queue'd item, factorize the code
-def match_thread(lock):
+
+def job_thread(lock, queue, func):
     while True:
-        title, codelang, user, t, conn = get_job(lock, match_queue)
+        title, codelang, user, t, conn = get_job(lock, queue)
 
         time1 = time.time()
         out = ''
@@ -527,7 +526,7 @@ def match_thread(lock):
             print mysite, title
             title = title.decode('utf-8')
             user = user.decode('utf-8')
-            out = do_match(mysite, title, user, codelang)
+            out = func(mysite, title, user, codelang)
 
         if conn:
             conn.send(out)
@@ -539,43 +538,9 @@ def match_thread(lock):
             res = " FAILED  "
 
         time2 = time.time()
-        print date_s(time2) + res + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)"%(time2-time1) + " " + out
+        print date_s(time2) + res + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)" % (time2-time1) + " " + out
 
-        remove_job(lock, match_queue)
-
-
-def split_thread(lock):
-    while True:
-        title, codelang, user, t, conn = get_job(lock, split_queue)
-
-        time1 = time.time()
-        out = ''
-        try:
-            mysite = wikipedia.getSite(codelang, config.family)
-        except:
-            print "site error", repr(codelang)
-            out = "site error: " + repr(codelang)
-            mysite = False
-        if mysite:
-            wikipedia.setSite(mysite)
-            print mysite, title
-            title = title.decode('utf-8')
-            user = user.decode('utf-8')
-            out = do_split(mysite, title, user, codelang)
-
-        if conn:
-            conn.send(out)
-            conn.close()
-
-        if out and mysite:
-            res = " DONE    "
-        else:
-            res = " FAILED  "
-
-        time2 = time.time()
-        print date_s(time2)+res+user.encode("utf8")+" "+codelang+" (%.2f)"%(time2-time1)+" "+out
-
-        remove_job(lock, split_queue)
+        remove_job(lock, queue)
 
 
 if __name__ == "__main__":
@@ -592,6 +557,6 @@ if __name__ == "__main__":
         pass
 
     lock = thread.allocate_lock()
-    thread.start_new_thread(match_thread,(lock,))
-    thread.start_new_thread(split_thread,(lock,))
+    thread.start_new_thread(job_thread, (lock, match_queue, do_match))
+    thread.start_new_thread(job_thread, (lock, split_queue, do_split))
     bot_listening(lock)
