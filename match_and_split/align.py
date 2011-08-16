@@ -11,12 +11,16 @@ import os, re, time, random
 import difflib
 import wikipedia
 
+def read_djvu_page(filename, pagenum):
+    c = config.djvutxtpath + " --page=%d '%s'" % (pagenum, filename)
+    p = os.popen(c.encode("utf8"))
+    text = p.read()
+    p.close()
+    return text
+
 def match_page(target, filename, pagenum):
     s = difflib.SequenceMatcher()
-    cmd = config.djvutxtpath + " --page=%d \"%s\" "%(pagenum,filename)
-    p = os.popen(cmd.encode("utf8"))
-    text1 = p.read()
-    p.close()
+    text1 = read_djvu_page(filename, pagenum)
     text2 = target
     p = re.compile(r'[\W]+')
     text1 = p.split(text1)
@@ -24,13 +28,6 @@ def match_page(target, filename, pagenum):
     s.set_seqs(text1,text2)
     ratio = s.ratio()
     return ratio
-
-def read_djvu_page(filename, pagenum):
-    c = config.djvutxtpath + " --page=%d '%s'" % (pagenum, filename)
-    p = os.popen(c.encode("utf8"))
-    text = p.read()
-    p.close()
-    return text
 
 # returns result, status
 def do_match(target, filename, djvuname, number, verbose, prefix):
