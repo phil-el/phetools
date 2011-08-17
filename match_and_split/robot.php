@@ -3,14 +3,15 @@ define('PUBLIC_HTML',true);
 header('Cache-control: no-cache');
 //header('Content-type: application/json');
 
+// FIXME: handle title containing a &
 function send_request( $cmd, $title, $lang, $user, $port ) {
+	// FIXME: try with SOL_UDP.
 	$conn = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 	$server_name = file_get_contents('./match_and_split.server');
 	$result = socket_connect($conn, $server_name, $port);
 	if($result){
 		$res = "";
-		// FIXME, isn't it broken if a title contains a " ?
-		$line = '("'.$cmd.'","'.$title.'","'.$lang.'","'.$user.'")';
+		$line = $cmd.'|'.$title.'|'.$lang.'|'.$user;
 		socket_write($conn, $line, strlen($line));
 		while ($out = socket_read($conn, 1024)) {
 			$res.=$out;
@@ -22,7 +23,10 @@ function send_request( $cmd, $title, $lang, $user, $port ) {
 		else
 			return 'match_callback("'.$res.'");';
 	} else {
-		return 'alert("The robot is not running.\n Please try again later.");';
+		if ($cmd == 'status')
+			return 'The robot is not running.<br />Please try again later.';
+		else
+			return 'alert("The robot is not running.\n Please try again later.");';
 	}
 }
 
@@ -31,12 +35,9 @@ $title = isset($_GET["title"]) ? $_GET["title"] : FALSE;
 $lang = isset($_GET["lang"]) ? $_GET["lang"] : FALSE;
 $user = isset($_GET["user"]) ? $_GET["user"] : FALSE;
 
-if(!$cmd) {
-	$out = send_request("status", "", $lang, $user, 12346);
-	print $out;
-	exit();
+if (!$cmd) {
+	$cmd = 'status';
 }
-
 $out = send_request($cmd, $title, $lang, $user, 12346);
 print $out;
 

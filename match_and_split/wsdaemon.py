@@ -430,7 +430,7 @@ def bot_listening(lock):
             conn, addr = sock.accept()
             data = conn.recv(1024)
             try:
-                cmd, title, lang, user = eval(data)
+                cmd, title, lang, user = data.split('|')
             except:
                 print "error", data
                 conn.close()
@@ -461,7 +461,7 @@ def bot_listening(lock):
                     try:
                         msite = wikipedia.getSite(codelang, config.family)
                         page = wikipedia.Page(msite,mtitle)
-                        path = msite.get_address(page.urlname())
+                        path = msite.nice_get_address(page.urlname())
                         url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
                     except:
                         url = ""
@@ -480,6 +480,7 @@ def bot_listening(lock):
                 add_job(lock, split_queue, (title, lang, user, t, conn))
             else:
                 print "error", cmd
+                conn.send("unknown command: " + cmd);
                 conn.close()
 
     finally:
