@@ -26,7 +26,9 @@ import match_and_split_config as config
 import os
 import socket
 import re
-import thread, time
+import thread
+import time
+import copy
 
 import align
 
@@ -397,6 +399,41 @@ def do_split(mysite, rootname, user, codelang):
 match_queue = []
 split_queue = []
 
+def html_for_queue(queue):
+    html = ''
+    for i in queue:
+        mtitle = i[0].decode('utf-8')
+        codelang = i[1]
+        try:
+            msite = wikipedia.getSite(codelang, config.family)
+            page = wikipedia.Page(msite, mtitle)
+            path = msite.nice_get_address(page.urlname())
+            url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
+        except:
+            url = ""
+        html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
+    return html
+
+def do_status(lock, conn):
+    lock.acquire()
+    m_queue = copy.deepcopy(match_queue)
+    s_queue = copy.deepcopy(split_queue)
+    lock.release()
+
+    html = '<html>'
+    html += '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
+    html += '<head></head><body>'
+
+    html += "<html><body>the robot is running.<br/><hr/>"
+    html += "<br/>%d jobs in match queue.<br/>" % len(m_queue)
+    html += html_for_queue(m_queue)
+    html += "<br/>%d jobs in split queue.<br/>" % len(s_queue)
+    html += html_for_queue(s_queue)
+    html += '</body></html>'
+
+    conn.send(html)
+    conn.close()
+
 
 def bot_listening(lock):
 
@@ -424,7 +461,6 @@ def bot_listening(lock):
     fd.close()
     os.chmod(config.servername_filename, 0444)
 
-    # wait for requests
     try:
         while True:
             conn, addr = sock.accept()
@@ -438,48 +474,17 @@ def bot_listening(lock):
 
             t = time.time()
             user = user.replace(' ', '_')
-            print user
-
-            if cmd == "status":
-                # FIXME: the lock is taken too much time, clone the job queue
-                # with the lock taken, then use it
-                lock.acquire()
-                code = 'utf-8'
-                html = '<html>'
-                html += '<meta http-equiv="content-type" content="text/html; charset=%s">' % code
-                html += '<head></head><body>'
-
-                html += "<html><body>the robot is running.<br/><hr/>"
-                html += "<br/>%d jobs in match queue.<br/>"%len(match_queue)
-                for i in match_queue:
-                    html += date_s(i[3])+' '+i[2]+" "+i[1]+" "+i[0]+"<br/>"
-                html += "<br/>%d jobs in split queue.<br/>"%len(split_queue)
-                for i in split_queue:
-                    mtitle = i[0]
-                    mtitle = mtitle.decode('utf-8')
-                    codelang = i[1]
-                    try:
-                        msite = wikipedia.getSite(codelang, config.family)
-                        page = wikipedia.Page(msite,mtitle)
-                        path = msite.nice_get_address(page.urlname())
-                        url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
-                    except:
-                        url = ""
-                    html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
-                html += '</body></html>'
-                lock.release()
-
-                conn.send(html)
-                conn.close()
-                continue
 
             print date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title
-            if cmd == "match":
+
+            if cmd == "status":
+                do_status(lock, conn)
+            elif cmd == "match":
                 add_job(lock, match_queue, (title, lang, user, t, conn))
             elif cmd == "split":
                 add_job(lock, split_queue, (title, lang, user, t, conn))
             else:
-                print "error", cmd
+                print "unknown command: ", cmd
                 conn.send("unknown command: " + cmd);
                 conn.close()
 
