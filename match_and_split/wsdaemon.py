@@ -339,17 +339,18 @@ def do_split(mysite, rootname, user, codelang):
             #first and last pages : check if they are transcluded
             if numrefs > 0 :
                 m = re.match("<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",old_text,re.MULTILINE|re.DOTALL)
-                if m and ( i==0 or i==(len(bl)/2 -1) ):
-                    print "creating sections"
-                    old_text = m.group(2)
-                    if i == 0:
-                        first_part = old_text
-                        second_part = content
-                        fromsection="fromsection=s2 "
-                    else:
-                        first_part = content
-                        second_part = old_text
-                        tosection="tosection=s1 "
+                if m:
+                    if i == 0 or i == (len(bl)/2 -1):
+                        print "creating sections"
+                        old_text = m.group(2)
+                        if i == 0:
+                            first_part = old_text
+                            second_part = content
+                            fromsection="fromsection=s2 "
+                        else:
+                            first_part = content
+                            second_part = old_text
+                            tosection="tosection=s1 "
 
                     content = "<noinclude>"+m.group(1)+"</noinclude><section begin=s1/>"+first_part+"<section end=s1/>\n----\n" \
                         + "<section begin=s2/>"+second_part+"<section end=s2/><noinclude>"+m.group(3)+"</noinclude>"
@@ -357,13 +358,13 @@ def do_split(mysite, rootname, user, codelang):
                 m = re.match("<noinclude><pagequality level=\"1\" user=\"(.*?)\" />(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
                              old_text,re.MULTILINE|re.DOTALL)
                 if m :
-                    print "ok, quality 1"
+                    print "ok, quality 1, first try"
                     content = "<noinclude><pagequality level=\"1\" user=\"" + m.group(1) + "\" />"+m.group(2)+"</noinclude>"+content+"<noinclude>"+m.group(4)+"</noinclude>"
                     m2 = re.match("<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
                                   old_text,re.MULTILINE|re.DOTALL)
                     if m2 :
                         # FIXME: shouldn't use an hardcoded name here
-                        print "ok, quality 1"
+                        print "ok, quality 1, second try"
                         content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
 
         safe_put(pl,content,user+": split")
