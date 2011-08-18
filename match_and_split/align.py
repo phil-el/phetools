@@ -1,9 +1,7 @@
-#!/usr/bin/python
+# -*- coding: utf-8 -*-
 # text alignment program
 # author : thomasv1 at gmx dot de
 # licence : GPL
-
-# FIXME: do the match in unicode, it'll more accurate this way
 
 import match_and_split_config as config
 
@@ -16,7 +14,7 @@ def read_djvu_page(filename, pagenum):
     p = os.popen(c.encode("utf8"))
     text = p.read()
     p.close()
-    return text
+    return unicode(text, 'utf-8')
 
 def get_nr_djvu_pages(filename):
     c = config.djvulibre_path + "djvused -e n '%s'" % filename
@@ -29,7 +27,7 @@ def match_page(target, filename, pagenum):
     s = difflib.SequenceMatcher()
     text1 = read_djvu_page(filename, pagenum)
     text2 = target
-    p = re.compile(r'[\W]+')
+    p = re.compile(ur'[\W]+')
     text1 = p.split(text1)
     text2 = p.split(text2)
     s.set_seqs(text1,text2)
@@ -58,8 +56,8 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         text1 = page1+page2
         text2 = target[offset:offset+ int(1.5*len(text1))]
 
-        p = re.compile(r'[\W]+')
-        fp = re.compile(r'([\W]+)')
+        p = re.compile(ur'[\W]+', re.U)
+        fp = re.compile(ur'([\W]+)', re.U)
         ftext1 = fp.split(text1)
         ftext2 = fp.split(text2)
 
@@ -69,22 +67,18 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         s.set_seqs(text1,text2)
 
         mb = s.get_matching_blocks()
-
-        try:
-            ccc = mb[-2]
-            dummy = mb[-1]
-        except:
-            print "not enough matching blocks"
+        if len(mb) < 2:
+            print "LEN(MB) < 2, breaking"
             break
-
+        ccc = mb[-2]
+        dummy = mb[-1]
         ratio = s.ratio()
         #print i, ccc, ratio
 
         if ratio < 0.1:
             print "low ratio", ratio
             break
-
-        mstr = ""
+        mstr = u""
         overflow = False
         for i in range(ccc[0] + ccc[2]):
             matched = False
@@ -96,7 +90,8 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
                    break
             if not overflow:
                 ss = ftext1[2*i]
-                if matched : ss ="\033[1;32m%s\033[0;49m"%ss
+                if matched:
+                    ss =u"\033[1;32m%s\033[0;49m"%ss
                 if 2*i+1 < len(ftext1):
                     mstr = mstr + ss + ftext1[2*i+1]
         if verbose:
@@ -118,7 +113,7 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
             if not overflow:
                 ss = ftext2[2*i]
                 if matched:
-                    ss ="\033[1;31m%s\033[0;49m"%ss
+                    ss =u"\033[1;31m%s\033[0;49m"%ss
                 if 2*i+1 < len(ftext2):
                     mstr = mstr + ss + ftext2[2*i+1]
                     no_color = no_color + ftext2[2*i] + ftext2[2*i+1]
@@ -127,46 +122,46 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
             print "===================================="
 
         if is_poem:
-            sep = "\n</poem>\n==[["+prefix+":%s/%d]]==\n<poem>\n"%(djvuname,pagenum)
+            sep = u"\n</poem>\n==[["+prefix+":%s/%d]]==\n<poem>\n"%(djvuname,pagenum)
         else:
-            sep = "\n==[["+prefix+":%s/%d]]==\n"%(djvuname,pagenum)
+            sep = u"\n==[["+prefix+":%s/%d]]==\n"%(djvuname,pagenum)
 
         if is_poem:
             no_color = no_color.rstrip()
-            if no_color[-3:] == u"\n\n\xab":
+            if no_color[-3:] == u"\n\n«":
                 no_color = no_color[:-3]
         else:
             no_color = no_color.rstrip('\n')
-            if no_color[-4:] == "\n\n- ":
+            if no_color[-4:] == u"\n\n- ":
                 no_color = no_color[:-4]
-            if no_color[-3:] == "\n\n\"":
+            if no_color[-3:] == u"\n\n«":
                 no_color = no_color[:-3]
-            if no_color[-5:] == "\n\nIl ":
+            if no_color[-5:] == u"\n\nIl ":
                 no_color = no_color[:-5]
-            if no_color[-4:] == u"\n\n\u2013 ":
+            if no_color[-4:] == u"\n\n– ":
                 no_color = no_color[:-4]
-            if no_color[-4:] == u"\n\n\u2014 ":
+            if no_color[-4:] == u"\n\n— ":
                 no_color = no_color[:-4]
-            if no_color[-4:] == u"\n\n\xab ":
+            if no_color[-4:] == u"\n\n« ":
                 no_color = no_color[:-4]
             if no_color[-5:] == u"\n\n== ":
                 no_color = no_color[:-5]
 
         offset = offset + len(no_color)
 
-        if no_color and no_color[0]=='\n':
+        if no_color and no_color[0]==u'\n':
             no_color = no_color[1:]
         output = output + sep + no_color
 
         #update is_poem
-        if no_color.find("<poem>") > no_color.find("</poem>"):
+        if no_color.find(u"<poem>") > no_color.find(u"</poem>"):
             is_poem = True
 
-        if no_color.find("<poem>") < no_color.find("</poem>"):
+        if no_color.find(u"<poem>") < no_color.find(u"</poem>"):
             is_poem = False
 
     if offset != 0 and target[offset:]:
-        output = output+"\n=== no match ===\n" + target[offset:]
+        output = output+u"\n=== no match ===\n" + target[offset:]
 
     if offset == 0:
         output = ""
