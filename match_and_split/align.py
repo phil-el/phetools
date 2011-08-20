@@ -1,27 +1,102 @@
 # -*- coding: utf-8 -*-
 # text alignment program
 # author : thomasv1 at gmx dot de
+# author : phe at some dot where
 # licence : GPL
 
 import match_and_split_config as config
 
 import os, re, time, random
+import urllib2
+import pickle
 import difflib
 import wikipedia
 
+# We use a two level cache, in memory we keep a few of the last used text
+# layer, on disk we cache more item as python serialized object, both
+# use the following dumb LRU implementation. Work in progress.
+class dumbLRU(object):
+    def __init__(self, max_disk_size = 20, max_mem_size = 4):
+        # Associate a key to (timestamp, data)
+        self.object = {}
+        # Associate a timestamp to a set of key
+        self.timestamp = {}
+        self.max_disk_size = max_disk_size
+        self.max_mem_size = max_mem_size
+        self.cache_mem_hit = 0
+        self.cache_disk_hit = 0
+        self.cache_miss = 0
+
+    def get(self, key):
+        #self.cache_mem_hit += 1
+        timestamp = time.time()
+        if not self.object.has_key(key):
+            raise RuntimeError(u"dumbLRU.get(), unkown key: " + key)
+        old_timestamp = self.object[key][0]
+        del self.timestamp[old_timestamp]
+        self.object[key][0] = timestamp
+        self.timestamp[timestamp] = key
+
+    #def put(self, key, data):
+    #    if self.max_mem_size == len(self.timestamp):
+    #        self.free_slot()
+
+    def free_slot(self):
+        if self.max_disk_size == len(self.timestamp):
+            # That's why this implementation is called dumb
+            key = min(self.timestamp.keys())
+            del self.object[key]
+            os.remove(key)
+            del self.timestamp[0]
+        in_memory = [x[0] for x in self.object.values if x[1]]
+        if self.max_mem_size == len(in_memory):
+            key = self.object[min(in_memory)]
+            self.object[key][1] = None
+
+    def clear_data(self):
+        for key in self.object:
+            self.object[key][1] = None
+
+def copy_file_from_url(url, out_file):
+    wikipedia.output("getting " + out_file)
+    cmd = "wget -q -O '%s' '%s'" % (out_file, url)
+    os.system(cmd.encode("utf8"))
+    # FIXME: urllib2.HTTPError: HTTP Error 403: Forbidden.
+    #fd_in = urllib2.urlopen(url)
+    #fd_out = open(out_file, "wb")
+    #data = True
+    #while data:
+    #    data = fd_in.read(4096)
+    #    if data:
+    #        fd_out.write(data)
+    #fd_in.close()
+    #fd_out.close()
+
+def data_filename(filename):
+    return filename[:-4] + "dat"
+
+pickle_obj = None
+pickle_filename = None
+def get_pickle_obj(filename):
+    global pickle_obj, pickle_filename
+    if pickle_filename != filename:
+        print "Mem cache miss for:", filename.encode(u'utf-8')
+        fd = open(data_filename(filename), "rb")
+        pickle_obj = pickle.load(fd)
+        fd.close()
+        pickle_filename = filename
+    return pickle_obj
+
 def read_djvu_page(filename, pagenum):
-    c = config.djvulibre_path + "djvutxt --page=%d '%s'" % (pagenum, filename)
-    p = os.popen(c.encode("utf8"))
-    text = p.read()
-    p.close()
-    return unicode(text, 'utf-8')
+    obj = get_pickle_obj(filename)
+    if pagenum > 0 and pagenum <= len(obj[1]):
+        return obj[1][pagenum-1]
+    else:
+        return u""
 
 def get_nr_djvu_pages(filename):
-    c = config.djvulibre_path + "djvused -e n '%s'" % filename
-    p = os.popen(c.encode("utf8"))
-    text = p.read()
-    p.close()
-    return int(text)
+    obj = get_pickle_obj(filename)
+    return len(obj[1])
 
 def match_page(target, filename, pagenum):
     s = difflib.SequenceMatcher()
@@ -34,6 +109,32 @@ def match_page(target, filename, pagenum):
     ratio = s.ratio()
     return ratio
 
+def unquote_text_from_djvu(text):
+    #text = text.replace(u'\\r', u'\r')
+    text = text.replace(u'\\n', u'\n')
+    text = text.replace(u'\\"', u'"')
+    text = text.replace(u'\\\\', u'\\')
+    return text
+
+def extract_djvu_text(url, filename, sha1):
+    copy_file_from_url(url, filename)
+    data = []
+    cmdline = "djvutxt -detail=page '%s'" % filename.encode('utf-8')
+    fd = os.popen(cmdline)
+    text = fd.read()
+    for t in re.finditer(u'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
+        t = unicode(t.group(1), 'utf-8', 'replace')
+        t = re.sub(u'^page \d+ \d+ \d+ \d+[ \n]+"', u'', t)
+        t = re.sub(u'"[ ]*$', u'', t)
+        t = unquote_text_from_djvu(t)
+        data.append(t)
+    fd.close()
+    os.remove(filename)
+    filename = data_filename(filename)
+    fd = open(filename, "wb")
+    pickle.dump((sha1, data), fd)
+    fd.close()
+
 # returns result, status
 def do_match(target, filename, djvuname, number, verbose, prefix):
     s = difflib.SequenceMatcher()
@@ -42,7 +143,6 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
     is_poem = False
 
     max_pages = get_nr_djvu_pages(filename)
-
     last_page = read_djvu_page(filename, number)
 
     for pagenum in range(number, min(number + 1000, max_pages)):
@@ -171,21 +271,19 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
     else:
         return (output, "ok")
 
-
-# FIXME: use urllib2 instead of wget
-# FIXME: theorically it's possible to get a name collision if two different
-# wiki have local file with same name but different contents.
+# It's possible to get a name collision if two different wiki have local
+# file with the same name but different contents. In this case the cache will
+# be ineffective but no wrong data can be used as we check its sha1.
 def get_djvu(mysite, djvuname, check_timestamp = False):
     print "get_djvu", repr(djvuname)
 
-    djvuname = djvuname.replace(" ","_")
+    djvuname = djvuname.replace(" ", "_")
     filename = "djvu/" + djvuname
-    if not os.path.exists(filename):
-        # FIXME: use a LRU rather to randomly delete a file in the cache, the
-        # best way is to save in the cache only the text layer, but extracting
-        # the whole text layer isn't too costly for big volume?
+    if not os.path.exists(data_filename(filename)):
+        # FIXME: use a LRU rather to randomly delete a file in the cache.
+        print "CACHE MISS"
         o = os.listdir("djvu")
-        if len(o) > 19:
+        if len(o) >= 32:
             k = random.randint(0, len(o) - 1)
             print "deleting " + o[k]
             os.unlink("djvu/" + o[k])
@@ -196,25 +294,23 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
         except:
             return False
 
-        wikipedia.output("getting " + djvuname)
-        cmd = 'wget -q -O "%s" %s'%(filename, url)
-        os.system(cmd.encode("utf8"))
+        print "extracting text layer"
+        extract_djvu_text(url, filename, filepage.getHash())
     else:
         if check_timestamp:
-            (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filename)
-            filepage = wikipedia.ImagePage(mysite,"File:"+djvuname)
-            hist = filepage.getFileVersionHistory()
-            date = hist[0][0]
-            timestamp = time.mktime( time.strptime(date, "%Y-%m-%dT%H:%M:%SZ") )
-            if timestamp - mtime > 120: #allow 2 minutes difference
-                print "OUTDATED FILE", timestamp, mtime , ":", timestamp - mtime
+            filepage = wikipedia.ImagePage(mysite, "File:" + djvuname)
+            # required to get the SHA1 when the file is on commons.
+            if filepage.fileIsOnCommons():
+                site = wikipedia.getSite(code = 'commons', fam = 'commons')
+                filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+            obj = get_pickle_obj(filename)
+            if obj[0] != filepage.getHash():
+                print "OUTDATED FILE", obj[0], filepage.getHash()
                 try:
                     url = filepage.fileUrl()
                 except:
                     return filename
-                os.unlink(filename)
-                wikipedia.output("getting "+djvuname)
-                cmd = 'wget -q -O "%s" %s'%(filename,url)
-                os.system(cmd.encode("utf8"))
+                print "extracting text layer"
+                extract_djvu_text(url, filename, filepage.getHash())
 
     return filename
