@@ -271,6 +271,14 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
     else:
         return (output, "ok")
 
+def get_filepage(site, djvuname):
+    filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+    # required to get the SHA1 when the file is on commons.
+    if filepage.fileIsOnCommons():
+        site = wikipedia.getSite(code = 'commons', fam = 'commons')
+        filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+    return filepage
+
 # It's possible to get a name collision if two different wiki have local
 # file with the same name but different contents. In this case the cache will
 # be ineffective but no wrong data can be used as we check its sha1.
@@ -288,7 +296,7 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
             print "deleting " + o[k]
             os.unlink("djvu/" + o[k])
 
-        filepage = wikipedia.ImagePage(mysite, "File:" + djvuname)
+        filepage = get_filepage(mysite, djvuname)
         try:
             url = filepage.fileUrl()
         except:
@@ -298,11 +306,7 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
         extract_djvu_text(url, filename, filepage.getHash())
     else:
         if check_timestamp:
-            filepage = wikipedia.ImagePage(mysite, "File:" + djvuname)
-            # required to get the SHA1 when the file is on commons.
-            if filepage.fileIsOnCommons():
-                site = wikipedia.getSite(code = 'commons', fam = 'commons')
-                filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+            filepage = get_filepage(mysite, djvuname)
             obj = get_pickle_obj(filename)
             if obj[0] != filepage.getHash():
                 print "OUTDATED FILE", obj[0], filepage.getHash()
