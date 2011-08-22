@@ -226,42 +226,30 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         else:
             sep = u"\n==[["+prefix+":%s/%d]]==\n"%(djvuname,pagenum)
 
-        if is_poem:
-            no_color = no_color.rstrip()
-            if no_color[-3:] == u"\n\n«":
-                no_color = no_color[:-3]
-        else:
-            no_color = no_color.rstrip('\n')
-            if no_color[-4:] == u"\n\n- ":
-                no_color = no_color[:-4]
-            if no_color[-3:] == u"\n\n«":
-                no_color = no_color[:-3]
-            if no_color[-5:] == u"\n\nIl ":
-                no_color = no_color[:-5]
-            if no_color[-4:] == u"\n\n– ":
-                no_color = no_color[:-4]
-            if no_color[-4:] == u"\n\n— ":
-                no_color = no_color[:-4]
-            if no_color[-4:] == u"\n\n« ":
-                no_color = no_color[:-4]
-            if no_color[-5:] == u"\n\n== ":
-                no_color = no_color[:-5]
+        # Move the end of the last page to the start of the next page
+        # if the end of the last page look like a paragraph start. 16 char
+        # width to detect that is a guessed value.
+        no_color = no_color.rstrip()
+        match = re.match("(?ms).*(\n\n.*)$", no_color)
+        if match and len(match.group(1)) <= 16:
+            no_color = no_color[:-len(match.group(1))]
 
-        offset = offset + len(no_color)
+        offset += len(no_color)
 
         if no_color and no_color[0]==u'\n':
             no_color = no_color[1:]
-        output = output + sep + no_color
+        no_color = no_color.lstrip(u' ')
+        output += sep + no_color
 
-        #update is_poem
         if no_color.find(u"<poem>") > no_color.find(u"</poem>"):
             is_poem = True
-
-        if no_color.find(u"<poem>") < no_color.find(u"</poem>"):
+        elif no_color.find(u"<poem>") < no_color.find(u"</poem>"):
             is_poem = False
 
     if offset != 0 and target[offset:]:
-        output = output+u"\n=== no match ===\n" + target[offset:]
+        if len(target) - offset >= 16:
+            output += u"\n=== no match ===\n"
+        output += target[offset:].lstrip(u' ')
 
     if offset == 0:
         output = ""
