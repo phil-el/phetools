@@ -290,8 +290,8 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
             print "deleting " + o[k]
             os.unlink("djvu/" + o[k])
 
-        filepage = get_filepage(mysite, djvuname)
         try:
+            filepage = get_filepage(mysite, djvuname)
             url = filepage.fileUrl()
         except:
             return False
@@ -300,7 +300,10 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
         extract_djvu_text(url, filename, filepage.getHash())
     else:
         if check_timestamp:
-            filepage = get_filepage(mysite, djvuname)
+            try:
+                filepage = get_filepage(mysite, djvuname)
+            except: # can occur if file has been deleted.
+                return False
             obj = get_pickle_obj(filename)
             if obj[0] != filepage.getHash():
                 print "OUTDATED FILE", obj[0], filepage.getHash()
