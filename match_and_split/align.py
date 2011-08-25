@@ -232,9 +232,13 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         # if the end of the last page look like a paragraph start. 16 char
         # width to detect that is a guessed value.
         no_color = no_color.rstrip()
-        match = re.match("(?ms).*(\n\n.*)$", no_color)
+        match = re.match(u"(?ms).*(\n\n.*)$", no_color)
         if match and len(match.group(1)) <= 16:
             no_color = no_color[:-len(match.group(1))]
+        else:
+            match = re.match(u"(?ms).*(\n\w+\W*)$", no_color)
+            if match:
+                no_color = no_color[:-(len(match.group(1)) - 1)]
 
         offset += len(no_color)
 
