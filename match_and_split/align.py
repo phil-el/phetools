@@ -130,10 +130,12 @@ def extract_djvu_text(url, filename, sha1):
         data.append(t)
     fd.close()
     os.remove(filename)
-    filename = data_filename(filename)
-    fd = open(filename, "wb")
+    fd = open(data_filename(filename), "wb")
     pickle.dump((sha1, data), fd)
     fd.close()
+    global pickle_obj, pickle_filename
+    pickle_filename = filename
+    pickle_obj = (sha1, data)
 
 # returns result, status
 def do_match(target, filename, djvuname, number, verbose, prefix):
