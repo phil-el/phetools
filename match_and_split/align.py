@@ -247,9 +247,9 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         no_color = no_color.lstrip(u' ')
         output += sep + no_color
 
-        if no_color.find(u"<poem>") > no_color.find(u"</poem>"):
+        if no_color.rfind(u"<poem>") > no_color.rfind(u"</poem>"):
             is_poem = True
-        elif no_color.find(u"<poem>") < no_color.find(u"</poem>"):
+        elif no_color.rfind(u"<poem>") < no_color.rfind(u"</poem>"):
             is_poem = False
 
     if offset != 0 and target[offset:]:
