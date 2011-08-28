@@ -339,18 +339,17 @@ def do_split(mysite, rootname, user, codelang):
             #first and last pages : check if they are transcluded
             if numrefs > 0 :
                 m = re.match("<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",old_text,re.MULTILINE|re.DOTALL)
-                if m:
-                    if i == 0 or i == (len(bl)/2 -1):
-                        print "creating sections"
-                        old_text = m.group(2)
-                        if i == 0:
-                            first_part = old_text
-                            second_part = content
-                            fromsection="fromsection=s2 "
-                        else:
-                            first_part = content
-                            second_part = old_text
-                            tosection="tosection=s1 "
+                if m and (i == 0 or i == (len(bl)/2 -1)):
+                    print "creating sections"
+                    old_text = m.group(2)
+                    if i == 0:
+                        first_part = old_text
+                        second_part = content
+                        fromsection="fromsection=s2 "
+                    else:
+                        first_part = content
+                        second_part = old_text
+                        tosection="tosection=s1 "
 
                     content = "<noinclude>"+m.group(1)+"</noinclude><section begin=s1/>"+first_part+"<section end=s1/>\n----\n" \
                         + "<section begin=s2/>"+second_part+"<section end=s2/><noinclude>"+m.group(3)+"</noinclude>"
