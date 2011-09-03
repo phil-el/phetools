@@ -103,7 +103,7 @@ def do_extract(mysite, maintitle, user, codelang):
         return E_ERROR
 
     djvuname = maintitle.replace(u' ', u'_')
-    print djvuname
+    print djvuname.encode('utf-8')
 
     filename = align.get_djvu(mysite, djvuname, True)
     if not filename:
