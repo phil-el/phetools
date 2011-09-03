@@ -174,7 +174,10 @@ def do_match(mysite, maintitle, user, codelang):
             title  = bl[i*2+1]
             content = bl[i*2+2]
             filename, pagenum = title.split('/')
-            filename = align.get_djvu(mysite, filename)
+            if i == 0:
+                filename = align.get_djvu(mysite, filename, True)
+            else:
+                filename = align.get_djvu(mysite, filename, False)
             if not filename:
                 return "Erreur : fichier absent"
             if content.find("R2Mondes") != -1:
@@ -544,7 +547,7 @@ def job_thread(lock, queue, func):
             res = " FAILED  "
 
         time2 = time.time()
-        print date_s(time2) + res + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)" % (time2-time1) + " " + out
+        print date_s(time2), res, title.encode('utf-8'), user.encode("utf8"), codelang, " (%.2f)" % (time2-time1), out
 
         remove_job(lock, queue)
 
