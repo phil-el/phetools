@@ -11,66 +11,28 @@ import urllib2
 import pickle
 import difflib
 import wikipedia
+import urllib
 
-# We use a two level cache, in memory we keep a few of the last used text
-# layer, on disk we cache more item as python serialized object, both
-# use the following dumb LRU implementation. Work in progress.
-class dumbLRU(object):
-    def __init__(self, max_disk_size = 20, max_mem_size = 4):
-        # Associate a key to (timestamp, data)
-        self.object = {}
-        # Associate a timestamp to a set of key
-        self.timestamp = {}
-        self.max_disk_size = max_disk_size
-        self.max_mem_size = max_mem_size
-        self.cache_mem_hit = 0
-        self.cache_disk_hit = 0
-        self.cache_miss = 0
-
-    def get(self, key):
-        #self.cache_mem_hit += 1
-        timestamp = time.time()
-        if not self.object.has_key(key):
-            raise RuntimeError(u"dumbLRU.get(), unkown key: " + key)
-        old_timestamp = self.object[key][0]
-        del self.timestamp[old_timestamp]
-        self.object[key][0] = timestamp
-        self.timestamp[timestamp] = key
-
-    #def put(self, key, data):
-    #    if self.max_mem_size == len(self.timestamp):
-    #        self.free_slot()
-
-    def free_slot(self):
-        if self.max_disk_size == len(self.timestamp):
-            # That's why this implementation is called dumb
-            key = min(self.timestamp.keys())
-            del self.object[key]
-            os.remove(key)
-            del self.timestamp[0]
-        in_memory = [x[0] for x in self.object.values if x[1]]
-        if self.max_mem_size == len(in_memory):
-            key = self.object[min(in_memory)]
-            self.object[key][1] = None
-
-    def clear_data(self):
-        for key in self.object:
-            self.object[key][1] = None
+def url_opener():
+    opener = urllib.URLopener()
+    opener.addheaders = [('User-agent', 'MW_match_and_split')]
+    return opener
 
 def copy_file_from_url(url, out_file):
-    wikipedia.output("getting " + out_file)
-    cmd = "wget -q -O '%s' '%s'" % (out_file, url)
-    os.system(cmd.encode("utf8"))
+    #wikipedia.output("getting " + out_file)
+    #cmd = "wget -q -O '%s' '%s'" % (out_file, url)
+    #os.system(cmd.encode("utf8"))
     # FIXME: urllib2.HTTPError: HTTP Error 403: Forbidden.
-    #fd_in = urllib2.urlopen(url)
-    #fd_out = open(out_file, "wb")
-    #data = True
-    #while data:
-    #    data = fd_in.read(4096)
-    #    if data:
-    #        fd_out.write(data)
-    #fd_in.close()
-    #fd_out.close()
+    opener = url_opener()
+    fd_in = opener.open(url)
+    fd_out = open(out_file, "wb")
+    data = True
+    while data:
+        data = fd_in.read(4096)
+        if data:
+            fd_out.write(data)
+    fd_in.close()
+    fd_out.close()
 
 def data_filename(filename):
     return filename[:-4] + "dat"
@@ -116,10 +78,19 @@ def unquote_text_from_djvu(text):
     text = text.replace(u'\\\\', u'\\')
     return text
 
+def quote_filename(filename):
+    result = u''
+    for ch in filename:
+        if ch in u";&|><*?`$(){}[]!#'\"":
+            result += u"\\"
+        result += ch
+    return result
+
 def extract_djvu_text(url, filename, sha1):
     copy_file_from_url(url, filename)
     data = []
-    cmdline = "djvutxt -detail=page '%s'" % filename.encode('utf-8')
+    cmdline = "djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
+    print cmdline
     fd = os.popen(cmdline)
     text = fd.read()
     for t in re.finditer(u'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
