@@ -1,0 +1,73 @@
+<html>
+<head>
+<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/vector/screen.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/common/shared.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/common/commonPrint.css" type="text/css" media="print" />
+</head>
+
+<body class="mediawiki ltr ns--1 ns-special page-Special_RecentChanges skin-vector">
+
+
+<div id="mw-panel" class="noprint">
+ <div id="p-logo">
+   <a style="background-image: url(http://upload.wikimedia.org/wikipedia/sources/b/bc/Wiki.png);" href="index.html"></a>
+ </div>
+ <div class="portal" id='p-Channels'>
+  <h5>Statistics pages</h5>
+  <div class="body">
+   <ul>
+    <li><a href="statistics.php">Today's table</a></li>
+    <li><a href="statistics.php?diff=1">Today's increase</a></li>
+    <li><a href="stats.html">Proofreading graphs</a></li>
+    <li><a href="transclusions.html">Transclusion graphs</a></li>
+   </ul>
+  </div>
+ </div>
+</div>
+
+<div id="content">
+ <h1 id="firstHeading" class="firstHeading">Wikisource Transclusion Statistics</h1>
+ <div id="bodyContent">
+   <div id="contentSub"></div>
+
+
+This page shows how many texts at Wikisource are backed with scans, using the ProofreadPage extension. It is updated daily by a cron job. <br/>
+<u>Notes:</u>
+<ul>
+<li>Some subdomains store author pages in the main namespace, which biases the percentage.</li>
+<li>Most texts at the German language Wikisource are backed with scans, but do not use transclusion ; they are misrepresented here.</li>
+</ul>
+
+<h3>Texts with scans : comparison between subdomains</h3>
+
+Left: raw number; right:percentage of total<br/>
+
+<a href="graphs/Wikisource_-_pr_texts.png"><img width=250 src="graphs/thumb/Wikisource_-_pr_texts.png" /></a>
+<a href="graphs/Wikisource_-_pr_percent.png"><img width=250 src="graphs/thumb/Wikisource_-_pr_percent.png" /></a>
+
+<h3>Texts with scans : Statistics per subdomain</h3>
+<a href="graphs/Wikisource_-_texts_fr.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_fr.png" /></a>
+<a href="graphs/Wikisource_-_texts_en.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_en.png" /></a>
+<a href="graphs/Wikisource_-_texts_de.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_de.png" /></a>
+<br/>
+<a href="graphs/Wikisource_-_texts_it.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_it.png" /></a>
+<a href="graphs/Wikisource_-_texts_pl.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_pl.png" /></a>
+<a href="graphs/Wikisource_-_texts_es.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_es.png" /></a>
+<br/>
+<a href="graphs/Wikisource_-_texts_ru.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_ru.png" /></a>
+<a href="graphs/Wikisource_-_texts_no.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_no.png" /></a>
+<a href="graphs/Wikisource_-_texts_ca.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_ca.png" /></a>
+<br/>
+<a href="graphs/Wikisource_-_texts_sv.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_sv.png" /></a>
+<a href="graphs/Wikisource_-_texts_hy.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_hy.png" /></a>
+<a href="graphs/Wikisource_-_texts_da.png"><img width=250 src="graphs/thumb/Wikisource_-_texts_da.png" /></a>
+
+<!--
+<h3>Texts without scans</h3>
+<a href="graphs/Wikisource_-_nonpr_texts_en.png"><img width=250 src="graphs/thumb/Wikisource_-_nonpr_texts_en.png" /></a>
+<a href="graphs/Wikisource_-_nonpr_texts_fr.png"><img width=250 src="graphs/thumb/Wikisource_-_nonpr_texts_fr.png" /></a>
+<a href="graphs/Wikisource_-_nonpr_texts_it.png"><img width=250 src="graphs/thumb/Wikisource_-_nonpr_texts_it.png" /></a>
+-->
+
+</div>
+</html>
