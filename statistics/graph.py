@@ -291,7 +291,7 @@ def main():
 
     print "per day"
 
-    draw( names, 2, sg, 380,20,"proofread_pages_per_day")
+    draw( names, 2, sg, 400, 20,"proofread_pages_per_day")
     draw( names, 1, sg, 150,20,"validated_pages_per_day")
     draw( names, 0, None, 900000,50000,"all_pages")
     draw( names, 2, None, 340000,20000,"proofread_pages")
