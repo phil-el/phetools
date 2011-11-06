@@ -128,11 +128,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            title, codelang, user, t, conn = queue[-1]
+            title, codelang, user, server, t, conn = queue[-1]
             got_it = True
         lock.release()
 
-    return title, codelang, user, t, conn
+    return title, codelang, user, server, t, conn
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -146,7 +146,7 @@ def add_job(lock, queue, cmd):
 
 # FIXME, here and everywhere, can't we use mysite.lang and mysite.family.name
 # to remove some parameters, does this work for old wikisource?
-def do_match(mysite, maintitle, user, codelang):
+def do_match(mysite, maintitle, user, codelang, server):
     prefix = page_prefixes.get(codelang)
     if not prefix:
         print "no prefix"
@@ -191,7 +191,7 @@ def do_match(mysite, maintitle, user, codelang):
                 return "Erreur : Le texte ne correspond pas, page %s" % pagenum
         #the page is ok
         safe_put(page,new_text,user+": match")
-        add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), time.time(), None))
+        add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
         return "ok : transfert en cours."
 
     prefix = prefix.decode('utf-8')
@@ -259,7 +259,7 @@ def safe_put(page,text,comment):
     mylock.release()
 
 
-def do_split(mysite, rootname, user, codelang):
+def do_split(mysite, rootname, user, codelang, server):
     prefix = page_prefixes.get(codelang)
     if not prefix:
         return E_ERROR
@@ -414,7 +414,7 @@ def html_for_queue(queue):
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:
             url = ""
-        html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
+        html += date_s(i[4])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
     return html
 
 def do_status(lock, conn):
@@ -469,7 +469,7 @@ def bot_listening(lock):
             conn, addr = sock.accept()
             data = conn.recv(1024)
             try:
-                cmd, title, lang, user = data.split('|')
+                cmd, title, lang, user, server = data.split('|')
             except:
                 print "error", data
                 conn.close()
@@ -478,14 +478,14 @@ def bot_listening(lock):
             t = time.time()
             user = user.replace(' ', '_')
 
-            print date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title
+            print date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title + ' ' + server
 
             if cmd == "status":
                 do_status(lock, conn)
             elif cmd == "match":
-                add_job(lock, match_queue, (title, lang, user, t, conn))
+                add_job(lock, match_queue, (title, lang, user, server, t, conn))
             elif cmd == "split":
-                add_job(lock, split_queue, (title, lang, user, t, conn))
+                add_job(lock, split_queue, (title, lang, user, server, t, conn))
             else:
                 print "unknown command: ", cmd
                 conn.send("unknown command: " + cmd);
@@ -496,14 +496,14 @@ def bot_listening(lock):
         print "STOP"
 
         for i in range(len(match_queue)):
-            title,lang,user,t,conn = match_queue[i]
-            match_queue[i] = (title,lang,user,t,None)
+            title, lang, user, server, t, conn = match_queue[i]
+            match_queue[i] = (title, lang, user, server, t, None)
             if conn:
                 conn.close()
 
         for i in range(len(split_queue)):
-            title,lang,user,t,conn = split_queue[i]
-            split_queue[i] = (title,lang,user,t,None)
+            title, lang, user, server, t, conn = split_queue[i]
+            split_queue[i] = (title, lang, user, server, t, None)
             if conn:
                 conn.close()
 
@@ -517,15 +517,21 @@ def date_s(at):
     t = time.gmtime(at)
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
+def get_family(server):
+    # Kludge
+    print "server", server
+    if server.endswith('wikilivres.info'):
+        return 'wikilivres'
+    return config.family
 
 def job_thread(lock, queue, func):
     while True:
-        title, codelang, user, t, conn = get_job(lock, queue)
+        title, codelang, user, server, t, conn = get_job(lock, queue)
 
         time1 = time.time()
         out = ''
         try:
-            mysite = wikipedia.getSite(codelang, config.family)
+            mysite = wikipedia.getSite(codelang, get_family(server))
         except:
             print "site error", repr(codelang)
             out = "site error: " + repr(codelang)
@@ -535,7 +541,7 @@ def job_thread(lock, queue, func):
             print mysite, title
             title = title.decode('utf-8')
             user = user.decode('utf-8')
-            out = func(mysite, title, user, codelang)
+            out = func(mysite, title, user, codelang, server)
 
         if conn:
             conn.send(out)
@@ -547,7 +553,7 @@ def job_thread(lock, queue, func):
             res = " FAILED  "
 
         time2 = time.time()
-        print date_s(time2), res, title.encode('utf-8'), user.encode("utf8"), codelang, " (%.2f)" % (time2-time1), out
+        print date_s(time2), res, title.encode('utf-8'), user.encode("utf8"), codelang, server, " (%.2f)" % (time2-time1), out
 
         remove_job(lock, queue)
 
