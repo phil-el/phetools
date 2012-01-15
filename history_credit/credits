@@ -8,9 +8,69 @@ import urllib
 sys.path.append("/home/phe/wsbot")
 import get_credit
 
+class formater_base:
+    def __init__(self, format):
+        self.format_type = format
+        self.raw = format.endswith('fm')
+
+    def is_raw(self):
+        return self.raw
+
+    def content_type(self):
+        if self.is_raw():
+            return 'text/plain'
+        return self.mime_type()
+
+    def mime_type(self):
+        return 'text/plain'
+
+    def format(self, result):
+        text = ''
+        for r in result:
+            text += str(r) + ': ' + str(result[r]) + '\n'
+        return text
+
+class formater_html(formater_base):
+    def __init__(self, format):
+        formater_base.__init__(self, format)
+
+    def mime_type(self):
+        return 'text/html'
+
+    def format(self, result):
+        html = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head></head>
+<body>"""
+        for r in result:
+            html += str(r) + ': ' + str(result[r]) + '<br />'
+        return html + "</body></html>"
+
+class formater_json(formater_base):
+    def __init__(self, format):
+        formater_base.__init__(self, format)
+
+    def mime_type(self):
+        return 'application/json'
+
+    def format(self, result):
+        import json
+        return json.dumps(result)
+
+def get_formater(format):
+    real_format = format
+    if format.endswith("fm"):
+        real_format = format[:-2]
+    formater = {
+        'text' : formater_base,
+        'html' : formater_html,
+        'json' : formater_json,
+        }
+    return formater.get(real_format, formater_base)(format)
+
 def get_params(query_string):
     params = query_string.split("&")
-    rdict = {}
+    rdict = { 'format' : 'text' }
     for param in params:
         [key, value] = param.split("=")
         rdict[key] = urllib.unquote(value)
@@ -21,12 +81,15 @@ def myapp(environ, start_response):
         query_string = environ['QUERY_STRING']
     else:
         query_string= 'lang=fr&book=Michaud - Biographie universelle ancienne et moderne - 1843 - Tome 1.djvu'
+    # FIXME: implement POST
     #postdata = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
     params = get_params(query_string)
     conn = get_credit.create_conn(domain = params['lang'])
     result = get_credit.get_credit(conn, params['book'], domain = params['lang'])
-    start_response('200 OK', [('Content-Type', 'text/plain; charset=UTF-8')])
-    return [ str(result) ]
+    formater = get_formater(params['format'])
+    start_response('200 OK', [('Content-Type',
+                               formater.content_type() + '; charset=UTF-8')])
+    return [ formater.format(result) ]
 
 if __name__ == "__main__":
     from flup.server.cgi import WSGIServer
