@@ -18,8 +18,13 @@ def prefixed_name(book, cursor, max_count = 5000):
     last = book
     cont = True
     while cont:
-        q = "SELECT page_title, page_id FROM page WHERE page_namespace = 104 AND page_title >= '" + last + "' ORDER BY page_title LIMIT 500;"
-        cursor.execute(q)
+        cursor.execute("""SELECT page_title, page_id
+                          FROM page
+                          WHERE page_namespace = %s AND page_title >= %s
+                          ORDER BY page_title LIMIT 500
+                       """,
+                       # FIXME: do not hardcode 104 ns number of Page:
+                       [ 104, last ])
         for r in cursor.fetchall():
             count += 1
             if not r[0].startswith(book) or count > max_count:
@@ -28,16 +33,22 @@ def prefixed_name(book, cursor, max_count = 5000):
             last = r[0]
             yield r
 
-def get_revision(conn, ids, cursor):
-    id_str = [str(x) for x in ids ]
-    q = 'select rev_user from revision where rev_page = ' + ' OR rev_page = '.join(id_str)
+def get_revision(rev_ids, cursor):
+    rev_id_str = [str(x) for x in rev_ids ]
+    q = """SELECT rev_user
+           FROM revision
+           WHERE rev_page IN (%s)
+        """ % ( ",".join(rev_id_str), )
     cursor.execute(q)
     for r in cursor.fetchall():
         yield r
 
-def get_username(conn, user_ids, cursor):
+def get_username(user_ids, cursor):
     user_id_str = [str(x) for x in user_ids ]
-    q = 'select user_name from user where user_id = ' + ' OR user_id = '.join(user_id_str)
+    q = """SELECT user_name, ug_group, user_id
+           FROM user, user_groups
+           WHERE user_id IN( %s ) AND ug_user = user_id
+        """ % (','.join(user_id_str)) 
     cursor.execute(q)
     for r in cursor.fetchall():
         yield r
@@ -45,11 +56,19 @@ def get_username(conn, user_ids, cursor):
 def get_credit(conn, book, domain = 'fr'):
     book = book.replace(' ', '_')
     cursor = use_db(conn, domain)
-    ids = [ x[1] for x in prefixed_name(book, cursor) ]
-    user_ids = set([r[0] for r in get_revision(conn, ids, cursor)])
-    return [ x for x in get_username(conn, user_ids, cursor) ]
-    #for r in get_username(conn, user_ids, cursor):
-    #    print r
+
+    rev_ids = [ x[1] for x in prefixed_name(book, cursor) ]
+
+    user_ids = {}
+    for x in get_revision(rev_ids, cursor):
+        user_ids.setdefault(x[0], 0)
+        user_ids[x[0]] += 1
+
+    results = {}
+    for x in get_username(user_ids, cursor):
+        results.setdefault(x[0], (user_ids[x[2]], []))
+        results[x[0]][1].append(x[1])
+    return results
 
 def create_conn(domain = 'fr'):
     conn = MySQLdb.connect(host = "sql-s3", user = "phe",
