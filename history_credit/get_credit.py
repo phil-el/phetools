@@ -66,8 +66,8 @@ def get_credit(conn, book, domain = 'fr'):
 
     results = {}
     for x in get_username(user_ids, cursor):
-        results.setdefault(x[0], (user_ids[x[2]], []))
-        results[x[0]][1].append(x[1])
+        results.setdefault(x[0], { 'count' : user_ids[x[2]], 'flags' : [] } )
+        results[x[0]]['flags'].append(x[1])
     return results
 
 def create_conn(domain = 'fr'):
