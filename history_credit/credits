@@ -4,9 +4,75 @@
 import re
 import sys
 import urllib
+import types
+
+fd_log = open("/home/phe/log_credit", "a")
 
 sys.path.append("/home/phe/wsbot")
 import get_credit
+
+# php sérializer, support only base type, list, tuple and dict, no support
+# for set not object
+# FIXME: add set support but how is it implemented in php ?
+def serialize_php_int(var):
+    return "i:%d;" % (var)
+
+def serialize_php_string(var):
+    return 's:%d:"%s";' % (len(var), var)
+
+def serialize_php_float(var):
+    return "d:%s;" % (var)
+
+def serialize_php_error(var):
+    raise TypeError("Invalid Type %s" % (type(var)))
+
+def serialize_php_bool(var):
+    return "b:%d;" % (var)
+
+def serialize_php_none(var):
+    return "N;"
+
+# Special case for none as dict index
+def serialize_php_none_as_zero(var):
+    return serialize_php_int(0);
+
+def serialize_php_array_key(var):
+    serializer = {
+        types.IntType : serialize_php_int,
+        types.FloatType : serialize_php_int,
+        types.BooleanType : serialize_php_int,
+        types.StringType : serialize_php_string,
+        types.NoneType : serialize_php_none_as_zero,
+        }
+    return serializer.get(type(var), serialize_php_error)(var);
+
+def serialize_php_array(var):
+    values = []
+    for index, value in enumerate(var):
+        values.append(serialize_php_array_key(index))
+        values.append(serialize_php(value))
+    return "a:%d:{%s}" % (len(var), "".join(values))
+
+def serialize_php_dict(var):
+    values = []
+    for index, value in var.iteritems():
+        values.append(serialize_php_array_key(index))
+        values.append(serialize_php(value))
+    return "a:%d:{%s}" % (len(var), "".join(values))
+
+# FIXME: in it's own module
+def serialize_php(var):
+    serializer = {
+        types.IntType : serialize_php_int,
+        types.LongType : serialize_php_int,
+        types.StringType : serialize_php_string,
+        types.BooleanType : serialize_php_bool,
+        types.NoneType : serialize_php_none,
+        types.ListType : serialize_php_array,
+        types.TupleType : serialize_php_array,
+        types.DictType : serialize_php_dict,
+        }
+    return serializer.get(type(var), serialize_php_error)(var);
 
 class formater_base:
     def __init__(self, format):
@@ -57,6 +123,16 @@ class formater_json(formater_base):
         import json
         return json.dumps(result)
 
+class formater_php(formater_base):
+    def __init__(self, format):
+        formater_base.__init__(self, format)
+
+    def mime_type(self):
+        return 'application/php'
+
+    def format(self, result):
+        return serialize_php(result)
+
 def get_formater(format):
     real_format = format
     if format.endswith("fm"):
@@ -65,6 +141,7 @@ def get_formater(format):
         'text' : formater_base,
         'html' : formater_html,
         'json' : formater_json,
+        'php'  : formater_php,
         }
     return formater.get(real_format, formater_base)(format)
 
@@ -80,17 +157,25 @@ def myapp(environ, start_response):
     if environ.has_key('QUERY_STRING'):
         query_string = environ['QUERY_STRING']
     else:
-        query_string= 'lang=fr&book=Michaud - Biographie universelle ancienne et moderne - 1843 - Tome 1.djvu'
+        query_string= 'lang=fr&book=Michaud - Biographie universelle ancienne et moderne - 1843 - Tome 1.djvu&format=phpfm'
+    print >> fd_log, query_string
     # FIXME: implement POST
     #postdata = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
     params = get_params(query_string)
     conn = get_credit.create_conn(domain = params['lang'])
     result = get_credit.get_credit(conn, params['book'], domain = params['lang'])
     formater = get_formater(params['format'])
+    text = formater.format(result)
     start_response('200 OK', [('Content-Type',
-                               formater.content_type() + '; charset=UTF-8')])
-    return [ formater.format(result) ]
+                               formater.content_type() + '; charset=UTF-8'),
+                              ('Content-Length', len(text)),
+                              ('Access-Control-Allow-Origin', '*')])
+    return [ text ]
 
 if __name__ == "__main__":
     from flup.server.cgi import WSGIServer
-    WSGIServer(myapp).run()
+    try:
+        WSGIServer(myapp).run()
+    except BaseException as e:
+        print >> fd_log, str(e)
+        raise
