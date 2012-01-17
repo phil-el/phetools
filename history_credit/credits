@@ -12,8 +12,7 @@ sys.path.append("/home/phe/wsbot")
 import get_credit
 
 # php sérializer, support only base type, list, tuple and dict, no support
-# for set not object
-# FIXME: add set support but how is it implemented in php ?
+# for set nor object
 def serialize_php_int(var):
     return "i:%d;" % (var)
 
@@ -145,12 +144,19 @@ def get_formater(format):
         }
     return formater.get(real_format, formater_base)(format)
 
+def split_param(params):
+    if params:
+        return params.split('|')
+    return []
+
 def get_params(query_string):
     params = query_string.split("&")
-    rdict = { 'format' : 'text' }
+    rdict = { 'format' : 'text', 'book' : '', 'page' : '' }
     for param in params:
         [key, value] = param.split("=")
         rdict[key] = urllib.unquote(value)
+    rdict['book'] = split_param(rdict['book'])
+    rdict['page'] = split_param(rdict['page'])
     return rdict
 
 def myapp(environ, start_response):
@@ -163,7 +169,7 @@ def myapp(environ, start_response):
     #postdata = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
     params = get_params(query_string)
     conn = get_credit.create_conn(domain = params['lang'])
-    result = get_credit.get_credit(conn, params['lang'], params['book'])
+    result = get_credit.get_credit(conn, params['lang'], params['book'], params['page'])
     formater = get_formater(params['format'])
     text = formater.format(result)
     start_response('200 OK', [('Content-Type',

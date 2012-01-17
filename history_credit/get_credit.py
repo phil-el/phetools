@@ -19,9 +19,9 @@ def get_source_ns(conn, domain):
 
     cursor.execute("""SELECT ns_name, ns_id
                       FROM namespacename
-                      WHERE dbname = %s AND (ns_name = %s OR ns_name = %s)
+                      WHERE dbname = %s
                    """,
-                   [ dbname, 'Page', 'Index' ] )
+                   [ dbname ] )
     result = {}
     for r in cursor.fetchall():
         result[r[0]] = r[1]
@@ -72,14 +72,22 @@ def get_username(cursor, user_ids):
     for r in cursor.fetchall():
         yield r
 
-def get_credit(conn, domain, book):
-    book = book.replace(' ', '_')
-    ns = get_source_ns(conn, domain)
-    cursor = use_db(conn, domain)
-    rev_ids = [ x[1] for x in prefix_index(cursor, book + '/', ns['Page']) ]
+def merge_contrib(a, b):
+    for key in b:
+        a.setdefault(key, { 'count' : 0, 'flags' : [] })
+        a[key]['count'] += b[key]['count']
+        for flag in b[key]['flags']:
+            if not flag in a[key]['flags']:
+                a[key]['flags'].append(flag)
 
+def book_pages_id(cursor, book, ns):
+    book = book.replace(' ', '_')
+    pages_id = [ x[1] for x in prefix_index(cursor, book + '/', ns['Page']) ]
+    return pages_id
+
+def credit_from_pages_id(cursor, pages_id):
     user_ids = {}
-    for x in get_revision(cursor, rev_ids):
+    for x in get_revision(cursor, pages_id):
         user_ids.setdefault(x[0], 0)
         user_ids[x[0]] += 1
 
@@ -87,6 +95,55 @@ def get_credit(conn, domain, book):
     for x in get_username(cursor, user_ids):
         results.setdefault(x[0], { 'count' : user_ids[x[2]], 'flags' : [] } )
         results[x[0]]['flags'].append(x[1])
+    return results
+
+def get_book_credit(cursor, book, ns):
+    book = book.replace(' ', '_')
+    pages_id = book_pages_id(cursor, book, ns)
+    return credit_from_pages_id(cursor, pages_id)
+
+def get_page_id(cursor, ns_nr, pages):
+    cursor.execute("""SELECT page_id
+                      FROM page
+                      WHERE page_namespace = %s AND page_title in (%s)
+                      """,
+                   [ ns_nr, ",".join(pages)])
+    for r in cursor.fetchall():
+        yield r
+
+def get_pages_credit(cursor, pages, ns):
+    splitted = {}
+    for p in pages:
+        p = p.replace(' ', '_')
+        namespace = p.split(':', 1)
+        ns_nr = 0
+        if namespace[0] in ns:
+            p = namespace[1]
+            ns_nr = ns[namespace[0]]
+        splitted.setdefault(ns_nr, [])
+        splitted[ns_nr].append(p)
+
+    pages_id = []
+    for ns_nr in splitted:
+        for r in get_page_id(cursor, ns_nr, splitted[ns_nr]) :
+            pages_id.append(r[0])
+
+    return credit_from_pages_id(cursor, pages_id)
+
+def get_credit(conn, domain, books, pages):
+    ns = get_source_ns(conn, domain)
+    cursor = use_db(conn, domain)
+
+    books_name = []
+    results = {}
+    for book in books:
+        contribs = get_book_credit(cursor, book, ns)
+        merge_contrib(results, contribs)
+        books_name.append('Index:' + book )
+
+    contribs = get_pages_credit(cursor, pages + books_name, ns)
+    merge_contrib(results, contribs)
+
     return results
 
 def create_conn(domain):
@@ -98,4 +155,4 @@ if __name__ == "__main__":
     domain = 'fr'
     conn = create_conn(domain)
     for arg in sys.argv[1:]:
-        get_credit(conn, domain, arg)
+        get_credit(conn, domain, [ arg ])
