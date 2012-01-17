@@ -163,7 +163,7 @@ def myapp(environ, start_response):
     #postdata = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
     params = get_params(query_string)
     conn = get_credit.create_conn(domain = params['lang'])
-    result = get_credit.get_credit(conn, params['book'], domain = params['lang'])
+    result = get_credit.get_credit(conn, params['lang'], params['book'])
     formater = get_formater(params['format'])
     text = formater.format(result)
     start_response('200 OK', [('Content-Type',
