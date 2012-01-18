@@ -53,24 +53,26 @@ def prefix_index(cursor, start, ns, max_count = 5000):
             yield r
 
 def get_revision(cursor, rev_ids):
-    rev_id_str = [str(x) for x in rev_ids ]
-    q = """SELECT rev_user
-           FROM revision
-           WHERE rev_page IN (%s)
-        """ % ( ",".join(rev_id_str), )
-    cursor.execute(q)
-    for r in cursor.fetchall():
-        yield r
+    if len(rev_ids):
+        rev_id_str = [str(x) for x in rev_ids ]
+        q = """SELECT rev_user
+               FROM revision
+               WHERE rev_page IN (%s)
+            """ % ( ",".join(rev_id_str), )
+        cursor.execute(q)
+        for r in cursor.fetchall():
+            yield r
 
 def get_username(cursor, user_ids):
-    user_id_str = [str(x) for x in user_ids ]
-    q = """SELECT user_name, ug_group, user_id
-           FROM user, user_groups
-           WHERE user_id IN (%s) AND ug_user = user_id
-        """ % (','.join(user_id_str)) 
-    cursor.execute(q)
-    for r in cursor.fetchall():
-        yield r
+    if len(user_ids):
+        user_id_str = [str(x) for x in user_ids ]
+        q = """SELECT user_name, ug_group, user_id
+               FROM user, user_groups
+               WHERE user_id IN (%s) AND ug_user = user_id
+            """ % (','.join(user_id_str)) 
+        cursor.execute(q)
+        for r in cursor.fetchall():
+            yield r
 
 def merge_contrib(a, b):
     for key in b:
@@ -103,11 +105,12 @@ def get_book_credit(cursor, book, ns):
     return credit_from_pages_id(cursor, pages_id)
 
 def get_page_id(cursor, ns_nr, pages):
+    fmt_strs = ','.join(['%s'] * len(pages))
     cursor.execute("""SELECT page_id
                       FROM page
-                      WHERE page_namespace = %s AND page_title in (%s)
-                      """,
-                   [ ns_nr, ",".join(pages)])
+                      WHERE page_namespace = %s AND page_title IN (%s)
+                      """ % ('%s', fmt_strs),
+                   [ ns_nr ] + list(pages) )
     for r in cursor.fetchall():
         yield r
 
