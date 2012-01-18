@@ -159,14 +159,17 @@ def get_params(query_string):
     rdict['page'] = split_param(rdict['page'])
     return rdict
 
-def myapp(environ, start_response):
-    if environ.has_key('QUERY_STRING'):
-        query_string = environ['QUERY_STRING']
+def get_query_string(environ):
+    if environ.has_key('REQUEST_METHOD') and environ['REQUEST_METHOD'] == 'POST':
+        query = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
+    elif environ.has_key('QUERY_STRING'):
+        query = environ['QUERY_STRING']
     else:
-        query_string= 'lang=fr&book=Michaud - Biographie universelle ancienne et moderne - 1843 - Tome 1.djvu&format=phpfm'
-    print >> fd_log, query_string
-    # FIXME: implement POST
-    #postdata = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
+        query = 'lang=fr&book=&format=phpfm&page=Utilisateur:Phe/common.js&format=text'
+    return query
+
+def myapp(environ, start_response):
+    query_string = get_query_string(environ)
     params = get_params(query_string)
     conn = get_credit.create_conn(domain = params['lang'])
     result = get_credit.get_credit(conn, params['lang'], params['book'], params['page'])
@@ -179,9 +182,11 @@ def myapp(environ, start_response):
     return [ text ]
 
 if __name__ == "__main__":
+    import traceback
     from flup.server.cgi import WSGIServer
     try:
         WSGIServer(myapp).run()
     except BaseException as e:
         print >> fd_log, str(e)
+        print >> fd_log, traceback.format_exc()
         raise
