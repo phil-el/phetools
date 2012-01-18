@@ -149,28 +149,18 @@ def split_param(params):
         return params.split('|')
     return []
 
-def get_params(query_string):
-    params = query_string.split("&")
+def query_params(environ):
+    import cgi
+    field = cgi.FieldStorage(environ['wsgi.input'])
     rdict = { 'format' : 'text', 'book' : '', 'page' : '' }
-    for param in params:
-        [key, value] = param.split("=")
-        rdict[key] = urllib.unquote(value)
+    for name in field:
+        rdict[name] = field[name].value
     rdict['book'] = split_param(rdict['book'])
     rdict['page'] = split_param(rdict['page'])
     return rdict
 
-def get_query_string(environ):
-    if environ.has_key('REQUEST_METHOD') and environ['REQUEST_METHOD'] == 'POST':
-        query = environ['wsgi.input'].read(int(environ['CONTENT_LENGTH']))
-    elif environ.has_key('QUERY_STRING'):
-        query = environ['QUERY_STRING']
-    else:
-        query = 'lang=fr&book=&format=phpfm&page=Utilisateur:Phe/common.js&format=text'
-    return query
-
 def myapp(environ, start_response):
-    query_string = get_query_string(environ)
-    params = get_params(query_string)
+    params = query_params(environ)
     conn = get_credit.create_conn(domain = params['lang'])
     result = get_credit.get_credit(conn, params['lang'], params['book'], params['page'])
     formater = get_formater(params['format'])
