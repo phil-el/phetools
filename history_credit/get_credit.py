@@ -149,13 +149,34 @@ def get_credit(conn, domain, books, pages):
 
     return results
 
-def create_conn(domain):
-    conn = MySQLdb.connect(host = "sql-s3", user = "phe",
-                           read_default_file=os.path.expanduser("~/.my.cnf"))
+def cluster_from_domain(conn, domain, family):
+    cursor = conn.cursor()
+    cursor.execute("""
+                   SELECT server
+                   FROM toolserver.wiki
+                   WHERE dbname = %s
+                   """,
+                   [ domain + family + '_p'])
+    return cursor.fetchone()[0]
+
+# hint can be used by application to get directly the right cluster
+def create_conn(domain, family, hint):
+    conn_params = {
+        'user' : 'phe',
+        'read_default_file' : os.path.expanduser("~/.my.cnf"),
+        }
+    conn = MySQLdb.connect(host = 'sql-s%s' % hint, **conn_params)
+    cluster = cluster_from_domain(conn, domain, family)
+    if cluster != hint:
+        conn.close()
+        # FIXME: log it somewhere, caller application would prolly redirect
+        # sys.stderr to a log file
+        #print >> sys.stderr, "bad hint, expect %d found %d" % (hint, cluster)
+        conn = MySQLdb.connect(host = 'sql-s%d' % cluster, **conn_params)
     return conn
 
 if __name__ == "__main__":
     domain = 'fr'
-    conn = create_conn(domain)
+    conn = create_conn(domain, 'wikisource', 3)
     for arg in sys.argv[1:]:
         get_credit(conn, domain, [ arg ])

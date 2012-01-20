@@ -161,7 +161,10 @@ def query_params(environ):
 
 def myapp(environ, start_response):
     params = query_params(environ)
-    conn = get_credit.create_conn(domain = params['lang'])
+
+    conn = get_credit.create_conn(domain = params['lang'],
+                                  family = 'wikisource', hint = 3)
+
     result = get_credit.get_credit(conn, params['lang'], params['book'], params['page'])
     formater = get_formater(params['format'])
     text = formater.format(result)
