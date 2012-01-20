@@ -4,15 +4,19 @@ import MySQLdb
 import os
 import sys
 
-def database_name(domain):
-    if domain in [ '', 'www', 'old' ]:
+def default_userdict(count = 0):
+    # credits are returned in a dict with user name associated with this value
+    return { 'count' : count, 'flags' : [] }
+
+def database_name(domain, family):
+    if family == 'wiksource' and domain == 'old':
         dbname = 'sourceswiki_p'
     else:
-        dbname = domain + 'wikisource_p'
+        dbname = domain + family + '_p'
     return dbname
 
-def get_source_ns(conn, domain):
-    dbname = database_name(domain)
+def get_source_ns(conn, domain, family):
+    dbname = database_name(domain, family)
 
     cursor = conn.cursor()
     cursor.execute('use toolserver')
@@ -27,8 +31,8 @@ def get_source_ns(conn, domain):
         result[r[0]] = r[1]
     return result
 
-def use_db(conn, domain):
-    q = 'use ' + database_name(domain)
+def use_db(conn, domain, family):
+    q = 'use ' + database_name(domain, family)
     cursor = conn.cursor()
     cursor.execute(q)
     return cursor
@@ -76,7 +80,7 @@ def get_username(cursor, user_ids):
 
 def merge_contrib(a, b):
     for key in b:
-        a.setdefault(key, { 'count' : 0, 'flags' : [] })
+        a.setdefault(key, default_userdict())
         a[key]['count'] += b[key]['count']
         for flag in b[key]['flags']:
             if not flag in a[key]['flags']:
@@ -133,9 +137,48 @@ def get_pages_credit(cursor, pages, ns):
 
     return credit_from_pages_id(cursor, pages_id)
 
-def get_credit(conn, domain, books, pages):
-    ns = get_source_ns(conn, domain)
-    cursor = use_db(conn, domain)
+def get_images_credit_db(cursor, images):
+    if len(images):
+        fmt_strs = ','.join(['%s'] * len(images))
+        cursor.execute("""SELECT img_user_text
+                          FROM image
+                          WHERE img_name IN (%s)
+                       """ % fmt_strs,
+                       images)
+        for r in cursor.fetchall():
+            yield r
+
+        cursor.execute("""SELECT oi_user_text
+                          FROM oldimage
+                          WHERE oi_name IN (%s)
+                       """ % fmt_strs,
+                       images)
+        for r in cursor.fetchall():
+            yield r
+
+# cursor is the cursor to the local DB
+def get_images_credit(cursor, images):
+    if not len(images):
+        return []
+
+    images = [ x.replace(' ', '_') for x in images ]
+    results = []
+
+    conn = create_conn('commons', 'wiki', 4)
+    use_db(conn, 'commons', 'wiki')
+    for r in get_images_credit_db(conn.cursor(), images):
+        results.append(r[0])
+    conn.close()
+
+    for r in get_images_credit_db(cursor, images):
+        results.append(r[0])
+
+    return results
+
+def get_credit(domain, family, books, pages, images):
+    conn = create_conn(domain, family, 3)
+    ns = get_source_ns(conn, domain, family)
+    cursor = use_db(conn, domain, family)
 
     books_name = []
     results = {}
@@ -147,6 +190,11 @@ def get_credit(conn, domain, books, pages):
     contribs = get_pages_credit(cursor, pages + books_name, ns)
     merge_contrib(results, contribs)
 
+    # FIXME, we don't get flags for user not already in the results
+    for user_name in get_images_credit(cursor, images):
+        results.setdefault(user_name, default_userdict())
+        results[user_name]['count'] += 1
+
     return results
 
 def cluster_from_domain(conn, domain, family):
@@ -156,7 +204,7 @@ def cluster_from_domain(conn, domain, family):
                    FROM toolserver.wiki
                    WHERE dbname = %s
                    """,
-                   [ domain + family + '_p'])
+                   [ database_name(domain, family)])
     return cursor.fetchone()[0]
 
 # hint can be used by application to get directly the right cluster

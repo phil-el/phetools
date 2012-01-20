@@ -152,20 +152,23 @@ def split_param(params):
 def query_params(environ):
     import cgi
     field = cgi.FieldStorage(environ['wsgi.input'])
-    rdict = { 'format' : 'text', 'book' : '', 'page' : '' }
+    rdict = { 'format' : 'text', 'book' : '', 'page' : '', 'image' : '' }
     for name in field:
         rdict[name] = field[name].value
     rdict['book'] = split_param(rdict['book'])
     rdict['page'] = split_param(rdict['page'])
+    rdict['image'] = split_param(rdict['image'])
     return rdict
 
 def myapp(environ, start_response):
     params = query_params(environ)
 
-    conn = get_credit.create_conn(domain = params['lang'],
-                                  family = 'wikisource', hint = 3)
+    result = get_credit.get_credit(domain = params['lang'],
+                                   family = 'wikisource',
+                                   books = params['book'],
+                                   pages = params['page'],
+                                   images = params['image'])
 
-    result = get_credit.get_credit(conn, params['lang'], params['book'], params['page'])
     formater = get_formater(params['format'])
     text = formater.format(result)
     start_response('200 OK', [('Content-Type',
