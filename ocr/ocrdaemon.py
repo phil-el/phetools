@@ -15,10 +15,11 @@
 #
 #
 #
-#    copyright thomasv1 at gmx dot de
+# copyright thomasv1 at gmx dot de
+# copyright phe at nowhere
 
 
-# todo : use urllib2
+# todo : use urllib
 
 
 __module_name__ = "wikisourceocr"
@@ -27,18 +28,14 @@ __module_description__ = "wikisource ocr bot"
 
 
 
-import sys,os
+import os
 import socket
-import string
-import re, Queue
-import sre_constants
-import thread, time
+import thread
+import time
 import simplejson
-import urllib2
+import multiprocessing
 
 task_queue = []
-#task_queue = Queue.Queue(0)
-
 
 tesseract_languages = { 
 	'fr':"fra",
@@ -48,9 +45,8 @@ tesseract_languages = {
         'la':"ita",
         'it':"ita",
 	'es':"spa",
-	'pt':"spa" }
-
-
+	'pt':"spa"
+        }
 
 def bot_listening():
 
@@ -93,14 +89,6 @@ def bot_listening():
 	    t = time.time()
 	    user = user.replace(' ','_')
 
-	    if url=="status":
-		#print date_s(t) +" STATUS"
-		conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>"%len(task_queue))
-		for i in task_queue:
-		    conn.send( date_s(i[3])+' '+i[2]+" "+i[1]+" "+i[0].split('/')[-1]+"<br/>")
-		conn.close()
-		continue
-
 	    print date_s(t)+" REQUEST "+user+' '+lang+' '+url.split('/')[-1]
 	    task_queue.insert(0,(url,lang,user,t,conn))
 
@@ -118,16 +106,15 @@ def ret_val(error, text):
     return simplejson.dumps({'error' : error, 'text' : text })
 
 
-def ocr_image(url,codelang):
+def ocr_image(url, codelang, thread_id):
 
-    try:
-	lang = tesseract_languages[codelang]
-    except:
-        lang = "eng"
+    lang = tesseract_languages.get(codelang, 'eng')
 
-    os.system("rm -f image2.*")
+    basename = 'image_%d' % thread_id
 
-    f = "image2.jpg"
+    os.system("rm -f %s.*" % basename)
+
+    f = basename + ".jpg"
 
     # for debugging purpose only
     url = url.replace('http://upload.wikimedia.zaniah.virgus/',
@@ -138,46 +125,99 @@ def ocr_image(url,codelang):
     if not os.path.exists(f):
         return ret_val(1, "could not download url: %s" % url)
 
-    os.system("convert image2.jpg -compress none image2.tif")
+    os.system("convert %s.jpg -compress none %s.tif" % (basename, basename))
 
     os.putenv('LD_PRELOAD', '/opt/ts/lib/libtesseract_cutil.so.3')
     if lang == 'deu-frak':
         os.putenv('TESSDATA_PREFIX', '/home/phe/wsbot/')
 
-    os.system("tesseract image2.tif image2 -l %s 2>>tesseract_err"%lang)
+    os.system("tesseract %s.tif %s -l %s 2>>tesseract_err"% (basename, basename, lang))
 
     os.unsetenv('LD_PRELOAD')
     os.unsetenv('TESSDATA_PREFIX')
 
     try:
-        file = open("image2.txt")
+        file = open(basename + ".txt")
 	txt = file.read()
 	file.close()
     except:
-        return ret_val(2, "unable to read text file %s" % "image2.txt")
+        return ret_val(2, "unable to read text file %s.txt" % basesname)
 
     return ret_val(0, txt)
 
+def do_one_file(job_queue, done_queue, thread_id):
+    while True:
+        url, codelang, key = job_queue.get()
+        if url == None:
+            print "Stopping thread"
+            return
+        print "start threaded job"
+        # done this way to get a more accurate status, we want to know
+        # which process are running and waiting so we signal the status change.
+        done_queue.put( (None, key, True) )
+        json_text = ocr_image(url, codelang, thread_id)
+        done_queue.put( (json_text, key, False) )
+        print "stop threaded job"
+
+def start_threads():
+    num_worker_threads = 2
+    thread_array = []
+    job_queue = multiprocessing.Queue(num_worker_threads * 16)
+    done_queue = multiprocessing.Queue()
+    args = (job_queue, done_queue)
+    for i in range(num_worker_threads):
+        print "starting thread"
+        t = multiprocessing.Process(target=do_one_file, args=args + (i, ))
+        t.daemon = True
+        t.start()
+        thread_array.append(t)
+
+    return job_queue, done_queue
 
 def main():
     thread.start_new_thread(bot_listening,())
+    job_queue, done_queue = start_threads()
+    key = 1L
+    dict_query = {}
+    
     while 1:
 
-        if task_queue != []:
-            url,lang,user, t, conn = task_queue[-1]
+        if len(task_queue):
+            url, lang, user, t, conn = task_queue[-1]
         else:
-	    try:
-	        time.sleep(0.5)
-	    except:
-		break
+            time.sleep(1)
+
+            while not done_queue.empty():
+                json_text, done_key, running = done_queue.get()
+                if running:
+                    print "pop status change"
+                    dict_query[done_key][5] = True
+                else:
+                    print "pop job"
+                    user, url, lang, time1, conn, running = dict_query[done_key]
+                    conn.send(json_text)
+                    conn.close()
+                    time2 = time.time()
+                    print date_s(time2)+user+" "+lang+" %s (%.2f)"%(url.split('/')[-1], time2-time1)
+                    del dict_query[done_key]
             continue
-	    
-	time1 = time.time()
-	out = ocr_image(url,lang)
-        conn.send(out)
-	conn.close()
-	time2 = time.time()
-	print date_s(time2)+user+" "+lang+" %s (%.2f)"%(url.split('/')[-1],time2-time1)
+
+        if url == 'status':
+                print date_s(t) +" STATUS"
+                conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>"%len(dict_query))
+                for val in dict_query.itervalues():
+                    # t user lang url
+                    if val[5]:
+                        conn.send(date_s(val[3])+' '+val[0]+" "+val[2]+" "+val[1].split('/')[-1]+" running<br/>")
+                    else:
+                        conn.send(date_s(val[3])+' '+val[0]+" "+val[2]+" "+val[1].split('/')[-1]+" waiting<br/>")
+                conn.close()
+        else:
+            print "push job"
+            dict_query[key] = [ user, url, lang, time.time(), conn, False ]
+            job_queue.put((url, lang, key))
+            key += 1
+
 	task_queue.pop()
 
 if __name__ == "__main__":
