@@ -44,7 +44,7 @@ tesseract_languages = {
 	'fr':"fra",
         'en':"eng",
         'de':"deu",
-        'de-f':"deu-f",
+        'de-f':"deu-frak",
         'la':"ita",
         'it':"ita",
 	'es':"spa",
@@ -57,7 +57,7 @@ def bot_listening():
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
     try:
-        sock.bind(('',12345))
+        sock.bind(('',12347))
     except:
         print "could not start listener : socket already in use"
         thread.interrupt_main()
@@ -65,6 +65,18 @@ def bot_listening():
 
     print date_s(time.time())+ " START"
     sock.listen(1)
+
+    # The other side needs to know the server name where the daemon run to open
+    # the connection. We write it after bind() because we want to ensure than
+    # only one instance of the daemon is running. FIXME: this is not sufficient
+    # if the job is migrated so migration is disabled for this daemon.
+    servername_filename = os.getenv('HOME') + '/public_html/ocr_server.server'
+    if os.path.exists(servername_filename):
+        os.chmod(servername_filename, 0644)
+    fd = open(servername_filename, "w")
+    fd.write(socket.gethostname())
+    fd.close()
+    os.chmod(servername_filename, 0444)
 
     # wait for requests
     try:
@@ -96,10 +108,14 @@ def bot_listening():
 	sock.close()
 
 
-
 def date_s(at):
     t = time.gmtime(at)
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
+
+def ret_val(error, text):
+    if error:
+        print "Error: %d, %s" %(error, text)
+    return simplejson.dumps({'error' : error, 'text' : text })
 
 
 def ocr_image(url,codelang):
@@ -113,29 +129,34 @@ def ocr_image(url,codelang):
 
     f = "image2.jpg"
 
+    # for debugging purpose only
+    url = url.replace('http://upload.wikimedia.zaniah.virgus/',
+                      'http://upload.wikimedia.org/')
+
     #url = url.replace("1024px","2900px")
     os.system("wget -q -O %s \"%s\""%(f,url))
     if not os.path.exists(f):
-	print "could not download url"
-	return ""
+        return ret_val(1, "could not download url: %s" % url)
 
-    os.system("nice -n 19 convert -normalize image2.jpg image2.png")
-    os.system("nice -n 19 convert -monochrome image2.png image2.tif")
-    os.system("nice -n 19 tesseract image2.tif image2 -l %s 2>tesseract_err"%lang)
+    os.system("convert image2.jpg -compress none image2.tif")
+
+    os.putenv('LD_PRELOAD', '/opt/ts/lib/libtesseract_cutil.so.3')
+    if lang == 'deu-frak':
+        os.putenv('TESSDATA_PREFIX', '/home/phe/wsbot/')
+
+    os.system("tesseract image2.tif image2 -l %s 2>>tesseract_err"%lang)
+
+    os.unsetenv('LD_PRELOAD')
+    os.unsetenv('TESSDATA_PREFIX')
 
     try:
         file = open("image2.txt")
 	txt = file.read()
 	file.close()
     except:
-	return ""
+        return ret_val(2, "unable to read text file %s" % "image2.txt")
 
-
-    try:
-        return simplejson.dumps(txt)
-    except:
-        return ""
-
+    return ret_val(0, txt)
 
 
 def main():
@@ -156,16 +177,8 @@ def main():
         conn.send(out)
 	conn.close()
 	time2 = time.time()
-	if out:
-	    res = " DONE    "
-	else:
-	    res = " FAILED  "
-	print date_s(time2)+res+user+" "+lang+" %s (%.2f)"%(url.split('/')[-1],time2-time1)
+	print date_s(time2)+user+" "+lang+" %s (%.2f)"%(url.split('/')[-1],time2-time1)
 	task_queue.pop()
 
-
-
-
 if __name__ == "__main__":
-
     main()
