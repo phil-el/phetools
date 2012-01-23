@@ -12,7 +12,7 @@ function send_request($url,$lang,$user,$port){
   $result = socket_connect($conn, $server_name, $port);
   if($result){
     $res = "";
-    $line = '("'.$url.'","'.$lang.'","'.$user.'")';
+    $line = $url.'|'.$lang.'|'.$user;
     socket_write($conn, $line, strlen($line)); 
     while ($out = socket_read($conn, 1024)) {
       $res.=$out;

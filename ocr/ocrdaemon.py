@@ -48,6 +48,23 @@ tesseract_languages = {
 	'pt':"spa"
         }
 
+class Request:
+    def __init__(self, data, conn):
+        self.url, self.lang, self.user = data.split('|')
+        self.user = self.user.replace(' ','_')
+        self.start_time = time.time()
+        self.conn = conn
+        self.running = False
+
+    def as_str(self):
+        ret = date_s(self.start_time)+" REQUEST "+self.user+' '+self.lang+' '+self.url.split('/')[-1]+' '
+        if self.running:
+            ret += 'running'
+        else:
+            ret += 'waiting'
+        return ret
+
+
 def bot_listening():
 
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -80,17 +97,14 @@ def bot_listening():
             conn, addr = sock.accept()
             data = conn.recv(1024)
             try:
-	        url,lang,user = eval(data)
+	        request = Request(data, conn)
 	    except:
 		print "error",data
 		conn.close()
 		continue
 
-	    t = time.time()
-	    user = user.replace(' ','_')
-
-	    print date_s(t)+" REQUEST "+user+' '+lang+' '+url.split('/')[-1]
-	    task_queue.insert(0,(url,lang,user,t,conn))
+	    print request.as_str()
+	    task_queue.insert(0, request)
 
     finally:
 	sock.close()
@@ -183,39 +197,35 @@ def main():
     while 1:
 
         if len(task_queue):
-            url, lang, user, t, conn = task_queue[-1]
+            request = task_queue[-1]
         else:
             time.sleep(1)
 
             while not done_queue.empty():
                 json_text, done_key, running = done_queue.get()
                 if running:
-                    print "pop status change"
-                    dict_query[done_key][5] = True
+                    print "pop job status change"
+                    dict_query[done_key].running = True
                 else:
                     print "pop job"
-                    user, url, lang, time1, conn, running = dict_query[done_key]
-                    conn.send(json_text)
-                    conn.close()
+                    r = dict_query[done_key]
+                    r.conn.send(json_text)
+                    r.conn.close()
                     time2 = time.time()
-                    print date_s(time2)+user+" "+lang+" %s (%.2f)"%(url.split('/')[-1], time2-time1)
+                    print date_s(time2)+r.user+" "+r.lang+" %s (%.2f)"%(r.url.split('/')[-1], time2-r.start_time)
                     del dict_query[done_key]
             continue
 
-        if url == 'status':
-                print date_s(t) +" STATUS"
-                conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>"%len(dict_query))
-                for val in dict_query.itervalues():
-                    # t user lang url
-                    if val[5]:
-                        conn.send(date_s(val[3])+' '+val[0]+" "+val[2]+" "+val[1].split('/')[-1]+" running<br/>")
-                    else:
-                        conn.send(date_s(val[3])+' '+val[0]+" "+val[2]+" "+val[1].split('/')[-1]+" waiting<br/>")
-                conn.close()
+        if request.url == 'status':
+            print date_s(request.start_time) +" STATUS"
+            request.conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>"%len(dict_query))
+            for val in dict_query.itervalues():
+                request.conn.send(val.as_str() + '<br />')
+            request.conn.close()
         else:
             print "push job"
-            dict_query[key] = [ user, url, lang, time.time(), conn, False ]
-            job_queue.put((url, lang, key))
+            dict_query[key] = request
+            job_queue.put( (request.url, request.lang, key) )
             key += 1
 
 	task_queue.pop()
