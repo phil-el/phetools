@@ -33,7 +33,10 @@ import socket
 import thread
 import time
 import simplejson
+import hashlib
 import multiprocessing
+import cPickle
+import re
 
 task_queue = []
 
@@ -53,17 +56,28 @@ class Request:
         self.url, self.lang, self.user = data.split('|')
         self.user = self.user.replace(' ','_')
         self.start_time = time.time()
+        self.filename = self.url.split('/')[-1]
         self.conn = conn
         self.running = False
 
     def as_str(self):
-        ret = date_s(self.start_time)+" REQUEST "+self.user+' '+self.lang+' '+self.url.split('/')[-1]+' '
+        ret = date_s(self.start_time)+" REQUEST "+self.user+' '+self.lang+' '+self.filename+' '
         if self.running:
             ret += 'running'
         else:
             ret += 'waiting'
         return ret
 
+    def key(self):
+        m = hashlib.md5()
+        m.update(self.lang + self.url)
+        return m.hexdigest()
+
+    def cached_name(self):
+        return '/home/phe/wsbot/tesscache/' + self.key()
+
+    def cache_entry_exist(self):
+        return os.path.exists(self.cached_name())
 
 def bot_listening():
 
@@ -99,12 +113,12 @@ def bot_listening():
             try:
 	        request = Request(data, conn)
 	    except:
-		print "error",data
+		print "error", data
 		conn.close()
 		continue
 
 	    print request.as_str()
-	    task_queue.insert(0, request)
+	    task_queue.append(request)
 
     finally:
 	sock.close()
@@ -116,8 +130,8 @@ def date_s(at):
 
 def ret_val(error, text):
     if error:
-        print "Error: %d, %s" %(error, text)
-    return simplejson.dumps({'error' : error, 'text' : text })
+        print "Error: %d, %s" % (error, text)
+    return  {'error' : error, 'text' : text }
 
 
 def ocr_image(url, codelang, thread_id):
@@ -155,7 +169,7 @@ def ocr_image(url, codelang, thread_id):
 	txt = file.read()
 	file.close()
     except:
-        return ret_val(2, "unable to read text file %s.txt" % basesname)
+        return ret_val(2, "unable to read text file %s.txt" % basename)
 
     return ret_val(0, txt)
 
@@ -167,68 +181,137 @@ def do_one_file(job_queue, done_queue, thread_id):
             return
         print "start threaded job"
         # done this way to get a more accurate status, we want to know
-        # which process are running and waiting so we signal the status change.
+        # which process are running and waiting so we signal the status change
+        # to the parent process.
         done_queue.put( (None, key, True) )
-        json_text = ocr_image(url, codelang, thread_id)
-        done_queue.put( (json_text, key, False) )
+        data = ocr_image(url, codelang, thread_id)
+        done_queue.put( (data, key, False) )
         print "stop threaded job"
 
-def start_threads():
-    num_worker_threads = 2
-    thread_array = []
-    job_queue = multiprocessing.Queue(num_worker_threads * 16)
-    done_queue = multiprocessing.Queue()
-    args = (job_queue, done_queue)
-    for i in range(num_worker_threads):
-        print "starting thread"
-        t = multiprocessing.Process(target=do_one_file, args=args + (i, ))
-        t.daemon = True
-        t.start()
-        thread_array.append(t)
+def next_pagename(match):
+    return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
 
-    return job_queue, done_queue
+def save_to_cache(filename, data):
+    fd = open(filename, 'wb')
+    cPickle.dump(data, fd)
+    fd.close()
+
+def load_from_cache(filename):
+    fd = open(filename, 'rb')
+    data = cPickle.load(fd)
+    fd.close()
+    return data
+
+class JobManager:
+    def __init__(self):
+        self.job_queue = None
+        self.done_queue = None
+        self.dict_query = {}
+        self.dict_hash = {}
+        self.key = 1L
+        self.start_subprocess()
+
+    def start_subprocess(self):
+        num_worker_threads = 2
+        thread_array = []
+        self.job_queue = multiprocessing.Queue(num_worker_threads * 16)
+        self.done_queue = multiprocessing.Queue()
+        args = (self.job_queue, self.done_queue)
+        for i in range(num_worker_threads):
+            print "starting thread"
+            t = multiprocessing.Process(target=do_one_file, args=args + (i, ))
+            t.daemon = True
+            t.start()
+            thread_array.append(t)
+
+    def finish_job(self, done_key, data):
+        print "pop job: job finished"
+        err = data['error']
+        data = simplejson.dumps(data)
+        r = self.dict_query[done_key]
+
+        # null conn is possible if this is a prefetched job
+        if r.conn:
+            r.conn.send(data)
+            r.conn.close()
+
+        # error are already logged by the subprocess
+        if not err:
+            save_to_cache(r.cached_name(), data)
+
+        time2 = time.time()
+        print date_s(time2)+r.user+" "+r.lang+" %s (%.2f)"%(r.filename, time2-r.start_time)
+        if self.dict_query[done_key].key() in self.dict_hash:
+            del self.dict_hash[self.dict_query[done_key].key()]
+        del self.dict_query[done_key]
+
+    def flush_done_job(self):
+        while not self.done_queue.empty():
+            data, done_key, running = self.done_queue.get()
+            if running:
+                print "pop job: status change"
+                self.dict_query[done_key].running = True
+            else:
+                self.finish_job(done_key, data)
+
+    def new_request(self, request):
+        if request.cache_entry_exist():
+            print "cache success"
+            data = load_from_cache(request.cached_name())
+            if request.conn:
+                request.conn.send(data)
+                request.conn.close()
+            time2 = time.time()
+            print date_s(time2)+request.user+" "+request.lang+" %s (%.2f)"%(request.filename, time2-request.start_time)
+        else:
+            if request.key() in self.dict_hash and self.dict_hash[request.key()].user == request.user:
+                print "reusing a waiting job"
+                old_conn = self.dict_hash[request.key()].conn
+                if old_conn:
+                    old_conn.close()
+                self.dict_hash[request.key()].conn = request.conn
+            else:
+                print "push job"
+                self.push_job(request)
+        next_page = re.sub('^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, request.url)
+        if next_page:
+            prefetch_request = Request('|'.join([next_page, request.lang, request.user]), None)
+            if not prefetch_request.cache_entry_exist():
+                print "push prefetched job: ", prefetch_request.filename
+                self.push_job(prefetch_request)
+
+    def push_job(self, request):
+        self.dict_query[self.key] = request
+        self.dict_hash[request.key()] = request
+        self.job_queue.put( (request.url, request.lang, self.key) )
+        self.key += 1
+
+    def status(self, request):
+        print date_s(request.start_time) + " STATUS"
+        request.conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>" % len(self.dict_query))
+        for val in self.dict_query.itervalues():
+            request.conn.send(val.as_str() + '<br />')
+        request.conn.close()
+
+    def handle_request(self, request):
+        if request.url == 'status':
+            self.status(request)
+        else:
+            self.new_request(request)
 
 def main():
     thread.start_new_thread(bot_listening,())
-    job_queue, done_queue = start_threads()
-    key = 1L
-    dict_query = {}
-    
-    while 1:
 
+    job_manager = JobManager()
+
+    while True:
         if len(task_queue):
-            request = task_queue[-1]
+            job_manager.handle_request(task_queue.pop(0))
         else:
+            # FIXME: that's horrible, handle it through another subprocess
             time.sleep(1)
 
-            while not done_queue.empty():
-                json_text, done_key, running = done_queue.get()
-                if running:
-                    print "pop job status change"
-                    dict_query[done_key].running = True
-                else:
-                    print "pop job"
-                    r = dict_query[done_key]
-                    r.conn.send(json_text)
-                    r.conn.close()
-                    time2 = time.time()
-                    print date_s(time2)+r.user+" "+r.lang+" %s (%.2f)"%(r.url.split('/')[-1], time2-r.start_time)
-                    del dict_query[done_key]
-            continue
-
-        if request.url == 'status':
-            print date_s(request.start_time) +" STATUS"
-            request.conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>"%len(dict_query))
-            for val in dict_query.itervalues():
-                request.conn.send(val.as_str() + '<br />')
-            request.conn.close()
-        else:
-            print "push job"
-            dict_query[key] = request
-            job_queue.put( (request.url, request.lang, key) )
-            key += 1
-
-	task_queue.pop()
+            job_manager.flush_done_job()
 
 if __name__ == "__main__":
     main()
