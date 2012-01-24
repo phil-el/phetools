@@ -29,7 +29,7 @@ import re
 import thread
 import time
 import copy
-
+import json
 import align
 
 import wikipedia, pywikibot
@@ -64,8 +64,8 @@ page_prefixes = {
     'zh' : 'Page',
     }
 
-E_ERROR = "error"
-E_OK = "ok"
+E_ERROR = 1
+E_OK = 0
 
 # parameters from <pagelist />, used as a cache too.
 pl_dict = {}
@@ -144,20 +144,23 @@ def add_job(lock, queue, cmd):
     queue.insert(0, cmd)
     lock.release()
 
+def ret_val(error, text):
+    if error:
+        print "Error: %d, %s" % (error, text)
+    return  { 'error' : error, 'text' : text }
+
 # FIXME, here and everywhere, can't we use mysite.lang and mysite.family.name
 # to remove some parameters, does this work for old wikisource?
 def do_match(mysite, maintitle, user, codelang, server):
     prefix = page_prefixes.get(codelang)
     if not prefix:
-        print "no prefix"
-        return E_ERROR
+        return ret_val(E_ERROR, "no prefix")
 
     page = wikipedia.Page(mysite, maintitle)
     try:
         text = page.get()
     except:
-        print "failed to get page"
-        return E_ERROR
+        return ret_val(E_ERROR, "failed to get page")
 
     if text.find("{{R2Mondes")!=-1:
         global pl_dict
@@ -166,8 +169,7 @@ def do_match(mysite, maintitle, user, codelang, server):
         try:
             new_text = p0.sub(repl, text)
         except wikipedia.NoPage:
-            print "failed to get index page"
-            return "Erreur : impossible de trouver l'index"
+            return ret_val(E_ERROR, "Erreur : impossible de trouver l'index")
         p = re.compile('==\[\[Page:([^=]+)\]\]==\n')
         bl= p.split(new_text)
         for i in range(len(bl)/2):
@@ -179,20 +181,20 @@ def do_match(mysite, maintitle, user, codelang, server):
             else:
                 filename = align.get_djvu(mysite, filename, False)
             if not filename:
-                return "Erreur : fichier absent"
+                return ret_val(E_ERROR, "Erreur : fichier absent")
             if content.find("R2Mondes") != -1:
                 p0 = re.compile("\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
                 bl0 = p0.split(text)
                 title0 = bl0[i*2+1].encode("utf8")
-                return "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page "+title0
+                return ret_val(E_RROR, "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page "+title0)
             r = align.match_page(content, filename, int(pagenum))
             print "%s %s  : %f"%(filename, pagenum, r)
             if r < 0.1:
-                return "Erreur : Le texte ne correspond pas, page %s" % pagenum
+                return ret_val(E_ERROR, "Erreur : Le texte ne correspond pas, page %s" % pagenum)
         #the page is ok
         safe_put(page,new_text,user+": match")
         add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
-        return "ok : transfert en cours."
+        return ret_val(E_OK, "ok : transfert en cours.")
 
     prefix = prefix.decode('utf-8')
     p = re.compile("==__MATCH__:\[\[" + prefix + ":(.*?)/(\d+)\]\]==")
@@ -204,24 +206,24 @@ def do_match(mysite, maintitle, user, codelang, server):
         head = text[:pos]
         text = text[pos+len(m.group(0)):]
     else:
-        print "match tag not found"
-        return E_ERROR
+        return ret_val(E_ERROR, "match tag not found")
 
     wikipedia.output(djvuname + " " + number)
     try:
         number = int(number)
     except:
-        return E_ERROR
+        return ret_val(E_ERROR, "illformed __MATCH__: no page number ?")
 
     filename = align.get_djvu(mysite, djvuname, True)
     if not filename:
-        return E_ERROR
+        return ret_val(E_ERROR, "unable to read djvu")
 
-    output, status = align.do_match(text, filename, djvuname, number, verbose = False, prefix = prefix)
-    if status == "ok":
-        safe_put(page, head + output, user + ": match")
+    data = align.do_match(text, filename, djvuname, number, verbose = False, prefix = prefix)
+    if not data['error']:
+        safe_put(page, head + data['text'], user + ": match")
+        data['text'] = ""
 
-    return status
+    return data
 
 
 def safe_put(page,text,comment):
@@ -262,14 +264,14 @@ def safe_put(page,text,comment):
 def do_split(mysite, rootname, user, codelang, server):
     prefix = page_prefixes.get(codelang)
     if not prefix:
-        return E_ERROR
+        return ret_val(E_ERROR, "no Page: prefix")
     prefix = prefix.decode('utf-8')
 
     try:
         page = wikipedia.Page(mysite,rootname)
         text = page.get()
     except:
-        return E_ERROR
+        return ret_val(E_ERROR, "unable to read page")
 
     p = re.compile('==\[\[(' + prefix + ':[^=]+)\]\]==\n')
     bl = p.split(text)
@@ -396,7 +398,7 @@ def do_split(mysite, rootname, user, codelang, server):
     header = bl[0]
     safe_put(page,header+titles,user+": split")
 
-    return E_OK
+    return ret_val(E_OK, "")
 
 
 match_queue = []
@@ -487,8 +489,8 @@ def bot_listening(lock):
             elif cmd == "split":
                 add_job(lock, split_queue, (title, lang, user, server, t, conn))
             else:
-                print "unknown command: ", cmd
-                conn.send("unknown command: " + cmd);
+                out = ret_val(E_ERROR, "unknown command: " + cmd)
+                conn.send(json.dumps(out));
                 conn.close()
 
     finally:
@@ -533,8 +535,7 @@ def job_thread(lock, queue, func):
         try:
             mysite = wikipedia.getSite(codelang, get_family(server))
         except:
-            print "site error", repr(codelang)
-            out = "site error: " + repr(codelang)
+            out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
         if mysite:
             wikipedia.setSite(mysite)
@@ -544,16 +545,11 @@ def job_thread(lock, queue, func):
             out = func(mysite, title, user, codelang, server)
 
         if conn:
-            conn.send(out)
+            conn.send(json.dumps(out))
             conn.close()
 
-        if out and mysite:
-            res = " DONE    "
-        else:
-            res = " FAILED  "
-
         time2 = time.time()
-        print date_s(time2), res, title.encode('utf-8'), user.encode("utf8"), codelang, server, " (%.2f)" % (time2-time1), out
+        print date_s(time2), title.encode('utf-8'), user.encode("utf8"), codelang, server, " (%.2f)" % (time2-time1), out
 
         remove_job(lock, queue)
 

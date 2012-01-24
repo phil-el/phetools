@@ -1,10 +1,13 @@
 <?php
-define('PUBLIC_HTML',true);
+define('PUBLIC_HTML', true);
 header('Cache-control: no-cache');
-//header('Content-type: application/json');
+header('Access-Control-Allow-Origin: *');
 
 // FIXME: handle title containing a &
 function send_request( $cmd, $title, $lang, $user, $server, $port ) {
+        if ($cmd != 'status')
+                header('Content-type: application/json');
+
 	$conn = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 	$server_name = file_get_contents('./match_and_split.server');
 	$result = socket_connect($conn, $server_name, $port);
@@ -16,17 +19,15 @@ function send_request( $cmd, $title, $lang, $user, $server, $port ) {
 			$res.=$out;
 		}
 		socket_close($conn);
-
-		if ($cmd == "status")
-			return $res;
-		else
-			return 'match_callback("'.$res.'");';
 	} else {
-		if ($cmd == 'status')
-			return 'The robot is not running.<br />Please try again later.';
-		else
-			return 'alert("The robot is not running.\n Please try again later.");';
+		$err = "The robot is not running.\n Please try again later.";
+		if ($cmd == 'status') {
+			$res = $err;
+		} else {
+                        $res = json_encode(array('error' => 3, 'text' => $err));
+		}
 	}
+	return $res;
 }
 
 $cmd = isset($_GET["cmd"]) ? $_GET["cmd"] : FALSE;
@@ -38,7 +39,6 @@ $server = isset($_GET["server"]) ? $_GET["server"] : FALSE;
 if (!$cmd) {
 	$cmd = 'status';
 }
+
 $out = send_request($cmd, $title, $lang, $user, $server, 12346);
 print $out;
-
-?>

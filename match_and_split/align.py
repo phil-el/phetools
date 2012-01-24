@@ -101,6 +101,14 @@ def extract_djvu_text(url, filename, sha1):
     pickle_filename = filename
     pickle_obj = (sha1, data)
 
+def ret_val(error, text):
+    if error:
+        print "Error: %d, %s" % (error, text)
+    return  { 'error' : error, 'text' : text }
+
+E_ERROR = 1
+E_OK = 0
+
 # returns result, status
 def do_match(target, filename, djvuname, number, verbose, prefix):
     s = difflib.SequenceMatcher()
@@ -114,7 +122,7 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
     for pagenum in range(number, min(number + 1000, max_pages)):
 
         if pagenum - number == 10 and offset == 0:
-            return ("", "error : could not find a text layer.")
+            return ret_val(E_ERROR, "error : could not find a text layer.")
 
         page1 = last_page
         last_page = page2 = read_djvu_page(filename, pagenum + 1)
@@ -225,9 +233,9 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         output = ""
 
     if output == "":
-        return ("", "text does not match")
+        return ret_val(E_ERROR, "text does not match")
     else:
-        return (output, "ok")
+        return ret_val(E_OK, output)
 
 def get_filepage(site, djvuname):
     filepage = wikipedia.ImagePage(site, "File:" + djvuname)
