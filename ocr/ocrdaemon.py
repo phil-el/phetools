@@ -32,7 +32,7 @@ import os
 import socket
 import thread
 import time
-import simplejson
+import json
 import hashlib
 import multiprocessing
 import cPickle
@@ -227,7 +227,7 @@ class JobManager:
     def finish_job(self, done_key, data):
         print "pop job: job finished"
         err = data['error']
-        data = simplejson.dumps(data)
+        data = json.dumps(data)
         r = self.dict_query[done_key]
 
         # null conn is possible if this is a prefetched job
