@@ -4,10 +4,7 @@
 # author : phe at some dot where
 # licence : GPL
 
-import match_and_split_config as config
-
-import os, re, time, random
-import urllib2
+import os, re, random
 import pickle
 import difflib
 import wikipedia
@@ -19,10 +16,6 @@ def url_opener():
     return opener
 
 def copy_file_from_url(url, out_file):
-    #wikipedia.output("getting " + out_file)
-    #cmd = "wget -q -O '%s' '%s'" % (out_file, url)
-    #os.system(cmd.encode("utf8"))
-    # FIXME: urllib2.HTTPError: HTTP Error 403: Forbidden.
     opener = url_opener()
     fd_in = opener.open(url)
     fd_out = open(out_file, "wb")
