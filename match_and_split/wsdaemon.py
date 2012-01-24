@@ -186,7 +186,7 @@ def do_match(mysite, maintitle, user, codelang, server):
                 p0 = re.compile("\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
                 bl0 = p0.split(text)
                 title0 = bl0[i*2+1].encode("utf8")
-                return ret_val(E_RROR, "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page "+title0)
+                return ret_val(E_ERROR, "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page "+title0)
             r = align.match_page(content, filename, int(pagenum))
             print "%s %s  : %f"%(filename, pagenum, r)
             if r < 0.1:

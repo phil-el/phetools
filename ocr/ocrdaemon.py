@@ -165,9 +165,9 @@ def ocr_image(url, codelang, thread_id):
     os.unsetenv('TESSDATA_PREFIX')
 
     try:
-        file = open(basename + ".txt")
-	txt = file.read()
-	file.close()
+        fd = open(basename + ".txt")
+	txt = fd.read()
+	fd.close()
     except:
         return ret_val(2, "unable to read text file %s.txt" % basename)
 
