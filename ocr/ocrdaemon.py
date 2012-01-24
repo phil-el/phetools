@@ -74,7 +74,7 @@ class Request:
         return m.hexdigest()
 
     def cached_name(self):
-        return '/home/phe/wsbot/tesscache/' + self.key()
+        return '/home/phe/wsbot/cache/tesseract/' + self.key()
 
     def cache_entry_exist(self):
         return os.path.exists(self.cached_name())
@@ -138,7 +138,7 @@ def ocr_image(url, codelang, thread_id):
 
     lang = tesseract_languages.get(codelang, 'eng')
 
-    basename = 'image_%d' % thread_id
+    basename = 'tmp/tesseract/image_%d' % thread_id
 
     os.system("rm -f %s.*" % basename)
 
@@ -308,8 +308,7 @@ def main():
         if len(task_queue):
             job_manager.handle_request(task_queue.pop(0))
         else:
-            # FIXME: that's horrible, handle it through another subprocess
-            time.sleep(1)
+            time.sleep(0.5)
 
             job_manager.flush_done_job()
 

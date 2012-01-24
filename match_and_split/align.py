@@ -251,15 +251,15 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
     print "get_djvu", repr(djvuname)
 
     djvuname = djvuname.replace(" ", "_")
-    filename = "djvu/" + djvuname
+    filename = "/home/phe/wsbot/cache/djvu/" + djvuname
     if not os.path.exists(data_filename(filename)):
         # FIXME: use a LRU rather to randomly delete a file in the cache.
         print "CACHE MISS"
-        o = os.listdir("djvu")
+        o = os.listdir("/home/phe/wsbot/cache/djvu")
         if len(o) >= 32:
             k = random.randint(0, len(o) - 1)
             print "deleting " + o[k]
-            os.unlink("djvu/" + o[k])
+            os.unlink("/home/phe/wsbot/cache/djvu/" + o[k])
 
         try:
             filepage = get_filepage(mysite, djvuname)
