@@ -194,7 +194,8 @@ def do_match(mysite, maintitle, user, codelang, server):
         #the page is ok
         safe_put(page,new_text,user+": match")
         add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
-        return ret_val(E_OK, "ok : transfert en cours.")
+        # FIXME: that's an abuse of E_ERROR
+        return ret_val(E_ERROR, "ok : transfert en cours.")
 
     prefix = prefix.decode('utf-8')
     p = re.compile("==__MATCH__:\[\[" + prefix + ":(.*?)/(\d+)\]\]==")
