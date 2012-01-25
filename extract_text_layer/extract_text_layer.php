@@ -1,32 +1,33 @@
 <?php
-define('PUBLIC_HTML',true);
+define('PUBLIC_HTML', true);
 header('Cache-control: no-cache');
+header('Access-Control-Allow-Origin: *');
 
 // FIXME: handle title containing a &
 function send_request( $cmd, $title, $lang, $user, $port ) {
-	// FIXME: try with SOL_UDP.
+	if ($cmd != 'status')
+                header('Content-type: application/json');
+
 	$conn = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 	$server_name = file_get_contents('./extract_text_layer.server');
 	$result = socket_connect($conn, $server_name, $port);
-	if($result){
+	if ($result){
 		$res = "";
 		$line = $cmd.'|'.$title.'|'.$lang.'|'.$user;
 		socket_write($conn, $line, strlen($line));
 		while ($out = socket_read($conn, 1024)) {
-			$res.=$out;
+			$res .= $out;
 		}
 		socket_close($conn);
-
-		if ($cmd == "status")
-			return $res;
-		else
-			return 'extract_text_layer.callback("'.$res.'");';
-	} else {
-		if ($cmd == 'status')
-			return 'The robot is not running.<br />Please try again later.';
-		else
-			return 'alert("The robot is not running.\n Please try again later.");';
-	}
+        } else {
+                $err = "The robot is not running.\n Please try again later.";
+                if ($cmd == 'status') {
+                        $res = $err;
+                } else {
+                        $res = json_encode(array('error' => 3, 'text' => $err));
+                }
+        }
+	return $res;
 }
 
 $cmd = isset($_GET["cmd"]) ? $_GET["cmd"] : FALSE;
@@ -39,5 +40,3 @@ if (!$cmd) {
 }
 $out = send_request($cmd, $title, $lang, $user, 12345);
 print $out;
-
-?>

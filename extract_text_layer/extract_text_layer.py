@@ -28,9 +28,10 @@ import socket
 import re
 import thread
 import time
+import copy
 
 import align
-
+import json
 import wikipedia, pywikibot
 
 mylock = thread.allocate_lock()
@@ -63,8 +64,8 @@ page_prefixes = {
     'zh' : 'Page',
     }
 
-E_ERROR = "error"
-E_OK = "ok"
+E_ERROR = 1
+E_OK = 0
 
 # FIXME: use a real Queue object and avoid polling the queue
 
@@ -96,18 +97,22 @@ def add_job(lock, queue, cmd):
     queue.insert(0, cmd)
     lock.release()
 
+def ret_val(error, text):
+    if error:
+        print "Error: %d, %s" % (error, text)
+    return  { 'error' : error, 'text' : text }
+
 def do_extract(mysite, maintitle, user, codelang):
     prefix = page_prefixes.get(codelang)
     if not prefix:
-        print "no prefix"
-        return E_ERROR
+        return ret_val(E_ERROR, "no prefix")
 
     djvuname = maintitle.replace(u' ', u'_')
     print djvuname.encode('utf-8')
 
     filename = align.get_djvu(mysite, djvuname, True)
     if not filename:
-        return E_ERROR
+        return ret_val(E_ERROR, "unable to retrieve djvu file")
 
     text = u''
     for i in range(align.get_nr_djvu_pages(filename)):
@@ -117,7 +122,7 @@ def do_extract(mysite, maintitle, user, codelang):
     page = wikipedia.Page(site = mysite, title = u'user:' + user + u'/Text')
     safe_put(page, text, comment = u'extract text')
 
-    return E_OK
+    return ret_val(E_OK, "")
 
 
 def safe_put(page,text,comment):
@@ -156,6 +161,38 @@ def safe_put(page,text,comment):
 
 
 extract_queue = []
+
+def html_for_queue(queue):
+    html = ''
+    for i in queue:
+        mtitle = i[0].decode('utf-8')
+        codelang = i[1]
+        try:
+            # FIXME: do not harcode the family
+            msite = wikipedia.getSite(codelang, 'wikisource')
+            page = wikipedia.Page(msite, mtitle)
+            path = msite.nice_get_address(page.urlname())
+            url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
+        except:
+            url = ""
+        html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
+    return html
+
+# title user lang t conn
+def do_status(lock, queue):
+    lock.acquire()
+    queue = copy.copy(queue)
+    lock.release()
+    html = '<html>'
+    html += '<meta http-equiv="content-type" content="text/html; charset=utf-8"\
+>'
+    html += '<head></head><body>'
+
+    html += "<html><body>the robot is running.<br/><hr/>"
+    html += "<br/>%d jobs in extract queue.<br/>" % len(queue)
+    html += html_for_queue(queue)
+    html += '</body></html>'
+    return html
 
 def bot_listening(lock):
 
@@ -202,24 +239,17 @@ def bot_listening(lock):
 
             if cmd == "extract":
                 add_job(lock, extract_queue, (title, lang, user, t, conn))
+            elif cmd == 'status':
+                html = do_status(lock, extract_queue)
+                conn.send(html);
+                conn.close()
             else:
-                print "unknown command: ", cmd
-                conn.send("unknown command: " + cmd);
+                conn.send(json.dumps(ret_val(E_ERROR, "unknown command: " + cmd)));
                 conn.close()
 
     finally:
         sock.close()
         print "STOP"
-
-        for i in range(len(extract_queue)):
-            title, lang, user, t, conn = extract_queue[i]
-            extract_queue[i] = (title,lang,user,t,None)
-            if conn:
-                conn.close()
-
-        f = open("extract_text_layer.jobs", "w")
-        f.write(repr(extract_queue))
-        f.close()
 
 def date_s(at):
     t = time.gmtime(at)
@@ -235,9 +265,9 @@ def job_thread(lock, queue, func):
         try:
             mysite = wikipedia.getSite(codelang, config.family)
         except:
-            print "site error", repr(codelang)
-            out = "site error: " + repr(codelang)
+            out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
+
         if mysite:
             wikipedia.setSite(mysite)
             print mysite, title
@@ -246,29 +276,16 @@ def job_thread(lock, queue, func):
             out = func(mysite, title, user, codelang)
 
         if conn:
-            conn.send(out)
+            conn.send(json.dumps(out))
             conn.close()
 
-        if out and mysite:
-            res = " DONE    "
-        else:
-            res = " FAILED  "
-
         time2 = time.time()
-        print date_s(time2) + res + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)" % (time2-time1) + " " + out
+        print date_s(time2) + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)" % (time2-time1) + " " + str(out)
 
         remove_job(lock, queue)
 
 
 if __name__ == "__main__":
-    try:
-        f = open("extract_text_layer.jobs", "r")
-        jobs = f.read()
-        f.close()
-        extract_queue = eval(jobs)
-    except:
-        pass
-
     lock = thread.allocate_lock()
     thread.start_new_thread(job_thread, (lock, extract_queue, do_extract))
     bot_listening(lock)
