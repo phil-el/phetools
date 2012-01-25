@@ -1,3 +1,3 @@
 #!/bin/bash
 cd $HOME/wsbot
-nohup nice -n 19 python -u  pyirclogs.py >> log/wsirc.log
+exec nohup python -u  pyirclogs.py >> log/wsirc.log
