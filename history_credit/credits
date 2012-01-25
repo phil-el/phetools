@@ -6,7 +6,7 @@ import sys
 import urllib
 import types
 
-fd_log = open("/home/phe/log_credit", "a")
+fd_log = open("/home/phe/wsbot/log/credits.log", "a")
 
 sys.path.append("/home/phe/wsbot")
 import get_credit
