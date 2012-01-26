@@ -205,8 +205,6 @@ for channel in channels:
 
 def _connected_checker():
     global server
-    print >> sys.stdout, "check connected"
-    sys.stdout.flush()
     server.execute_delayed(120, _connected_checker)
     if not server.is_connected():
         print >> sys.stdout, "disconnected, reconnect"
