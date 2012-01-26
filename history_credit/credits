@@ -7,6 +7,7 @@ import urllib
 import types
 
 fd_log = open("/home/phe/wsbot/log/credits.log", "a")
+sys.stderr = fd_log
 
 sys.path.append("/home/phe/wsbot")
 import get_credit
@@ -158,6 +159,7 @@ def query_params(environ):
     rdict['book'] = split_param(rdict['book'])
     rdict['page'] = split_param(rdict['page'])
     rdict['image'] = split_param(rdict['image'])
+    print >> sys.stderr, str(rdict)
     return rdict
 
 def myapp(environ, start_response):
@@ -183,6 +185,6 @@ if __name__ == "__main__":
     try:
         WSGIServer(myapp).run()
     except BaseException as e:
-        print >> fd_log, str(e)
-        print >> fd_log, traceback.format_exc()
+        print >> sys.stderr, str(e)
+        print >> sys.stderr, traceback.format_exc()
         raise
