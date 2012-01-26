@@ -124,7 +124,7 @@ def get_pages_credit(cursor, pages, ns):
         p = p.replace(' ', '_')
         namespace = p.split(':', 1)
         ns_nr = 0
-        if namespace[0] in ns:
+        if namespace[0] in ns and len(namespace) > 1:
             p = namespace[1]
             ns_nr = ns[namespace[0]]
         splitted.setdefault(ns_nr, [])
