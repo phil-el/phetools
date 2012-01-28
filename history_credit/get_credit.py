@@ -67,16 +67,26 @@ def get_revision(cursor, rev_ids):
         for r in cursor.fetchall():
             yield r
 
-def get_username(cursor, user_ids):
+def get_user_groups(cursor, user_ids):
     if len(user_ids):
         user_id_str = [str(x) for x in user_ids ]
-        q = """SELECT user_name, ug_group, user_id
+        q = """SELECT user_id, ug_group
                FROM user, user_groups
                WHERE user_id IN (%s) AND ug_user = user_id
-            """ % (','.join(user_id_str)) 
+            """ % (','.join(user_id_str))
         cursor.execute(q)
         for r in cursor.fetchall():
             yield r
+
+def get_usernames(cursor, user_ids):
+    if len(user_ids):
+        user_id_str = [str(x) for x in user_ids ]
+        cursor.execute("""SELECT user_id, user_name
+                       FROM user
+                       WHERE user_id IN (%s)
+                       """ % (','.join(user_id_str)))
+        for x in cursor.fetchall():
+            yield x
 
 def merge_contrib(a, b):
     for key in b:
@@ -97,10 +107,17 @@ def credit_from_pages_id(cursor, pages_id):
         user_ids.setdefault(x[0], 0)
         user_ids[x[0]] += 1
 
+    user_groups = {}
+    for r in get_user_groups(cursor, user_ids):
+        user_groups.setdefault(r[0], [])
+        user_groups[r[0]].append(r[1])
+
     results = {}
-    for x in get_username(cursor, user_ids):
-        results.setdefault(x[0], { 'count' : user_ids[x[2]], 'flags' : [] } )
-        results[x[0]]['flags'].append(x[1])
+    for r in get_usernames(cursor, user_ids):
+        results[r[1]] = { 'count' : user_ids[r[0]], 'flags' : [] }
+        if r[0] in user_groups:
+            results[r[1]]['flags'] = user_groups[r[0]]
+
     return results
 
 def get_book_credit(cursor, book, ns):
@@ -190,7 +207,6 @@ def get_credit(domain, family, books, pages, images):
     contribs = get_pages_credit(cursor, pages + books_name, ns)
     merge_contrib(results, contribs)
 
-    # FIXME, we don't get flags for user not already in the results
     for user_name in get_images_credit(cursor, images):
         results.setdefault(user_name, default_userdict())
         results[user_name]['count'] += 1
