@@ -6,7 +6,7 @@ import sys
 import urllib
 import types
 
-fd_log = open("/home/phe/wsbot/log/credits.log", "a")
+fd_log = open("/home/phe/wsbot/log/credits.log", "a", 0)
 sys.stderr = fd_log
 
 sys.path.append("/home/phe/wsbot")
