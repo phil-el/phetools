@@ -9,7 +9,7 @@ def default_userdict(count = 0):
     return { 'count' : count, 'flags' : [] }
 
 def database_name(domain, family):
-    if family == 'wiksource' and domain == 'old':
+    if family == 'wikisource' and domain in [ 'old', 'www' ]:
         dbname = 'sourceswiki_p'
     else:
         dbname = domain + family + '_p'
