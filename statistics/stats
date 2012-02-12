@@ -18,7 +18,7 @@ from common import decode_res, disambiguations
 is_test = False
 
 def catreq(cat, ns):
-    return "select count(cl_from) as num from categorylinks where cl_to='%s' and cl_from in (select page_id from page where page_namespace=%d)"%(cat,ns)
+    return "select /* SLOW_OK */ count(cl_from) as num from categorylinks where cl_to='%s' and cl_from in (select page_id from page where page_namespace=%d)"%(cat,ns)
 
 def get_stats(domains):
 
@@ -65,30 +65,30 @@ def get_stats(domains):
 	    num_q0 = 0
 	    num_q2 = 0
 
-	q = "select count(distinct tl_from) as num from templatelinks left join page on page_id=tl_from where tl_namespace=%d and page_namespace=0;"%ns
+	q = "select /* SLOW_OK */ count(distinct tl_from) as num from templatelinks left join page on page_id=tl_from where tl_namespace=%d and page_namespace=0;"%ns
 	cursor.execute(q)
 	row = cursor.fetchone ()
         num_trans = int(row[0])
 
-	cursor.execute ("select count(distinct page_id) from page where page_namespace=0 and page_is_redirect=0;")
+	cursor.execute ("select /* SLOW_OK */ count(distinct page_id) from page where page_namespace=0 and page_is_redirect=0;")
 	row = cursor.fetchone ()
         num_texts = int(row[0])
 
         #disambiguation pages
         #first test if the message is a template...
-        q = "select count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title in ( select pl_title from page left join pagelinks on page_id=pl_from where pl_namespace=10 and page_namespace=8 and page_title='Disambiguationspage' )"
+        q = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title in ( select pl_title from page left join pagelinks on page_id=pl_from where pl_namespace=10 and page_namespace=8 and page_title='Disambiguationspage' )"
         cursor.execute (q)
         row = cursor.fetchone ()
         num_disambig = int(row[0])
 
         if num_disambig==0 and disambiguations.get(dom) :
-            q = "select count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'"%disambiguations.get(dom)
+            q = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'"%disambiguations.get(dom)
             cursor.execute (q)
             row = cursor.fetchone ()
             num_disambig = int(row[0])
 
         if dom=='no':
-            qq = "select page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q.replace("count(page_title)","page_id")
+            qq = "select /* SLOW_OK */ page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q.replace("count(page_title)","page_id")
             cursor.execute(qq)
             rows = cursor.fetchall()
 	    site = wikipedia.getSite(dom,fam='wikisource')
