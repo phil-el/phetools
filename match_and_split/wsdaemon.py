@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 2 of the License, or
@@ -193,6 +194,25 @@ def do_match(mysite, maintitle, user, codelang, server):
             if r < 0.1:
                 return ret_val(E_ERROR, "Erreur : Le texte ne correspond pas, page %s" % pagenum)
         #the page is ok
+        new_text = re.sub(u'<references[ ]*/>', u'', new_text)
+        new_text = re.sub(u'[ ]([,])', u'\\1', new_text)
+        new_text = re.sub(u'([^.])[ ]([,.])', u'\\1\\2', new_text)
+        new_text = re.sub(u'\.\.\.', u'…', new_text)
+
+        new_text = re.sub(u'([^ \s])([;:!?])', u'\\1 \\2', new_text)
+        new_text = re.sub(u'([«;:!?])([^ \s…])', u'\\1 \\2', new_text)
+        # separated from the previous regexp else "word!»" overlap
+        new_text = re.sub(u'([^ \s])([»])', u'\\1 \\2', new_text)
+
+        # workaround some buggy text
+        new_text = re.sub(u'([;:!?»]) \n', u'\\1\n', new_text)
+        new_text = re.sub(u'([;:!?»])\'\'([ \n])', u'\\1\'\'\\2', new_text)
+        # <&nbsp;><space>
+        #new_text = re.sub(u'  ([;:!?»])', u' \\1', new_text)
+        #new_text = re.sub(u' ([;:!?»])', u' \\1', new_text)
+        new_text = re.sub(u'([;:!?»]) <br />', u'\\1<br />', new_text)
+        new_text = new_text.replace(u'Page : ', u'Page:')
+        #text = re.sub(u'([;:!?»]) <div>\n', u'\\1\n', new_text)
         safe_put(page,new_text,user+": match")
         add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
         # FIXME: that's an abuse of E_ERROR
