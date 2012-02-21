@@ -1,0 +1,7 @@
+#!/bin/bash
+cd ~/public_html/graphs/
+for i in Wikisource*.png; do /opt/ts/bin/convert -thumbnail 250 $i thumb/$i ; done
+cd ~/stats
+./stats -y > ~/public_html/stats.txt
+./stats -y -d > ~/public_html/stats_diff.txt
+
