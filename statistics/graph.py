@@ -31,7 +31,7 @@ names = colors.keys()
 names.sort()
 names.remove("total")
 
-savepath = "/home/phe/public_html/graphs/temp/"
+savepath = "/home/phe/public_html/graphs/"
 
 count_array = {}
 for dom in names + ["total"]:
