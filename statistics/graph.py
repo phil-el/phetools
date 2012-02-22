@@ -9,11 +9,25 @@ import pylab
 import common
 from common import domain_urls, decode_res
 
-colors = { 'total':'#000000', 'en':'r', 'fr':'b', 'de':'g', 'ca':'m', 'it':'c', 'hy':'#ff7000',
-           'es':'#a08030','no':'#436712', 'sv':'#ff2073', 'pl':'#09eaf2', 'ru':'#13ee77', 'da':'#eff000', 'br':'#d0fff0', 'vec': '#d0d0d0'}
+colors = { 'total':'#000000',
+           'en':'r',
+           'fr':'b',
+           'de':'g',
+           'ca':'m',
+           'it':'c',
+           'hy':'#ff7000',
+           'es':'#a08030',
+           'no':'#436712',
+           'sv':'#ff2073',
+           'pl':'#09eaf2',
+           'ru':'#13ee77',
+           'da':'#eff000',
+           'br':'#d0fff0',
+           'vec': '#d0d0d0',
+           'sa': '#d0d000',
+           'ml': '#00d0d0',
+           }
 
-#alphabetically sorted
-#names = [ 'ca', 'da', 'de', 'en', 'es', 'fr', 'hy', 'it', 'no', 'sv', 'pl', 'ru' ]
 names = colors.keys()
 names.sort()
 names.remove("total")
