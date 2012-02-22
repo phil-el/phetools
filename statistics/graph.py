@@ -6,7 +6,6 @@ import sys
 sys.path.append("/home/phe/lib/python")
 import pylab
 
-import common
 from common import domain_urls, decode_res
 
 colors = { 'total':'#000000',
@@ -32,7 +31,7 @@ names = colors.keys()
 names.sort()
 names.remove("total")
 
-savepath = "/home/phe/public_html/graphs/"
+savepath = "/home/phe/public_html/graphs/temp/"
 
 count_array = {}
 for dom in names + ["total"]:
@@ -249,13 +248,11 @@ def add_rev(line):
 
 
 def read_from_file(filename):
-    try:
-        f = open(filename,"r")
-        revs = f.readlines()
-        f.close()
-    except:
-        return
-    for item in revs: add_rev(item)
+    f = open(filename,"r")
+    revs = f.readlines()
+    f.close()
+    for item in revs:
+        add_rev(item)
         
 
 #leaky average
@@ -295,7 +292,6 @@ def rm29bis(pp, dom):
 
 def main():
 
-    read_from_file("/home/phe/stats/data/curl_stats.py")
     read_from_file("/home/phe/stats/data/new_stats.py")
 
     print "totals"
