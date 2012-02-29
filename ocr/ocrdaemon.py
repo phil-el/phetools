@@ -149,7 +149,9 @@ def ocr_image(url, codelang, thread_id):
                       'http://upload.wikimedia.org/')
 
     #url = url.replace("1024px","2900px")
-    os.system("wget -q -O %s \"%s\""%(f,url))
+    cmdline = "wget --no-check-certificate -q -O %s \"%s\"" % (f,url)
+    print cmdline
+    os.system(cmdline)
     if not os.path.exists(f):
         return ret_val(1, "could not download url: %s" % url)
 
