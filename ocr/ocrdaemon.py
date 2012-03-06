@@ -48,7 +48,8 @@ tesseract_languages = {
         'la':"ita",
         'it':"ita",
 	'es':"spa",
-	'pt':"spa"
+	'pt':"spa",
+        'ru':"rus",
         }
 
 class Request:
