@@ -46,6 +46,7 @@ page_prefixes = {
     'de' : 'Seite',
     'en' : 'Page',
     'es' : 'P\xc3\xa1gina',
+    'et' : 'Lehek\xc3\xbclg',
     'fr' : 'Page',
     'hr' : 'Stranica',
     'hu' : 'Oldal',
