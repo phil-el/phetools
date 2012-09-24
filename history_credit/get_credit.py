@@ -241,6 +241,5 @@ def create_conn(domain, family, hint):
 
 if __name__ == "__main__":
     domain = 'fr'
-    conn = create_conn(domain, 'wikisource', 3)
-    for arg in sys.argv[1:]:
-        get_credit(conn, domain, [ arg ])
+    family = 'wikisource'
+    get_credit(domain, family, [ "foo.djvu" ], [ "" ], [ "" ])
