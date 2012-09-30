@@ -69,6 +69,10 @@ def unquote_text_from_djvu(text):
     text = text.replace(u'\\n', u'\n')
     text = text.replace(u'\\"', u'"')
     text = text.replace(u'\\\\', u'\\')
+    text = text.replace(u'\\037', u'\n')
+    text = text.replace(u'\\035', u'')
+    text = text.replace(u'\\013', u'')
+    text = text.rstrip(u'\n')
     return text
 
 def quote_filename(filename):
