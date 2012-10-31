@@ -218,6 +218,8 @@ def do_match(mysite, maintitle, user, codelang, server):
         new_text = new_text.replace(u'\n::: ', u'\n:::')
         new_text = new_text.replace(u'\n:::: ', u'\n::::')
         new_text = new_text.replace(u'\n::::: ', u'\n:::::')
+        new_text = re.sub(u'1er (janvier|février|avril|mars|mai|juin|juillet|août|septembre|octobre|novembre|décembre)', u'1{[er}} \\1', new_text)
+        new_text = re.sub(u'([0-9])e ', u'\\1{{e}} ', new_text)
         #text = re.sub(u'([;:!?»]) <div>\n', u'\\1\n', new_text)
         safe_put(page,new_text,user+": match")
         add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
