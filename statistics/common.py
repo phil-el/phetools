@@ -157,6 +157,13 @@ domain_urls = {
         "എഴുത്ത്_ഇല്ലാത്തവ",
         "പ്രശ്നമുള്ളവ",
         ),
+    'nl': (
+        104,
+        "Proefgelezen",
+        "Gecontroleerd",
+        "Geen_tekst",
+        "Onvolledig",
+        ),
     'no': (
         104,
         "Korrekturlest",
