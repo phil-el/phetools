@@ -310,7 +310,7 @@ def main():
     draw( names, 2, None, 200000,10000,"proofread_pages",True)
     draw( names, 1, None, 100000, 5000,"validated_pages",True)
 
-    draw( names,  5, None,  80000, 4000,"pr_texts")
+    draw( names,  5, None,  84000, 4000,"pr_texts")
     draw( names,  6, rm29bis, 100, 5,"pr_percent")
 
     draw( ['fr'], 7, rm29bis, False,500,"nonpr_texts_fr")
