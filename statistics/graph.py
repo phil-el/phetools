@@ -304,7 +304,7 @@ def main():
     draw( names, 2, sg, 420, 20,"proofread_pages_per_day")
     draw( names, 1, sg, 150,20,"validated_pages_per_day")
     draw( names, 0, None, 1200000,100000,"all_pages")
-    draw( names, 2, None, 450000,30000,"proofread_pages")
+    draw( names, 2, None, 480000,30000,"proofread_pages")
     draw( names, 1, None, 140000, 10000,"validated_pages")
     draw( names, 0, None, 500000,50000,"all_pages", True)
     draw( names, 2, None, 200000,10000,"proofread_pages",True)
