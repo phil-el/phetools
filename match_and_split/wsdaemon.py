@@ -221,6 +221,14 @@ def do_match(mysite, maintitle, user, codelang, server):
         new_text = re.sub(u'1er (janvier|février|avril|mars|mai|juin|juillet|août|septembre|octobre|novembre|décembre)', u'1{{er}} \\1', new_text)
         new_text = re.sub(u'([0-9])e ', u'\\1{{e}} ', new_text)
         #text = re.sub(u'([;:!?»]) <div>\n', u'\\1\n', new_text)
+
+        # try to move the title inside the M&S
+        match_title = re.search(u"{{[Jj]ournal[ ]*\|*(.*?)\|", new_text)
+        if match_title:
+            pos = re.search(u'==(.*?)==', new_text)
+            if pos:
+                new_text = new_text[0:pos.end(0)] + u'\n{{c|' + match_title.group(1) + u'|fs=140%}}\n\n\n' + new_text[pos.end(0):]
+
         safe_put(page,new_text,user+": match")
         add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
         # FIXME: that's an abuse of E_ERROR
