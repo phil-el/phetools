@@ -46,6 +46,7 @@ tesseract_languages = {
         'de':"deu",
         'de-f':"deu-frak",
         'la':"ita",
+        'is':'isl', # needs tess 3.02
         'it':"ita",
 	'es':"spa",
 	'pt':"spa",
@@ -158,13 +159,15 @@ def ocr_image(url, codelang, thread_id):
 
     os.system("convert %s.jpg -compress none %s.tif" % (basename, basename))
 
-    os.putenv('LD_PRELOAD', '/opt/ts/lib/libtesseract_cutil.so.3')
-    if lang == 'deu-frak':
-        os.putenv('TESSDATA_PREFIX', '/home/phe/wsbot/')
+    #os.putenv('LD_PRELOAD', '/opt/ts/lib/libtesseract_cutil.so.3')
+    #if lang in [ 'deu-frak', 'isl' ]:
+        #os.putenv('TESSDATA_PREFIX', '/home/phe/wsbot/')
 
-    os.system("tesseract %s.tif %s -l %s 2>>tesseract_err"% (basename, basename, lang))
+    os.putenv('TESSDATA_PREFIX', '/home/phe/share')
 
-    os.unsetenv('LD_PRELOAD')
+    os.system("/home/phe/bin/tesseract %s.tif %s -l %s 2>>tesseract_err"% (basename, basename, lang))
+
+    #os.unsetenv('LD_PRELOAD')
     os.unsetenv('TESSDATA_PREFIX')
 
     try:
