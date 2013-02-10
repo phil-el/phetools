@@ -1,0 +1,60 @@
+<html>
+<head>
+<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/vector/screen.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/common/shared.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/common/commonPrint.css" type="text/css" media="print" />
+
+</head>
+
+<body class="mediawiki ltr ns--1 ns-special page-Special_RecentChanges skin-vector">
+
+
+<div id="mw-panel" class="noprint">
+ <div id="p-logo">
+   <a style="background-image: url(http://upload.wikimedia.org/wikipedia/sources/b/bc/Wiki.png);" href="index.html"></a>
+ </div>
+</div>
+
+<div id="content">
+ <h1 id="firstHeading" class="firstHeading">Statistics and Tools for Wikisource</h1>
+ <div id="bodyContent">
+   <div id="contentSub"></div>
+
+
+<h3>Wikisource ProofreadPage Statistics:</h3>
+<ul>
+<li><a href="statistics.php"/>Proofread pages and transclusions (table updated daily)</li>
+<li><a href="statistics.php?diff=1"/>Difference with yesterday</li>
+<li><a href="stats.html">Proofreading graphs</a></li>
+<li><a href="transclusions.html">Transclusion graphs</a></li>
+</ul>
+
+<h3>Wikisource Robot Status:</h3>
+<ul>
+<li><a href="robot.php">match and split job queue</a></li>
+<li><a href="ocr.php">ocr job queue</a></li>
+</ul>
+
+<h3>Recent Changes via Websockets</h3>
+
+This is a websocket server that forwards the Recent changes.<br/>
+The server status can be checked <a href= "http://toolserver.org/~thomasv/dynRC.php">here</a>.<br/>
+In order to use the following pages you need Chrome 6 or Firefox 4.
+<br/>
+<br/>
+A few examples:
+<ul>
+<li><a href="wprc.html">For en.wikipedia</a> : this scrolls kind of fast.</li>
+<li><a href="rcsound.html">For the most active Wikisource subdomains</a> : this page plays a sound everytime a page is proofread </li>
+<li><a href="http://toolserver.org/~darkdadaah/wiktio/outils/rc/fr_wikt_rc_table.html">For fr.wiktionary</a>, rendered in a table, thanks to Darkdadaah</li>
+</ul>
+<br/>
+Here is a script that turns the RC page of any wiki onto a self-updating page : <br/>
+importScriptURI('http://wikisource.org/w/index.php?title=MediaWiki:DynamicRC.js&action=raw&ctype=text/javascript');
+
+
+</div>
+
+
+</body>
+</html>
