@@ -1,0 +1,3 @@
+#!/bin/bash
+cd $HOME/wsbot
+exec nohup python -u wshocr.py >> log/wshocr.log
