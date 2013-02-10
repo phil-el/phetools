@@ -86,7 +86,7 @@ def quote_filename(filename):
 def extract_djvu_text(url, filename, sha1):
     copy_file_from_url(url, filename)
     data = []
-    cmdline = "djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
+    cmdline = "/home/phe/bin/djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
     print cmdline
     fd = os.popen(cmdline)
     text = fd.read()
