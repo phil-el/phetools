@@ -37,6 +37,7 @@ import hashlib
 import multiprocessing
 import cPickle
 import re
+import common_html
 
 task_queue = []
 
@@ -293,10 +294,15 @@ class JobManager:
         self.key += 1
 
     def status(self, request):
-        print date_s(request.start_time) + " STATUS"
-        request.conn.send("OCR daemon is running. %d jobs in queue.<br/><hr/>" % len(self.dict_query))
+        html = common_html.get_head('OCR service')
+        html += '<body><div>The robot is runnning.<br /><hr />'
+        html += date_s(request.start_time) + " STATUS: "
+        html += "%d jobs in queue.<br/>" % len(self.dict_query)
         for val in self.dict_query.itervalues():
-            request.conn.send(val.as_str() + '<br />')
+            html += val.as_str() + '<br />'
+        html += '</div></body></html>'
+
+        request.conn.send(html)
         request.conn.close()
 
     def handle_request(self, request):

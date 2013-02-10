@@ -32,6 +32,7 @@ import time
 import copy
 import json
 import align
+import common_html
 
 import wikipedia, pywikibot
 
@@ -463,16 +464,14 @@ def do_status(lock, conn):
     s_queue = copy.deepcopy(split_queue)
     lock.release()
 
-    html = '<html>'
-    html += '<meta http-equiv="content-type" content="text/html; charset=utf-8">'
-    html += '<head></head><body>'
+    html = common_html.get_head('Match and split')
 
-    html += "<html><body>the robot is running.<br/><hr/>"
+    html += "<body><div>the robot is running.<br/><hr/>"
     html += "<br/>%d jobs in match queue.<br/>" % len(m_queue)
     html += html_for_queue(m_queue)
     html += "<br/>%d jobs in split queue.<br/>" % len(s_queue)
     html += html_for_queue(s_queue)
-    html += '</body></html>'
+    html += '</div></body></html>'
 
     conn.send(html)
     conn.close()

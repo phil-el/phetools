@@ -33,6 +33,7 @@ import copy
 import align
 import json
 import wikipedia, pywikibot
+import common_html
 
 mylock = thread.allocate_lock()
 
@@ -184,15 +185,12 @@ def do_status(lock, queue):
     lock.acquire()
     queue = copy.copy(queue)
     lock.release()
-    html = '<html>'
-    html += '<meta http-equiv="content-type" content="text/html; charset=utf-8"\
->'
-    html += '<head></head><body>'
 
-    html += "<html><body>the robot is running.<br/><hr/>"
+    html = common_html.get_head('Extract text layer')
+    html += "<body><div>The robot is running.<br/><hr/>"
     html += "<br/>%d jobs in extract queue.<br/>" % len(queue)
     html += html_for_queue(queue)
-    html += '</body></html>'
+    html += '</div></body></html>'
     return html
 
 def bot_listening(lock):
