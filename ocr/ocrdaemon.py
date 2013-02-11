@@ -38,6 +38,7 @@ import multiprocessing
 import cPickle
 import re
 import common_html
+import ocr
 
 task_queue = []
 
@@ -158,25 +159,12 @@ def ocr_image(url, codelang, thread_id):
     if not os.path.exists(f):
         return ret_val(1, "could not download url: %s" % url)
 
+    # FIXME: do we really need this conversion ?
     os.system("convert %s.jpg -compress none %s.tif" % (basename, basename))
 
-    #os.putenv('LD_PRELOAD', '/opt/ts/lib/libtesseract_cutil.so.3')
-    #if lang in [ 'deu-frak', 'isl' ]:
-        #os.putenv('TESSDATA_PREFIX', '/home/phe/wsbot/')
-
-    os.putenv('TESSDATA_PREFIX', '/home/phe/share')
-
-    os.system("/home/phe/bin/tesseract %s.tif %s -l %s 2>>tesseract_err"% (basename, basename, lang))
-
-    #os.unsetenv('LD_PRELOAD')
-    os.unsetenv('TESSDATA_PREFIX')
-
-    try:
-        fd = open(basename + ".txt")
-	txt = fd.read()
-	fd.close()
-    except:
-        return ret_val(2, "unable to read text file %s.txt" % basename)
+    txt = ocr.ocr(basename + '.tif', basename, lang)
+    if txt == None:
+        return ret_val(2, "ocr failed")
 
     return ret_val(0, txt)
 
