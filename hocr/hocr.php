@@ -35,8 +35,8 @@ $lang = $_GET["lang"];
 $user = $_GET["user"];
 
 if ($cmd) {
-        $out = send_request($cmd, $page, $lang, $user, 12348);
+        $out = send_request($cmd, $page, $lang, $user, 12347);
 } else {
-        $out = send_request("status", $page, $lang, $user, 12348);
+        $out = send_request("status", $page, $lang, $user, 12347);
 }
 print $out;

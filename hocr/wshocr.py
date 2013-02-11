@@ -67,35 +67,50 @@ def add_job(lock, queue, cmd):
     queue.insert(0, cmd)
     lock.release()
 
+def cache_path(book_name):
+
+    book_name = book_name.replace(u'_', u' ')
+
+    # until user-store is fixed 
+    #base_dir = '/mnt/user-store/phe/cache/hocr'
+    base_dir = '/home/phe/cache/hocr/'
+    base_dir += '%s/%s/%s/%s/'
+
+    h = hashlib.md5()
+    h.update(book_name.encode('utf-8'))
+    h = h.hexdigest()
+
+    base_dir = base_dir % (h[0:2], h[2:4], h[4:6], h[6:])
+
+    return base_dir
+
 def ret_val(error, text):
     if error:
         print "Error: %d, %s" % (error, text)
     return  { 'error' : error, 'text' : text }
 
 def do_get(page, user, codelang):
-    base_dir = '/mnt/user-store/phe/cache/hocr/%s/%s/%s/%s/%d'
-    h = hashlib.md5()
-    h.update(page.encode('utf-8'))
-    h = h .hexdigest()
-    page_nr = re.sub(u'.*/([0-9]+)$', u'\\1', page)
-
+    page_nr = re.sub(u'^.*/([0-9]+)$', u'\\1', page)
     try:
         page_nr = int(page_nr)
     except:
         return ret_val(E_ERROR, "unable to extract page number from page=")
 
-    filename = base_dir % (h[0:2], h[2:4], h[4:6], h[6:], page_nr)
+    book_name = re.sub(u'^(.*)/[0-9]+$', u'\\1', page)
+
+    base_dir = cache_path(book_name)
+
+    filename = base_dir + 'page_%04d.html' % page_nr
 
     if not os.path.exists(filename):
-        return ret_val(E_ERROR, "unable to locate file for page %s" % page.encode('utf-8'))
+        return ret_val(E_ERROR, "unable to locate file %s for page %s" % (filename, page.encode('utf-8')))
 
     fd = open(filename)
     text = fd.read()
     fd.close()
 
-    #return ret_val(E_ERROR, "test: %s %s %s %s %s" %(page, user, codelang, h, filename))
+    #return ret_val(E_ERROR, "test: %s %s %s %s %s" %(page, user, codelang, base_dir, filename))
     return ret_val(E_OK, text)
-
 
 get_queue = []
 
@@ -135,7 +150,7 @@ def bot_listening(lock):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        sock.bind(('', 12348))
+        sock.bind(('', 12347))
     except:
         print "could not start listener : socket already in use"
         thread.interrupt_main()
@@ -215,10 +230,11 @@ def job_thread(lock, queue, func):
 
         if conn:
             conn.send(json.dumps(out))
+            #conn.send(out["text"])
             conn.close()
 
         time2 = time.time()
-        print date_s(time2), page.encode('utf-8'), user.encode("utf8"), codelang, " (%.2f)" % (time2-time1), out
+        print date_s(time2), page.encode('utf-8'), user.encode("utf8"), codelang, " (%.2f)" % (time2-time1)
 
         remove_job(lock, queue)
 
