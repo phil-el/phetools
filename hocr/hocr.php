@@ -5,7 +5,7 @@ header('Access-Control-Allow-Origin: *');
 
 function send_request($cmd, $page, $lang, $user, $port) {
 	if ($cmd != 'status')
-		;//header('Content-type: application/json');
+		header('Content-type: application/json');
 
 	$server_name = file_get_contents('./hocr_server.server');
 
