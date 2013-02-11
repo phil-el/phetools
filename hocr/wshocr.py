@@ -30,6 +30,7 @@ import time
 import copy
 import json
 import common_html
+import hashlib
 
 mylock = thread.allocate_lock()
 
@@ -72,7 +73,28 @@ def ret_val(error, text):
     return  { 'error' : error, 'text' : text }
 
 def do_get(page, user, codelang):
-    return ret_val(E_ERROR, "test: %s %s %s" %(page, user, codelang))
+    base_dir = '/mnt/user-store/phe/cache/hocr/%s/%s/%s/%s/%d'
+    h = hashlib.md5()
+    h.update(page.encode('utf-8'))
+    h = h .hexdigest()
+    page_nr = re.sub(u'.*/([0-9]+)$', u'\\1', page)
+
+    try:
+        page_nr = int(page_nr)
+    except:
+        return ret_val(E_ERROR, "unable to extract page number from page=")
+
+    filename = base_dir % (h[0:2], h[2:4], h[4:6], h[6:], page_nr)
+
+    if not os.path.exists(filename):
+        return ret_val(E_ERROR, "unable to locate file for page %s" % page.encode('utf-8'))
+
+    fd = open(filename)
+    text = fd.read()
+    fd.close()
+
+    #return ret_val(E_ERROR, "test: %s %s %s %s %s" %(page, user, codelang, h, filename))
+    return ret_val(E_OK, text)
 
 
 get_queue = []

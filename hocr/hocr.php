@@ -29,12 +29,13 @@ function send_request($cmd, $page, $lang, $user, $port) {
 	return $res;
 }
 
+$cmd = $_GET["cmd"];
 $page = $_GET["page"];
 $lang = $_GET["lang"];
 $user = $_GET["user"];
 
-if ($page) {
-        $out = send_request("get", $page, $lang, $user, 12348);
+if ($cmd) {
+        $out = send_request($cmd, $page, $lang, $user, 12348);
 } else {
         $out = send_request("status", $page, $lang, $user, 12348);
 }
