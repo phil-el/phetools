@@ -31,6 +31,7 @@ import copy
 import json
 import common_html
 import hashlib
+import gzip
 
 mylock = thread.allocate_lock()
 
@@ -71,9 +72,7 @@ def cache_path(book_name):
 
     book_name = book_name.replace(u'_', u' ')
 
-    # until user-store is fixed 
-    #base_dir = '/mnt/user-store/phe/cache/hocr'
-    base_dir = '/home/phe/cache/hocr/'
+    base_dir  = '/mnt/user-store/phe/cache/hocr/'
     base_dir += '%s/%s/%s/%s/'
 
     h = hashlib.md5()
@@ -102,14 +101,16 @@ def do_get(page, user, codelang):
 
     filename = base_dir + 'page_%04d.html' % page_nr
 
-    if not os.path.exists(filename):
+    if os.path.exists(filename + '.gz'):
+        fd = gzip.open(filename + '.gz')
+    elif os.path.exists(filename):
+        fd = open(filename)
+    else:
         return ret_val(E_ERROR, "unable to locate file %s for page %s" % (filename, page.encode('utf-8')))
 
-    fd = open(filename)
     text = fd.read()
     fd.close()
 
-    #return ret_val(E_ERROR, "test: %s %s %s %s %s" %(page, user, codelang, base_dir, filename))
     return ret_val(E_OK, text)
 
 get_queue = []
@@ -137,7 +138,7 @@ def do_status(lock, conn):
     html = common_html.get_head('hOCR server status')
 
     html += "<body><div>the robot is running.<br/><hr/>"
-    html += "<br/>%d jobs queued.<br/>" % len(m_queue)
+    html += "<br/>%d get request queued.<br/>" % len(m_queue)
     html += html_for_queue(m_queue)
     html += '</div></body></html>'
 
