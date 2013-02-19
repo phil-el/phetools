@@ -7,6 +7,7 @@ import ocr
 import wshocr
 import hashlib
 import multiprocessing
+import gzip
 
 djvulibre_path = '/home/phe/bin/'
 
@@ -46,6 +47,20 @@ def do_one_page(opt, page_nr, filename):
 
     os.remove(tiff_name)
 
+    if opt.gzip:
+        filename = "page_%04d" % page_nr
+        if opt.config == 'hocr':
+            filename += '.html'
+        else:
+            filename += '.txt'
+
+        f_in = open(filename, 'rb')
+        f_out = gzip.open(filename + '.gz', 'wb')
+        f_out.writelines(f_in)
+        f_out.close()
+        f_in.close()
+        os.remove(filename)
+            
 def do_file(job_queue, opt, filename):
     while True:
         page_nr = job_queue.get()
@@ -112,8 +127,9 @@ def default_options():
 
     options = Options()
     options.config = ''
-    options.nim_thread = 1
+    options.num_thread = 1
     options.base_files = []
+    options.gzip = False
 
     return options
 
@@ -123,7 +139,7 @@ if __name__ == "__main__":
 
     for arg in sys.argv[1:]:
         if arg == '-help':
-            print sys.argv[0], "dir/djvu_name -config: -lang: -j:"
+            print sys.argv[0], "dir/djvu_name -config: -lang: -j: -gzip"
             sys.exit(1)
         elif arg.startswith('-config:'):
             options.config = arg[len('-config:'):]
@@ -131,6 +147,8 @@ if __name__ == "__main__":
             options.lang = arg[len('-lang:'):]
         elif arg.startswith('-j:'):
             options.num_thread = int(arg[len('-j:'):])
+        elif arg == '-gzip':
+            options.gzip = True
         else:
             options.base_files.append(arg)
 
