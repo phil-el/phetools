@@ -32,6 +32,7 @@ import json
 import common_html
 import hashlib
 import gzip
+import common
 
 mylock = thread.allocate_lock()
 
@@ -113,7 +114,7 @@ def do_get(page, user, codelang):
 
     return ret_val(E_OK, text)
 
-get_queue = []
+jobs = None
 
 def html_for_queue(queue):
     html = ''
@@ -132,7 +133,7 @@ def html_for_queue(queue):
 
 def do_status(lock, conn):
     lock.acquire()
-    m_queue = copy.deepcopy(get_queue)
+    m_queue = copy.deepcopy(jobs['get_queue'])
     lock.release()
 
     html = common_html.get_head('hOCR server status')
@@ -140,11 +141,18 @@ def do_status(lock, conn):
     html += "<body><div>the robot is running.<br/><hr/>"
     html += "<br/>%d get request queued.<br/>" % len(m_queue)
     html += html_for_queue(m_queue)
+    html += "<br/>%(number_of_get_job)d get since server start<br/>" % jobs
     html += '</div></body></html>'
 
     conn.send(html)
     conn.close()
 
+def stop_queue(queue):
+    for i in range(len(queue)):
+        page, lang, user, t, conn = queue[i]
+        queue[i] = (page, lang, user, t, None)
+        if conn:
+            conn.close()
 
 def bot_listening(lock):
 
@@ -192,7 +200,8 @@ def bot_listening(lock):
             if cmd == "status":
                 do_status(lock, conn)
             elif cmd == "get":
-                add_job(lock, get_queue, (page, lang, user, t, conn))
+                jobs['number_of_get_job'] += 1
+                add_job(lock, jobs['get_queue'], (page, lang, user, t, conn))
             else:
                 out = ret_val(E_ERROR, "unknown command: " + cmd)
                 conn.send(json.dumps(out));
@@ -202,16 +211,11 @@ def bot_listening(lock):
         sock.close()
         print "STOP"
 
-        for i in range(len(get_queue)):
-            page, lang, user, t, conn = get_queue[i]
-            get_queue[i] = (page, lang, user, t, None)
-            if conn:
-                conn.close()
+        # no value to save the get queue but conn must be closed first
+        stop_queue(jobs['get_queue'])
+        jobs['get_queue'] = []
 
-        f = open("wshocr.job","w")
-        f.write(repr(get_queue))
-        f.close()
-
+        common.save_obj("wshocr.jobs", jobs)
 
 def date_s(at):
     t = time.gmtime(at)
@@ -239,19 +243,18 @@ def job_thread(lock, queue, func):
 
         remove_job(lock, queue)
 
+def default_jobs():
+    return {
+        'get_queue' : [],
+        'number_of_get_job' : 0
+        }
 
 if __name__ == "__main__":
     try:
-        f = open("wshocr.job","r")
-        jobs = f.read()
-        f.close()
-        gq = eval(jobs)
-        for i in gq:
-            print i
-            get_queue.append(i)
+        jobs = common.load_obj("wshocr.jobs")
     except:
-        pass
+        jobs = default_jobs()
 
     lock = thread.allocate_lock()
-    thread.start_new_thread(job_thread, (lock, get_queue, do_get))
+    thread.start_new_thread(job_thread, (lock, jobs['get_queue'], do_get))
     bot_listening(lock)
