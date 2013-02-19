@@ -33,6 +33,7 @@ import copy
 import json
 import align
 import common_html
+import common
 
 import wikipedia, pywikibot
 
@@ -231,7 +232,8 @@ def do_match(mysite, maintitle, user, codelang, server):
                 new_text = new_text[0:pos.end(0)] + u'\n{{c|' + match_title.group(1) + u'|fs=140%}}\n\n\n' + new_text[pos.end(0):]
 
         safe_put(page,new_text,user+": match")
-        add_job(lock, split_queue, (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
+        jobs['number_of_split_job'] += 1
+        add_job(lock, jobs['split_queue'], (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
         # FIXME: that's an abuse of E_ERROR
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
@@ -440,8 +442,7 @@ def do_split(mysite, rootname, user, codelang, server):
     return ret_val(E_OK, "")
 
 
-match_queue = []
-split_queue = []
+jobs = None
 
 def html_for_queue(queue):
     html = ''
@@ -460,8 +461,8 @@ def html_for_queue(queue):
 
 def do_status(lock, conn):
     lock.acquire()
-    m_queue = copy.deepcopy(match_queue)
-    s_queue = copy.deepcopy(split_queue)
+    m_queue = copy.deepcopy(jobs['match_queue'])
+    s_queue = copy.deepcopy(jobs['split_queue'])
     lock.release()
 
     html = common_html.get_head('Match and split')
@@ -471,11 +472,17 @@ def do_status(lock, conn):
     html += html_for_queue(m_queue)
     html += "<br/>%d jobs in split queue.<br/>" % len(s_queue)
     html += html_for_queue(s_queue)
+    html += "<br/>%(number_of_match_job)d match, %(number_of_split_job)d split since server start<br/>" % jobs
     html += '</div></body></html>'
 
     conn.send(html)
     conn.close()
 
+def stop_queue(queue):
+    title, lang, user, server, t, conn = queue[i]
+    queue[i] = (title, lang, user, server, t, None)
+    if conn:
+        conn.close()
 
 def bot_listening(lock):
 
@@ -522,9 +529,11 @@ def bot_listening(lock):
             if cmd == "status":
                 do_status(lock, conn)
             elif cmd == "match":
-                add_job(lock, match_queue, (title, lang, user, server, t, conn))
+                jobs['number_of_match_job'] += 1
+                add_job(lock, jobs['match_queue'], (title, lang, user, server, t, conn))
             elif cmd == "split":
-                add_job(lock, split_queue, (title, lang, user, server, t, conn))
+                jobs['number_of_split_job'] += 1
+                add_job(lock, jobs['split_queue'], (title, lang, user, server, t, conn))
             else:
                 out = ret_val(E_ERROR, "unknown command: " + cmd)
                 conn.send(json.dumps(out));
@@ -534,23 +543,10 @@ def bot_listening(lock):
         sock.close()
         print "STOP"
 
-        for i in range(len(match_queue)):
-            title, lang, user, server, t, conn = match_queue[i]
-            match_queue[i] = (title, lang, user, server, t, None)
-            if conn:
-                conn.close()
+        stop_queue(jobs['match_queue'])
+        stop_queue(jobs['split_queue'])
 
-        for i in range(len(split_queue)):
-            title, lang, user, server, t, conn = split_queue[i]
-            split_queue[i] = (title, lang, user, server, t, None)
-            if conn:
-                conn.close()
-
-        f = open("wsjobs","w")
-        f.write(repr((match_queue, split_queue)))
-        f.close()
-
-
+        common.save_obj(jobs, 'wsdaemon.jobs')
 
 def date_s(at):
     t = time.gmtime(at)
@@ -590,21 +586,21 @@ def job_thread(lock, queue, func):
 
         remove_job(lock, queue)
 
+def default_jobs():
+    return { 
+        'match_queue' : [],
+        'split_queue' : [],
+        'number_of_match_job' : 0,
+        'number_of_split_job' : 0
+        }
 
 if __name__ == "__main__":
     try:
-        f = open("wsjobs","r")
-        jobs = f.read()
-        f.close()
-        mq, sq = eval(jobs)
-        for i in mq:
-            match_queue.append(i)
-        for i in sq:
-            split_queue.append(i)
+        jobs = common.load_obj("wsdaemon.jobs")
     except:
-        pass
+        jobs = default_jobs()
 
     lock = thread.allocate_lock()
-    thread.start_new_thread(job_thread, (lock, match_queue, do_match))
-    thread.start_new_thread(job_thread, (lock, split_queue, do_split))
+    thread.start_new_thread(job_thread, (lock, jobs['match_queue'], do_match))
+    thread.start_new_thread(job_thread, (lock, jobs['split_queue'], do_split))
     bot_listening(lock)
