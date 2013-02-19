@@ -151,7 +151,7 @@ def bot_listening(lock):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
-        sock.bind(('', 12347))
+        sock.bind(('', 12348))
     except:
         print "could not start listener : socket already in use"
         thread.interrupt_main()
