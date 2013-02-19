@@ -35,10 +35,10 @@ import time
 import json
 import hashlib
 import multiprocessing
-import cPickle
 import re
 import common_html
 import ocr
+import common
 
 task_queue = []
 
@@ -186,17 +186,6 @@ def do_one_file(job_queue, done_queue, thread_id):
 def next_pagename(match):
     return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
 
-def save_to_cache(filename, data):
-    fd = open(filename, 'wb')
-    cPickle.dump(data, fd)
-    fd.close()
-
-def load_from_cache(filename):
-    fd = open(filename, 'rb')
-    data = cPickle.load(fd)
-    fd.close()
-    return data
-
 class JobManager:
     def __init__(self):
         self.job_queue = None
@@ -232,7 +221,7 @@ class JobManager:
 
         # error are already logged by the subprocess
         if not err:
-            save_to_cache(r.cached_name(), data)
+            common.save_obj(r.cached_name(), data)
 
         time2 = time.time()
         print date_s(time2)+r.user+" "+r.lang+" %s (%.2f)"%(r.filename, time2-r.start_time)
@@ -252,7 +241,7 @@ class JobManager:
     def new_request(self, request):
         if request.cache_entry_exist():
             print "cache success"
-            data = load_from_cache(request.cached_name())
+            data = common.load_obj(request.cached_name())
             if request.conn:
                 request.conn.send(data)
                 request.conn.close()
