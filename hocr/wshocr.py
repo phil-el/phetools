@@ -32,7 +32,7 @@ import json
 import common_html
 import hashlib
 import gzip
-import common
+import utils
 import signal
 
 mylock = thread.allocate_lock()
@@ -163,7 +163,7 @@ def on_exit(sign_nr, frame):
         stop_queue(jobs['get_queue'])
         jobs['get_queue'] = []
 
-        common.save_obj("wshocr.jobs", jobs)
+        utils.save_obj("wshocr.jobs", jobs)
 
 def bot_listening(lock):
 
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     # qdel send a SIGUSR2 if -notify is used when starting the job.
     signal.signal(signal.SIGUSR2, on_exit)
     try:
-        jobs = common.load_obj("wshocr.jobs")
+        jobs = utils.load_obj("wshocr.jobs")
     except:
         jobs = default_jobs()
 

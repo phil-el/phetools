@@ -38,7 +38,7 @@ import multiprocessing
 import re
 import common_html
 import ocr
-import common
+import utils
 
 task_queue = []
 
@@ -221,7 +221,7 @@ class JobManager:
 
         # error are already logged by the subprocess
         if not err:
-            common.save_obj(r.cached_name(), data)
+            utils.save_obj(r.cached_name(), data)
 
         time2 = time.time()
         print date_s(time2)+r.user+" "+r.lang+" %s (%.2f)"%(r.filename, time2-r.start_time)
@@ -241,7 +241,7 @@ class JobManager:
     def new_request(self, request):
         if request.cache_entry_exist():
             print "cache success"
-            data = common.load_obj(request.cached_name())
+            data = utils.load_obj(request.cached_name())
             if request.conn:
                 request.conn.send(data)
                 request.conn.close()

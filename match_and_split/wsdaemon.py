@@ -33,7 +33,7 @@ import copy
 import json
 import align
 import common_html
-import common
+import utils
 import signal
 
 import wikipedia, pywikibot
@@ -493,7 +493,7 @@ def on_exit(sig_nr, frame):
     stop_queue(jobs['match_queue'])
     stop_queue(jobs['split_queue'])
 
-    common.save_obj('wsdaemon.jobs', jobs)
+    utils.save_obj('wsdaemon.jobs', jobs)
 
 def bot_listening(lock):
 
@@ -604,7 +604,7 @@ if __name__ == "__main__":
     # qdel send a SIGUSR2 if -notify is used when starting the job.
     signal.signal(signal.SIGUSR2, on_exit)
     try:
-        jobs = common.load_obj("wsdaemon.jobs")
+        jobs = utils.load_obj("wsdaemon.jobs")
     except:
         jobs = default_jobs()
 
