@@ -479,10 +479,11 @@ def do_status(lock, conn):
     conn.close()
 
 def stop_queue(queue):
-    title, lang, user, server, t, conn = queue[i]
-    queue[i] = (title, lang, user, server, t, None)
-    if conn:
-        conn.close()
+    for i in range(len(queue)):
+        title, lang, user, server, t, conn = queue[i]
+        queue[i] = (title, lang, user, server, t, None)
+        if conn:
+            conn.close()
 
 def bot_listening(lock):
 
@@ -546,7 +547,7 @@ def bot_listening(lock):
         stop_queue(jobs['match_queue'])
         stop_queue(jobs['split_queue'])
 
-        common.save_obj(jobs, 'wsdaemon.jobs')
+        common.save_obj('wsdaemon.jobs', jobs)
 
 def date_s(at):
     t = time.gmtime(at)
