@@ -34,6 +34,7 @@ import json
 import align
 import common_html
 import common
+import signal
 
 import wikipedia, pywikibot
 
@@ -485,6 +486,15 @@ def stop_queue(queue):
         if conn:
             conn.close()
 
+# either called through a SIGUSR2 or a finally clause.
+def on_exit(sig_nr, frame):
+    print "STOP"
+
+    stop_queue(jobs['match_queue'])
+    stop_queue(jobs['split_queue'])
+
+    common.save_obj('wsdaemon.jobs', jobs)
+
 def bot_listening(lock):
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -542,12 +552,7 @@ def bot_listening(lock):
 
     finally:
         sock.close()
-        print "STOP"
-
-        stop_queue(jobs['match_queue'])
-        stop_queue(jobs['split_queue'])
-
-        common.save_obj('wsdaemon.jobs', jobs)
+        on_exit(0, None)
 
 def date_s(at):
     t = time.gmtime(at)
@@ -596,6 +601,8 @@ def default_jobs():
         }
 
 if __name__ == "__main__":
+    # qdel send a SIGUSR2 if -notify is used when starting the job.
+    signal.signal(signal.SIGUSR2, on_exit)
     try:
         jobs = common.load_obj("wsdaemon.jobs")
     except:

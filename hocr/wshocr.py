@@ -33,6 +33,7 @@ import common_html
 import hashlib
 import gzip
 import common
+import signal
 
 mylock = thread.allocate_lock()
 
@@ -154,6 +155,16 @@ def stop_queue(queue):
         if conn:
             conn.close()
 
+# either called through a SIGUSR2 or a finally clause.
+def on_exit(sign_nr, frame):
+        print "STOP"
+
+        # no value to save the get queue but conn must be closed first
+        stop_queue(jobs['get_queue'])
+        jobs['get_queue'] = []
+
+        common.save_obj("wshocr.jobs", jobs)
+
 def bot_listening(lock):
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -209,13 +220,7 @@ def bot_listening(lock):
 
     finally:
         sock.close()
-        print "STOP"
-
-        # no value to save the get queue but conn must be closed first
-        stop_queue(jobs['get_queue'])
-        jobs['get_queue'] = []
-
-        common.save_obj("wshocr.jobs", jobs)
+        on_exit(0, None)
 
 def date_s(at):
     t = time.gmtime(at)
@@ -250,6 +255,8 @@ def default_jobs():
         }
 
 if __name__ == "__main__":
+    # qdel send a SIGUSR2 if -notify is used when starting the job.
+    signal.signal(signal.SIGUSR2, on_exit)
     try:
         jobs = common.load_obj("wshocr.jobs")
     except:
