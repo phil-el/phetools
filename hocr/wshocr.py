@@ -104,12 +104,46 @@ def ret_val(error, text):
         print "Error: %d, %s" % (error, text)
     return  { 'error' : error, 'text' : text }
 
+def check_sha1(path, sha1):
+    if os.path.exists(path + "sha1.sum"):
+        fd = open(path + "sha1.sum")
+        old_sha1 = fd.read()
+        fd.close()
+        if old_sha1 == sha1:
+            return True
+    return False
+
+# check if data are uptodate
+# return -1 if the File: no longer exists
+# 0 data exist but aren't uptodate
+# 1 data exist and are uptodate
+def is_uptodate(path, filename, codelang):
+    site = wikipedia.getSite(code = codelang, fam = 'wikisource')
+    filepage = align.get_filepage(site, unicode(filename, 'utf-8'))
+    if filepage == None or not filepage.exists():
+        # file deleted between the initial request and now 
+        return -1
+
+    sha1 = filepage.getHash()
+    if check_sha1(path + '/', sha1):
+        return 1
+    return 0
+
 def do_hocr_djvu(filename, user, codelang):
     options = djvu_text_to_hocr.default_options()
     options.gzip = True
     path = os.path.split(filename)
     options.out_dir = path[0] + '/'
     options.silent = True
+
+    # redo the sha1 check, this is needed if the same job was queued
+    # twice before the first run terminate.
+    uptodate = is_uptodate(path[0], path[1], codelang)
+    if uptodate == -1:
+        return ret_val(E_ERROR, "do_hocr_djvu(): book not found (file deleted since initial request ?)")
+    elif uptodate == 1:
+        return ret_val(E_ERROR, "do_hocr_djvu(): book already hocred")
+
     if djvu_text_to_hocr.parse(options, filename):
         sha1 = ocr_djvu.sha1(filename)
         ocr_djvu.write_sha1(sha1, options.out_dir + "sha1.sum")
@@ -119,10 +153,6 @@ def do_hocr_djvu(filename, user, codelang):
         return ret_val(E_ERROR, "do_hocr_djvu() failure")
 
 def do_hocr_tesseract(filename, user, codelang):
-    # FIXME: we need to recheck here the sha1 checksum, this is because
-    # this request can have be asked twice or more in a row. But what about
-    # if the file changed between the request and now, must we always
-    # reupload the file or better check if the file need to be reuploaded ?
     options = ocr_djvu.default_options()
 
     options.silent = False
@@ -132,10 +162,22 @@ def do_hocr_tesseract(filename, user, codelang):
     options.num_thread = 2
     options.lang = ocrdaemon.tesseract_languages.get(codelang, 'eng')
 
-    # FIXME: is changing dir correct ?
+    # FIXME: changing dir is really a bad idea, see below all restore of cwd
+    # and chdir has global side effect, so it can break other thread...
+    # we need an options.out_dir to ocr_djvu.py
     path = os.path.split(filename)
     old_cwd = os.getcwd()
     os.chdir(path[0])
+
+    # redo the sha1 check, this is needed if the same job was queued
+    # twice before the first run terminate.
+    uptodate = is_uptodate(path[0], path[1], codelang)
+    if uptodate == -1:
+        os.chdir(old_cwd)
+        return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?)")
+    elif uptodate == 1:
+        os.chdir(old_cwd)
+        return ret_val(E_ERROR, "dp_hocr_tessseract(): book already hocred")
 
     if ocr_djvu.ocr_djvu(options, path[1]):
         sha1 = ocr_djvu.sha1(filename)
@@ -155,19 +197,18 @@ def do_hocr(page, user, codelang):
         return ret_val(E_ERROR, "wiki page not found")
 
     path = cache_path(book_name, filepage.site().lang, filepage.site().fam().name)
-    if os.path.exists(path + "sha1.sum"):
-        fd = open(path + "sha1.sum")
-        old_sha1 = fd.read()
-        fd.close()
-        if old_sha1 == sha1:
-            return ret_val(E_OK, "book already hocred")
+    sha1 = filepage.getHash()
+    if check_sha1(path, sha1):
+        return ret_val(E_OK, "book already hocred")
 
     if not os.path.exists(path):
         os.makedirs(path)
 
-    # the job queue processing this item must delete the file once the
-    # job is finished
-    align.copy_file_from_url(filepage.fileUrl(), path + book_name)
+    if not os.path.exists(path + book_name) or ocr_djvu.sha1(path + book_name) != sha1:
+        # file deleted by the job queue processing this item.
+        align.copy_file_from_url(filepage.fileUrl(), path + book_name)
+    else:
+        ret_val(E_ERROR, "book already uploaded")
 
     t = time.time()
 
@@ -195,8 +236,6 @@ def do_get(page, user, codelang):
 
     filename = base_dir + 'page_%04d.html' % page_nr
 
-    print "GET:", filename
-
     if os.path.exists(filename + '.gz'):
         fd = gzip.open(filename + '.gz')
     elif os.path.exists(filename):
@@ -206,8 +245,6 @@ def do_get(page, user, codelang):
 
     text = fd.read()
     fd.close()
-
-    print "returning data for:", filename
 
     return ret_val(E_OK, text)
 
