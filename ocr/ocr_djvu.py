@@ -118,7 +118,7 @@ def ocr_djvu(opt, filename):
         if not opt.silent:
             print "all thread finished"
 
-    if not opr.silent:
+    if not opt.silent:
         print >> sys.stderr
 
     return True
