@@ -242,12 +242,15 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
         return ret_val(E_OK, output)
 
 def get_filepage(site, djvuname):
-    filepage = wikipedia.ImagePage(site, "File:" + djvuname)
-    # required to get the SHA1 when the file is on commons.
-    if filepage.fileIsOnCommons():
-        site = wikipedia.getSite(code = 'commons', fam = 'commons')
+    try:
         filepage = wikipedia.ImagePage(site, "File:" + djvuname)
-    return filepage
+        # required to get the SHA1 when the file is on commons.
+        if filepage.fileIsOnCommons():
+            site = wikipedia.getSite(code = 'commons', fam = 'commons')
+            filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+        return filepage
+    except wikipedia.NoPage:
+        return None
 
 # It's possible to get a name collision if two different wiki have local
 # file with the same name but different contents. In this case the cache will
@@ -268,6 +271,8 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
 
         try:
             filepage = get_filepage(mysite, djvuname)
+            if filepage == None:
+                return False
             url = filepage.fileUrl()
         except:
             return False
@@ -278,6 +283,8 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
         if check_timestamp:
             try:
                 filepage = get_filepage(mysite, djvuname)
+                if filepage == None:
+                    return False
             except: # can occur if file has been deleted.
                 return False
             obj = get_pickle_obj(filename)
