@@ -267,9 +267,12 @@ def parse_page_recursive(page, elem):
 def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
-def parse(opt, fd):
+def parse(opt, filename):
+
+    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE)
+
     page_nr = 1
-    for event, elem in etree.iterparse(XmlFile(fd)):
+    for event, elem in etree.iterparse(XmlFile(ls.stdout)):
         if elem.tag.lower() == 'object':
             page = OcrPage()
             if not opt.silent:
@@ -294,6 +297,8 @@ def parse(opt, fd):
 
     if not opt.silent:
         print >> sys.stderr
+
+    return True
 
 def default_options():
     class Options:
@@ -334,5 +339,4 @@ if __name__ == "__main__":
         print "file:", filename, "doesn't exist"
         sys.exit(1)
 
-    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE)
-    parse(options, ls.stdout)
+    parse(options, filename)
