@@ -216,7 +216,7 @@ class JobManager:
 
         # null conn is possible if this is a prefetched job
         if r.conn:
-            r.conn.send(data)
+            r.conn.sendall(data)
             r.conn.close()
 
         # error are already logged by the subprocess
@@ -243,7 +243,7 @@ class JobManager:
             print "cache success"
             data = utils.load_obj(request.cached_name())
             if request.conn:
-                request.conn.send(data)
+                request.conn.sendall(data)
                 request.conn.close()
             time2 = time.time()
             print date_s(time2)+request.user+" "+request.lang+" %s (%.2f)"%(request.filename, time2-request.start_time)
@@ -279,7 +279,7 @@ class JobManager:
             html += val.as_str() + '<br />'
         html += '</div></body></html>'
 
-        request.conn.send(html)
+        request.conn.sendall(html)
         request.conn.close()
 
     def handle_request(self, request):

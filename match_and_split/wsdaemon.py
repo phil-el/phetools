@@ -476,7 +476,7 @@ def do_status(lock, conn):
     html += "<br/>%(number_of_match_job)d match, %(number_of_split_job)d split since server start<br/>" % jobs
     html += '</div></body></html>'
 
-    conn.send(html)
+    conn.sendall(html)
     conn.close()
 
 def stop_queue(queue):
@@ -547,7 +547,7 @@ def bot_listening(lock):
                 add_job(lock, jobs['split_queue'], (title, lang, user, server, t, conn))
             else:
                 out = ret_val(E_ERROR, "unknown command: " + cmd)
-                conn.send(json.dumps(out));
+                conn.sendall(json.dumps(out));
                 conn.close()
 
     finally:
@@ -584,7 +584,7 @@ def job_thread(lock, queue, func):
             out = func(mysite, title, user, codelang, server)
 
         if conn:
-            conn.send(json.dumps(out))
+            conn.sendall(json.dumps(out))
             conn.close()
 
         time2 = time.time()
