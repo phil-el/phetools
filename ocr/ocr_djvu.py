@@ -4,7 +4,6 @@ import sys
 sys.path.append('/home/phe/wsbot')
 import os
 import ocr
-import wshocr
 import hashlib
 import multiprocessing
 import gzip
@@ -69,6 +68,7 @@ def do_file(job_queue, opt, filename):
             return
         do_one_page(opt, page_nr, filename)
 
+# FIXME: move this code in the upper layer
 def sha1(filename):
     # FIXME: inefficient in memory usage
     fd = open(filename)
@@ -79,36 +79,34 @@ def sha1(filename):
 
     return h
 
-def write_sha1(sha1):
-    fd = open('sha1.sum', 'w')
+def write_sha1(sha1, filename = "sha1.sum"):
+    fd = open(filename, 'w')
     fd.write(sha1)
     fd.close()
 
 def ocr_djvu(opt, filename):
-    write_sha1(sha1(filename))
-
-    # informative only, unused at the moment
-    cache_path = wshocr.cache_path(unicode(filename, 'utf-8'))
-    print cache_path
 
     nr_pages = get_nr_pages_djvu(filename)
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
-            print >> sys.stderr, str(nr) + '/' + str(nr_pages), '\r',
+            if not opt.silent:
+                print >> sys.stderr, str(nr) + '/' + str(nr_pages), '\r',
             do_one_page(opt, nr, filename)
     else:
         thread_array = []
         job_queue = multiprocessing.Queue(opt.num_thread * 16)
         args = (job_queue, opt, filename)
         for i in range(opt.num_thread):
-            print "starting thread"
+            if not opt.silent:
+                print "starting thread"
             t = multiprocessing.Process(target=do_file, args=args)
             t.daemon = True
             t.start()
             thread_array.append(t)
 
         for nr in range(1, nr_pages + 1):
-            print >> sys.stderr, str(nr) + '/' + str(nr_pages), '\r',
+            if not opt.silent:
+                print >> sys.stderr, str(nr) + '/' + str(nr_pages), '\r',
             job_queue.put(nr)
 
         for i in range(opt.num_thread):
@@ -117,9 +115,13 @@ def ocr_djvu(opt, filename):
         for t in thread_array:
             t.join()
 
-        print "all thread finished"
+        if not opt.silent:
+            print "all thread finished"
 
-    print >> sys.stderr
+    if not opr.silent:
+        print >> sys.stderr
+
+    return True
 
 def default_options():
     class Options:
@@ -130,6 +132,7 @@ def default_options():
     options.num_thread = 1
     options.base_files = []
     options.gzip = False
+    options.silent = False
 
     return options
 
