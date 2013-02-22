@@ -240,10 +240,10 @@ def bot_listening(lock):
                 add_job(lock, extract_queue, (title, lang, user, t, conn))
             elif cmd == 'status':
                 html = do_status(lock, extract_queue)
-                conn.send(html);
+                conn.sendall(html);
                 conn.close()
             else:
-                conn.send(json.dumps(ret_val(E_ERROR, "unknown command: " + cmd)));
+                conn.sendall(json.dumps(ret_val(E_ERROR, "unknown command: " + cmd)));
                 conn.close()
 
     finally:
@@ -275,7 +275,7 @@ def job_thread(lock, queue, func):
             out = func(mysite, title, user, codelang)
 
         if conn:
-            conn.send(json.dumps(out))
+            conn.sendall(json.dumps(out))
             conn.close()
 
         time2 = time.time()
