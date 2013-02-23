@@ -162,29 +162,22 @@ def do_hocr_tesseract(filename, user, codelang):
     options.num_thread = 2
     options.lang = ocr.tesseract_languages.get(codelang, 'eng')
 
-    # FIXME: changing dir is really a bad idea, see below all restore of cwd
-    # and chdir has global side effect, so it can break other thread...
-    # we need an options.out_dir to ocr_djvu.py
     path = os.path.split(filename)
-    old_cwd = os.getcwd()
-    os.chdir(path[0])
+
+    options.out_dir = path[0] + '/'
 
     # redo the sha1 check, this is needed if the same job was queued
     # twice before the first run terminate.
     uptodate = is_uptodate(path[0], path[1], codelang)
     if uptodate == -1:
-        os.chdir(old_cwd)
         return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?)")
     elif uptodate == 1:
-        os.chdir(old_cwd)
         return ret_val(E_ERROR, "dp_hocr_tessseract(): book already hocred")
 
-    if ocr_djvu.ocr_djvu(options, path[1]):
+    if ocr_djvu.ocr_djvu(options, filename):
         sha1 = utils.sha1(filename)
-        utils.write_sha1(sha1)
+        utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
-
-    os.chdir(old_cwd)
 
     return ret_val(E_OK, "do_hocr_tesseract() finished")
 

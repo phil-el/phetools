@@ -35,18 +35,18 @@ def do_exec(cmdline):
     return True
 
 def do_one_page(opt, page_nr, filename):
-    tiff_name = 'page_%04d.tif' % page_nr
+    tiff_name = opt.out_dir + 'page_%04d.tif' % page_nr
     cmdline  = djvulibre_path + 'ddjvu -format=tiff -page=%d ' % page_nr
     cmdline += '"' + filename + '" ' + tiff_name
 
     do_exec(cmdline)
 
-    ocr.ocr(tiff_name, 'page_%04d' % page_nr, opt.lang, opt.config)
+    ocr.ocr(tiff_name, opt.out_dir + 'page_%04d' % page_nr, opt.lang, opt.config)
 
     os.remove(tiff_name)
 
     if opt.gzip:
-        filename = "page_%04d" % page_nr
+        filename = opt.out_dir + "page_%04d" % page_nr
         if opt.config == 'hocr':
             filename += '.html'
         else:
@@ -68,6 +68,9 @@ def do_file(job_queue, opt, filename):
         do_one_page(opt, page_nr, filename)
 
 def ocr_djvu(opt, filename):
+    if not opt.out_dir.endswith('/'):
+        opt.out_dir += '/'
+
     nr_pages = get_nr_pages_djvu(filename)
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
@@ -115,6 +118,7 @@ def default_options():
     options.base_files = []
     options.gzip = False
     options.silent = False
+    options.out_dir = './'
 
     return options
 
@@ -140,9 +144,5 @@ if __name__ == "__main__":
 
     for filename in options.base_files:
         path = os.path.split(filename)
-        old_cwd = os.getcwd()
-        os.chdir(path[0])
-
-        ocr_djvu(options, path[1])
-
-        os.chdir(old_cwd)
+        options.out_dir = path[0]
+        ocr_djvu(options, filename)

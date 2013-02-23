@@ -23,7 +23,7 @@ def ocr(filename, out_basename, lang, config = ''):
 
     os.putenv('TESSDATA_PREFIX', '/home/phe/share')
 
-    os.system("/home/phe/bin/tesseract %s %s -l %s %s 2>>tesseract_err"% (filename, out_basename, lang, config))
+    os.system("/home/phe/bin/tesseract %s %s -l %s %s 2>>/home/phe/wsbot/log/tesseract.log"% (filename, out_basename, lang, config))
 
     #os.unsetenv('LD_PRELOAD')
     os.unsetenv('TESSDATA_PREFIX')
