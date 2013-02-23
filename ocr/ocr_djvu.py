@@ -4,7 +4,6 @@ import sys
 sys.path.append('/home/phe/wsbot')
 import os
 import ocr
-import hashlib
 import multiprocessing
 import gzip
 
@@ -68,24 +67,7 @@ def do_file(job_queue, opt, filename):
             return
         do_one_page(opt, page_nr, filename)
 
-# FIXME: move this code in the upper layer
-def sha1(filename):
-    # FIXME: inefficient in memory usage
-    fd = open(filename)
-    h = hashlib.sha1()
-    h.update(fd.read())
-    fd.close()
-    h = h.hexdigest()
-
-    return h
-
-def write_sha1(sha1, filename = "sha1.sum"):
-    fd = open(filename, 'w')
-    fd.write(sha1)
-    fd.close()
-
 def ocr_djvu(opt, filename):
-
     nr_pages = get_nr_pages_djvu(filename)
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):

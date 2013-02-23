@@ -35,14 +35,14 @@ import gzip
 import utils
 import signal
 import sys
+import utils
 sys.path.append("/home/phe/pywikipedia")
 import wikipedia
 import align
 sys.path.append("/home/phe/tools")
 import djvu_text_to_hocr
 import ocr_djvu
-# FIXME: lang to tidy, should be in ocr.py
-import ocrdaemon
+import ocr
 
 mylock = thread.allocate_lock()
 
@@ -145,8 +145,8 @@ def do_hocr_djvu(filename, user, codelang):
         return ret_val(E_ERROR, "do_hocr_djvu(): book already hocred")
 
     if djvu_text_to_hocr.parse(options, filename):
-        sha1 = ocr_djvu.sha1(filename)
-        ocr_djvu.write_sha1(sha1, options.out_dir + "sha1.sum")
+        sha1 = utils.sha1(filename)
+        utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
         return ret_val(E_OK, "do_hocr_djvu() success")
     else:
@@ -155,12 +155,12 @@ def do_hocr_djvu(filename, user, codelang):
 def do_hocr_tesseract(filename, user, codelang):
     options = ocr_djvu.default_options()
 
-    options.silent = False
+    options.silent = True
     options.gzip = True
     options.config = 'hocr'
     # FIXME ?
     options.num_thread = 2
-    options.lang = ocrdaemon.tesseract_languages.get(codelang, 'eng')
+    options.lang = ocr.tesseract_languages.get(codelang, 'eng')
 
     # FIXME: changing dir is really a bad idea, see below all restore of cwd
     # and chdir has global side effect, so it can break other thread...
@@ -180,8 +180,8 @@ def do_hocr_tesseract(filename, user, codelang):
         return ret_val(E_ERROR, "dp_hocr_tessseract(): book already hocred")
 
     if ocr_djvu.ocr_djvu(options, path[1]):
-        sha1 = ocr_djvu.sha1(filename)
-        ocr_djvu.write_sha1(sha1)
+        sha1 = utils.sha1(filename)
+        utils.write_sha1(sha1)
         os.remove(filename)
 
     os.chdir(old_cwd)
@@ -204,7 +204,7 @@ def do_hocr(page, user, codelang):
     if not os.path.exists(path):
         os.makedirs(path)
 
-    if not os.path.exists(path + book_name) or ocr_djvu.sha1(path + book_name) != sha1:
+    if not os.path.exists(path + book_name) or utils.sha1(path + book_name) != sha1:
         # file deleted by the job queue processing this item.
         align.copy_file_from_url(filepage.fileUrl(), path + book_name)
     else:

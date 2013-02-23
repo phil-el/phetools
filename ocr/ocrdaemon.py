@@ -42,19 +42,6 @@ import utils
 
 task_queue = []
 
-tesseract_languages = { 
-	'fr':"fra",
-        'en':"eng",
-        'de':"deu",
-        'de-f':"deu-frak",
-        'la':"ita",
-        'is':'isl', # needs tess 3.02
-        'it':"ita",
-	'es':"spa",
-	'pt':"spa",
-        'ru':"rus",
-        }
-
 class Request:
     def __init__(self, data, conn):
         self.url, self.lang, self.user = data.split('|')
@@ -140,7 +127,7 @@ def ret_val(error, text):
 
 def ocr_image(url, codelang, thread_id):
 
-    lang = tesseract_languages.get(codelang, 'eng')
+    lang = ocr.tesseract_languages.get(codelang, 'eng')
 
     basename = 'tmp/tesseract/image_%d' % thread_id
 

@@ -3,6 +3,19 @@
 
 import os
 
+tesseract_languages = {
+        'fr':"fra",
+        'en':"eng",
+        'de':"deu",
+        'de-f':"deu-frak",
+        'la':"ita",
+        'is':'isl', # needs tess 3.02                                           
+        'it':"ita",
+        'es':"spa",
+        'pt':"spa",
+        'ru':"rus",
+        }
+
 def ocr(filename, out_basename, lang, config = ''):
     #os.putenv('LD_PRELOAD', '/opt/ts/lib/libtesseract_cutil.so.3') 
     #if lang in [ 'deu-frak', 'isl' ]:
