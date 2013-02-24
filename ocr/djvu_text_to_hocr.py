@@ -5,6 +5,7 @@ import xml.etree.ElementTree as etree
 import gzip
 import subprocess
 import os
+import resource
 
 djvulibre_path = '/home/phe/bin/'
 djvutoxml = djvulibre_path + 'djvutoxml'
@@ -198,12 +199,14 @@ class OcrPage:
         self.grow_bbox(self.para_box, self.word_box)
         self.grow_bbox(self.region_box, self.word_box)
         self.grow_bbox(self.column_box, self.word_box)
-        data = {
-            'word_bbox' : str(self.word_box),
-            'word_id' : self.word_id
-            }
-        self.word_buffer += hocr_word_begin % data + self.word_text + hocr_word_end
-        self.word_id += 1
+        # this can occur for empty words after input sanitization.
+        if self.word_text != None:
+            data = {
+                'word_bbox' : str(self.word_box),
+                'word_id' : self.word_id
+                }
+            self.word_buffer += hocr_word_begin % data + self.word_text + hocr_word_end
+            self.word_id += 1
 
     def get_hocr_html(self):
         return hocr_begin + self.page_buffer + hocr_end
@@ -221,7 +224,19 @@ class XmlFile:
 
     def read(self, size):
         text = self.fd.read(size)
-        text = text.replace("&#11;", "").replace("&#31;", "")
+        # Kludge... try to avoid cutting entity, assume no consecutive entity
+        if "&" in text[-8:]:
+            text += self.fd.read(8);
+
+        # djvutoxml can produce invalid entity, just strip them.
+        text = re.sub("&#\d+;", "", text)
+        # bug in etree ?
+        text = text.replace("&hl=", "")
+        # Are text always in utf-8 ?
+        # some djvu contains invalid sequence like (octal) \275 \276
+        text = unicode(text, "utf-8", "replace")
+        text = text.encode("utf-8")
+
         return text
 
 def begin_elem(page, e):
@@ -267,9 +282,14 @@ def parse_page_recursive(page, elem):
 def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
-def parse(opt, filename):
+def setrlimits():
+    resource.setrlimit(resource.RLIMIT_AS, (1<<30, 1<<30))
+    resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
+    resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
 
-    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE)
+def do_parse(opt, filename):
+
+    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits)
 
     page_nr = 1
     for event, elem in etree.iterparse(XmlFile(ls.stdout)):
@@ -298,7 +318,17 @@ def parse(opt, filename):
     if not opt.silent:
         print >> sys.stderr
 
-    return True
+    ls.wait()
+    return ls.returncode
+
+def parse(opt, filename):
+    try:
+        ret_code = do_parse(opt, filename)
+    except Exception, e:
+        print >>sys.stderr, filename, e
+        ret_code = -1
+
+    return ret_code
 
 def default_options():
     class Options:
@@ -311,7 +341,7 @@ def default_options():
 
 # Kludgy.
 def has_word_bbox(filename):
-    ls = subprocess.Popen([ djvutxt, filename, '--detail=char'], stdout=subprocess.PIPE)
+    ls = subprocess.Popen([ djvutxt, filename, '--detail=char'], stdout=subprocess.PIPE, preexec_fn=setrlimits)
     for line in ls.stdout:
         if re.search('\(word \d+ \d+ \d+ \d+ ".*"', line):
             ls.kill()
