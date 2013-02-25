@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
+import traceback
 import re
 import xml.etree.ElementTree as etree
-import gzip
 import subprocess
 import os
 import resource
+sys.path.append('home/phe/wsbot')
+import utils
 
 djvulibre_path = '/home/phe/bin/'
 djvutoxml = djvulibre_path + 'djvutoxml'
@@ -302,16 +304,10 @@ def do_parse(opt, filename):
             page.end_page(elem)
 
             filename = opt.out_dir + 'page_%04d.html' % page_nr
-            if opt.gzip:
-                filename += '.gz'
 
             text = page.get_hocr_html().encode('utf-8')
-            if opt.gzip:
-                fd = gzip.open(filename, 'wb')
-            else:
-                fd = open(filename, 'wb')
-            fd.write(text)
-            fd.close()
+            utils.compress_file_data(filename, text, 'bzip2')
+
             elem.clear()
             page_nr += 1
 
@@ -325,7 +321,16 @@ def parse(opt, filename):
     try:
         ret_code = do_parse(opt, filename)
     except Exception, e:
-        print >>sys.stderr, filename, e
+        #print >> sys.stderr, filename, e
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        try:
+            print >> sys.stderr, 'TRACEBACK'
+            print >> sys.stderr, filename
+            traceback.print_exception(exc_type, exc_value, exc_tb)
+        finally:
+            # this is required for proper gargabe collection of local var
+            # in the traceback frames.
+            del exc_tb
         ret_code = -1
 
     return ret_code
@@ -333,7 +338,7 @@ def parse(opt, filename):
 def default_options():
     class Options:
         def __init__(self):
-            self.gzip = False
+            self.compress = None
             self.out_dir = './'
             self.silent = False
 
@@ -352,10 +357,10 @@ if __name__ == "__main__":
     options = default_options()
     for arg in sys.argv[1:]:
         if arg == '-help':
-            print sys.argv[0], "-help -gzip -out_dir:dir -silent"
+            print sys.argv[0], "-help -compress: -out_dir:dir -silent"
             sys.exit(1)
-        elif arg == '-gzip':
-            options.gzip = True
+        elif arg.startswith('-compress:'):
+            options.compress = arg[len('-compress'):]
         elif arg == '-silent':
             options.silent = True
         elif arg.startswith('-out_dir:'):
