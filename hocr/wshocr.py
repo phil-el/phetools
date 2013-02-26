@@ -221,10 +221,12 @@ def do_hocr_tesseract(filename, user, codelang):
     elif uptodate == 1:
         return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred:" + filename)
 
-    if ocr_djvu.ocr_djvu(options, filename):
+    if ocr_djvu.ocr_djvu(options, filename) == 0:
         sha1 = utils.sha1(filename)
         utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
+    else:
+        return ret_val(E_ERROR, "do_hocr_tesseract()unable to process: " + filename)
 
     return ret_val(E_OK, "do_hocr_tesseract() finished:" + filename)
 

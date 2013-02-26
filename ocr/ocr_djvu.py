@@ -102,7 +102,7 @@ def ocr_djvu(opt, filename):
     if not opt.silent:
         print >> sys.stderr
 
-    return True
+    return 0
 
 def default_options():
     class Options:
