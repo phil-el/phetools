@@ -7,6 +7,8 @@
 import os, re, random
 import pickle
 import difflib
+import sys
+sys.path.append("/home/phe/pywikipedia")
 import wikipedia
 import urllib
 
