@@ -230,6 +230,9 @@ def do_hocr_tesseract(filename, user, codelang):
 
     return ret_val(E_OK, "do_hocr_tesseract() finished:" + filename)
 
+# FIXME: the response is slow because we upload the used file while the
+# connection is alive, we should let the internal queue upload the file
+# and only check here if the File: exists.
 def do_hocr(page, user, codelang):
     book_name = re.sub('^(.*)/[0-9]+$', '\\1', page)
 
@@ -315,6 +318,7 @@ def stop_queue(queue):
             conn.close()
 
 # either called through a SIGUSR2 or a finally clause.
+# FIXME: unsafe, see comment when the signal handler is installed.
 def on_exit(sign_nr, frame):
         print "STOP"
 
@@ -426,6 +430,10 @@ def default_jobs():
         }
 
 if __name__ == "__main__":
+    # FIXME: all thread will inherit that and for thread started with Thread
+    # they'll inherit the signal handler even for those started before
+    # the signal handler is installed. FIXME: this is not true, there is
+    # another problem elsewhere
     # qdel send a SIGUSR2 if -notify is used when starting the job.
     signal.signal(signal.SIGUSR2, on_exit)
     try:

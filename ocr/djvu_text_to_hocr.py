@@ -291,7 +291,7 @@ def setrlimits():
 
 def do_parse(opt, filename):
 
-    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits)
+    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
 
     page_nr = 1
     for event, elem in etree.iterparse(XmlFile(ls.stdout)):
@@ -346,11 +346,13 @@ def default_options():
 
 # Kludgy.
 def has_word_bbox(filename):
-    ls = subprocess.Popen([ djvutxt, filename, '--detail=char'], stdout=subprocess.PIPE, preexec_fn=setrlimits)
+    ls = subprocess.Popen([ djvutxt, filename, '--detail=char'], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     for line in ls.stdout:
         if re.search('\(word \d+ \d+ \d+ \d+ ".*"', line):
             ls.kill()
+            ls.wait()
             return True
+    ls.wait()
     return False
 
 if __name__ == "__main__":
