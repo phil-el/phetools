@@ -3,8 +3,12 @@ define('PUBLIC_HTML', true);
 header('Cache-control: no-cache');
 header('Access-Control-Allow-Origin: *');
 
-function send_request($cmd, $page, $lang, $user, $port) {
-	if ($cmd != 'status')
+function send_request($params, $port) {
+
+	if (!isset($params['cmd']))
+	    $params['cmd'] = 'status';
+
+	if ($params['cmd'] != 'status')
 		header('Content-type: application/json');
 
 	$server_name = file_get_contents('./hocr_server.server');
@@ -12,7 +16,7 @@ function send_request($cmd, $page, $lang, $user, $port) {
 	$conn = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 	if (socket_connect($conn, $server_name, $port)) {
 		$res = '';
-		$line = $cmd.'|'.$page.'|'.$lang.'|'.$user;
+		$line = json_encode($params);
 		socket_write($conn, $line, strlen($line)); 
 		while ($out = socket_read($conn, 1024)) {
 			$res .= $out;
@@ -20,7 +24,7 @@ function send_request($cmd, $page, $lang, $user, $port) {
 		socket_close($conn);
 	} else {
 		$err = "The hOCR robot is not running.\n Please try again later.";
-		if ($cmd == 'status') {
+		if ($params['cmd'] == 'status') {
 			$res = $err;
 		} else {
 			$res = json_encode(array('error' => 3, 'text' => $err));
@@ -29,14 +33,4 @@ function send_request($cmd, $page, $lang, $user, $port) {
 	return $res;
 }
 
-$cmd = $_GET["cmd"];
-$page = $_GET["page"];
-$lang = $_GET["lang"];
-$user = $_GET["user"];
-
-if ($cmd) {
-        $out = send_request($cmd, $page, $lang, $user, 12348);
-} else {
-        $out = send_request("status", $page, $lang, $user, 12348);
-}
-print $out;
+print send_request($_GET, 12348);

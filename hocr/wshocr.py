@@ -59,6 +59,44 @@ E_OK = 0
 
 jobs = None
 
+class Request:
+    def __init__(self, dct, conn):
+        self.cmd = dct['cmd']
+        self.conn = conn
+        self.start_time = time.time()
+        if self.cmd != 'status':
+            self.page = dct['page']
+            if '%' in self.page:
+                self.page = urllib.unquote_plus(self.page)
+            self.user = dct['user']
+            # compat, FIXME, needed ?
+            self.user = self.user.replace(' ', '_')
+            self.lang = dct['lang']
+            self.book_name = re.sub('^(.*)/[0-9]+$', '\\1', self.page)
+            # compat, FIXME; needed ?
+            self.book_name = self.book_name.replace('_', ' ')
+            # cached path cache, not reliable, used to get the path for
+            # do_get() request only, don't use it for other purpose.
+            # FIXME: this is obfuscation.
+            self.cache_path = cache_path(self.book_name, self.lang, 'wikisource')
+        else:
+            self.page = ''
+            self.user = ''
+            self.book_name = ''
+            self.cache_path = ''
+            self.lang = ''
+
+    def print_request_start(self):
+        print date_s(self.start_time), "REQUEST", self.user, self.lang, self.cmd, self.page
+
+    def print_request_end(self):
+        time2 = time.time()
+        print date_s(time2), self.user, self.lang, self.page, self.cmd, " (%.2f)" % (time2-self.start_time)
+
+    def to_html(self):
+        return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.page + '<br/>'
+
+
 # FIXME: use a real Queue object and avoid polling the queue
 
 # Get a job w/o removing it from the queue. FIXME: probably not the best
@@ -73,11 +111,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            page, codelang, user, t, conn = queue[-1]
+            request = queue[-1]
             got_it = True
         lock.release()
 
-    return page, codelang, user, t, conn
+    return request
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -90,9 +128,6 @@ def add_job(lock, queue, cmd):
     lock.release()
 
 def cache_path(book_name, lang, family):
-
-    book_name = book_name.replace('_', ' ')
-
     base_dir  = '/mnt/user-store/phe/cache/hocr/%s/%s/' % (family, lang)
     base_dir += '%s/%s/%s/%s/'
 
@@ -128,7 +163,6 @@ def check_and_upload(url, filename, sha1):
     else:
         ret_val(E_ERROR, "book already uploaded: " + filename)
 
-
 # check if data are uptodate
 #
 # return -1 if the File: no longer exists
@@ -137,51 +171,49 @@ def check_and_upload(url, filename, sha1):
 # 0 data exist but aren't uptodate
 # 1 data exist and are uptodate
 # if it return 0 the file is uploaded if it's not already exists
-def is_uptodate(filename, codelang, force_upload = True):
+def is_uptodate(request):
     try:
-        site = wikipedia.getSite(code = codelang, fam = 'wikisource')
-        filepage = align.get_filepage(site, unicode(filename, 'utf-8'))
+        site = wikipedia.getSite(code = request.lang, fam = 'wikisource')
+        filepage = align.get_filepage(site, unicode(request.book_name, 'utf-8'))
         if filepage == None or not filepage.exists():
             # file deleted between the initial request and now 
-            return None, -1
+            return -1
     except Exception, e:
         exc_type, exc_value, exc_tb = sys.exc_info()
         try:
             print >> sys.stderr, 'TRACEBACK'
-            print >> sys.stderr, filename
+            print >> sys.stderr, request.book_name
             traceback.print_exception(exc_type, exc_value, exc_tb)
         finally:
             del exc_tb
-        return None, -2
+        return -2
 
-    path = cache_path(filename, filepage.site().lang, filepage.site().fam().name)
-
-    if not os.path.exists(path):
-        os.makedirs(path)
+    # We can't use the cached path cache in the request but we update it here.
+    request.cache_path = cache_path(request.book_name, filepage.site().lang, filepage.site().fam().name)
 
     sha1 = filepage.getHash()
-    if check_sha1(path + '/', sha1):
-        return path, 1
+    if check_sha1(request.cache_path, sha1):
+        return 1
 
-    if force_upload:
-        check_and_upload(filepage.fileUrl(), path + filename, sha1)
-    return path, 0
+    if not os.path.exists(request.cache_path):
+        os.makedirs(path)
+    check_and_upload(filepage.fileUrl(), request.cache_path + request.book_name, sha1)
+    return 0
 
-
-def do_hocr_djvu(filename, user, codelang):
+def do_hocr_djvu(request):
     options = djvu_text_to_hocr.default_options()
     options.compress = 'bzip2'
-    path = os.path.split(filename)
-    options.out_dir = path[0] + '/'
+    options.out_dir = request.cache_path
     options.silent = True
 
-    # redo the sha1 check, this is needed if the same job was queued
-    # twice before the first run terminate.
-    temp_path, uptodate = is_uptodate(path[1], codelang)
+    filename = request.cache_path + request.book_name
+
+    # Needed if the same job was queued twice before the first run terminate.
+    uptodate = is_uptodate(request)
     if uptodate < 0:
         return ret_val(E_ERROR, "do_hocr_djvu(): book not found (file deleted since initial request ?) or exception: " + filename)
     elif uptodate == 1:
-        return ret_val(E_OK, "do_hocr_djvu(): book already hocred:" + filename)
+        return ret_val(E_OK, "do_hocr_djvu(): book already hocred: " + filename)
 
     if djvu_text_to_hocr.parse(options, filename) == 0:
         sha1 = utils.sha1(filename)
@@ -189,15 +221,17 @@ def do_hocr_djvu(filename, user, codelang):
         os.remove(filename)
         return ret_val(E_OK, "do_hocr_djvu() success: " + filename)
     else:
-        t = time.time()
+        request.start_time = time.time()
         jobs['number_of_hocr_tesseract_job'] += 1
-        add_job(lock, jobs['hocr_tesseract_queue'], (filename, codelang, user, t, None))
+        add_job(lock, jobs['hocr_tesseract_queue'], request)
         return ret_val(E_ERROR, "do_hocr_djvu() failure, moving to slow queue: " + filename)
 
 # Don't try to move the job to the fast queue, even if it look like
 # possible, else if the fast queue fail the job will be queued in this
 # (slow) queue and it'll ping-pong between the queues forever.
-def do_hocr_tesseract(filename, user, codelang):
+def do_hocr_tesseract(request):
+
+    filename = request.cache_path + request.book_name
 
     # FIXME: inhibited atm
     if os.path.exists(filename):
@@ -213,74 +247,67 @@ def do_hocr_tesseract(filename, user, codelang):
     options.num_thread = 2
     options.lang = ocr.tesseract_languages.get(codelang, 'eng')
 
-    path = os.path.split(filename)
+    options.output_dir = request.cache_path
 
-    options.out_dir = path[0] + '/'
-
-    # redo the sha1 check, this is needed if the same job was queued
-    # twice before the first run terminate.
-    temp_path, uptodate = is_uptodate(path[1], codelang)
+    # Needed if the same job was queued twice before the first run terminate.
+    uptodate = is_uptodate(request)
     if uptodate < 0:
         return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?) or exception: " + filename)
     elif uptodate == 1:
-        return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred:" + filename)
+        return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred: " + filename)
 
     if ocr_djvu.ocr_djvu(options, filename) == 0:
         sha1 = utils.sha1(filename)
         utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
     else:
-        return ret_val(E_ERROR, "do_hocr_tesseract()unable to process: " + filename)
+        return ret_val(E_ERROR, "do_hocr_tesseract() unable to process: " + filename)
 
-    return ret_val(E_OK, "do_hocr_tesseract() finished:" + filename)
+    return ret_val(E_OK, "do_hocr_tesseract() finished: " + filename)
 
-def do_hocr(page, user, codelang):
-    book_name = re.sub('^(.*)/[0-9]+$', '\\1', page)
-
-    path, uptodate = is_uptodate(book_name, codelang, force_upload = False)
+def do_hocr(request):
+    uptodate = is_uptodate(request)
     if uptodate < 0:
-        return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?) or exception: " + book_name)
+        return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?) or exception: " + request.book_name)
     elif uptodate == 1:
-        return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred:" + book_name)
+        return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred: " + request.book_name)
 
-    t = time.time()
+    request = copy.copy(request)
+    request.start_time = time.time()
+    request.conn = None
 
-    if djvu_text_to_hocr.has_word_bbox(path + book_name):
+    if djvu_text_to_hocr.has_word_bbox(request.cache_path + request.book_name):
         jobs['number_of_hocr_djvu_job'] += 1
-        add_job(lock, jobs['hocr_djvu_queue'], (path + book_name, codelang, user, t, None))
+        add_job(lock, jobs['hocr_djvu_queue'], request)
         queue_type = "fast"
     else:
         jobs['number_of_hocr_tesseract_job'] += 1
-        add_job(lock, jobs['hocr_tesseract_queue'], (path + book_name, codelang, user, t, None))
+        add_job(lock, jobs['hocr_tesseract_queue'], request)
         queue_type = "slow"
 
-    return ret_val(E_OK, "job queued and waiting processing in the %s queue: %s" % (queue_type, page))
+    return ret_val(E_OK, "job queued and waiting processing in the %s queue: %s" % (queue_type, request.page))
 
-def do_get(page, user, codelang):
-    page_nr = re.sub('^.*/([0-9]+)$', '\\1', page)
+def do_get(request):
+    page_nr = re.sub('^.*/([0-9]+)$', '\\1', request.page)
     try:
         page_nr = int(page_nr)
     except:
-        return ret_val(E_ERROR, "unable to extract page number from page: " + page)
+        return ret_val(E_ERROR, "unable to extract page number from page: " + request.page)
 
-    book_name = re.sub('^(.*)/[0-9]+$', '\\1', page)
-
-    base_dir = cache_path(book_name, codelang, 'wikisource')
-
-    filename = base_dir + 'page_%04d.html' % page_nr
+    filename = request.cache_path + 'page_%04d.html' % page_nr
 
     # We support data built with different compress scheme than the one
     # actually generated by the server
     text = utils.uncompress_file(filename, [ 'bzip2', 'gzip', '' ])
     if text == None:
-        return ret_val(E_ERROR, "unable to locate file %s for page %s" % (filename, page))
+        return ret_val(E_ERROR, "unable to locate file %s for page %s" % (filename, request.page))
 
     return ret_val(E_OK, text, False)
 
 def html_for_queue(queue):
     html = ''
-    for i in queue:
-        html += date_s(i[3])+' '+i[2]+" "+i[1]+" "+i[0]+"<br/>"
+    for request in queue:
+        html += request.to_html()
     return html
 
 def do_status(lock, conn):
@@ -312,11 +339,10 @@ def do_status(lock, conn):
     conn.close()
 
 def stop_queue(queue):
-    for i in range(len(queue)):
-        page, lang, user, t, conn = queue[i]
-        queue[i] = (page, lang, user, t, None)
-        if conn:
-            conn.close()
+    for request in queue:
+        if request.conn:
+            request.close()
+            request.conn = None
 
 # either called through a SIGUSR2 or a finally clause.
 # FIXME: unsafe, see comment when the signal handler is installed.
@@ -332,6 +358,10 @@ def on_exit(sign_nr, frame):
         stop_queue(jobs['hocr_tesseract_queue'])
 
         utils.save_obj("/home/phe/wshocr.jobs", jobs)
+
+def utf8_encode_dict(data):
+    ascii_encode = lambda x: x.encode('utf-8')
+    return dict(map(ascii_encode, pair) for pair in data.items())
 
 def bot_listening(lock):
 
@@ -365,27 +395,26 @@ def bot_listening(lock):
             conn, addr = sock.accept()
             data = conn.recv(1024)
             try:
-                cmd, page, lang, user = data.split('|')
+                json_data = json.loads(data, object_hook=utf8_encode_dict)
+                request = Request(json_data, conn)
             except:
-                print "error", data
+                # FIXME: must return valid data to the connection.
+                print "FATAL: Ill formed request", data
                 conn.close()
                 continue
 
-            t = time.time()
-            user = user.replace(' ', '_')
+            request.print_request_start()
 
-            print date_s(t) + " REQUEST " + user + ' ' + lang + ' ' +  cmd + ' ' + page
-
-            if cmd == "status":
+            if request.cmd == "status":
                 do_status(lock, conn)
-            elif cmd == 'hocr':
+            elif request.cmd == 'hocr':
                 jobs['number_of_hocr_job'] += 1
-                add_job(lock, jobs['hocr_queue'], (page, lang, user, t, conn))
-            elif cmd == "get":
+                add_job(lock, jobs['hocr_queue'], request)
+            elif request.cmd == "get":
                 jobs['number_of_get_job'] += 1
-                add_job(lock, jobs['get_queue'], (page, lang, user, t, conn))
+                add_job(lock, jobs['get_queue'], request)
             else:
-                out = ret_val(E_ERROR, "unknown command: " + cmd)
+                out = ret_val(E_ERROR, "unknown command: " + request.cmd)
                 conn.sendall(json.dumps(out));
                 conn.close()
 
@@ -399,22 +428,18 @@ def date_s(at):
 
 def job_thread(lock, queue, func):
     while True:
-        page, codelang, user, t, conn = get_job(lock, queue)
+        request = get_job(lock, queue)
 
-        time1 = time.time()
-        out = ''
+        # FIXME: too verbose ?
+        print request.page, request.user, request.lang
 
-        if '%' in page:
-            page = urllib.unquote_plus(page)
-        print page, user
-        out = func(page, user, codelang)
+        out = func(request)
 
-        if conn:
-            conn.sendall(json.dumps(out))
-            conn.close()
+        if request.conn:
+            request.conn.sendall(json.dumps(out))
+            request.conn.close()
 
-        time2 = time.time()
-        print date_s(time2), page, user, codelang, " (%.2f)" % (time2-time1)
+        request.print_request_end()
 
         remove_job(lock, queue)
 
