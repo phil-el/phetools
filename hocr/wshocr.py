@@ -234,9 +234,9 @@ def do_hocr_tesseract(request):
     filename = request.cache_path + request.book_name
 
     # FIXME: inhibited atm
-    if os.path.exists(filename):
-        os.remove(filename)
-    return ret_val(E_ERROR, "tesseract job queue not available atm: " + filename)
+    #if os.path.exists(filename):
+    #    os.remove(filename)
+    #return ret_val(E_ERROR, "tesseract job queue not available atm: " + filename)
 
     options = ocr_djvu.default_options()
 
@@ -244,17 +244,17 @@ def do_hocr_tesseract(request):
     options.compress = 'bzip2'
     options.config = 'hocr'
     # FIXME ?
-    options.num_thread = 2
-    options.lang = ocr.tesseract_languages.get(codelang, 'eng')
+    options.num_thread = 4
+    options.lang = ocr.tesseract_languages.get(request.lang, 'eng')
 
-    options.output_dir = request.cache_path
+    options.out_dir = request.cache_path
 
     # Needed if the same job was queued twice before the first run terminate.
     uptodate = is_uptodate(request)
     if uptodate < 0:
         return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?) or exception: " + filename)
     elif uptodate == 1:
-        return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred: " + filename)
+        return ret_val(E_ERROR, "do_hocr_tesseract(): book already hocred: " + filename)
 
     if ocr_djvu.ocr_djvu(options, filename) == 0:
         sha1 = utils.sha1(filename)
@@ -268,9 +268,9 @@ def do_hocr_tesseract(request):
 def do_hocr(request):
     uptodate = is_uptodate(request)
     if uptodate < 0:
-        return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?) or exception: " + request.book_name)
+        return ret_val(E_ERROR, "do_hocr(): book not found (file deleted since initial request ?) or exception: " + request.book_name)
     elif uptodate == 1:
-        return ret_val(E_ERROR, "do_hocr_tessseract(): book already hocred: " + request.book_name)
+        return ret_val(E_ERROR, "do_hocr(): book already hocred: " + request.book_name)
 
     request = copy.copy(request)
     request.start_time = time.time()
