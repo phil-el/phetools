@@ -130,11 +130,14 @@ def check_and_upload(url, filename, sha1):
 
 
 # check if data are uptodate
+#
 # return -1 if the File: no longer exists
+# -2 an exception occur, likely to be a network error raised
+# by pywikipedia
 # 0 data exist but aren't uptodate
 # 1 data exist and are uptodate
 # if it return 0 the file is uploaded if it's not already exists
-def is_uptodate(filename, codelang):
+def is_uptodate(filename, codelang, force_upload = True):
     try:
         site = wikipedia.getSite(code = codelang, fam = 'wikisource')
         filepage = align.get_filepage(site, unicode(filename, 'utf-8'))
@@ -160,7 +163,8 @@ def is_uptodate(filename, codelang):
     if check_sha1(path + '/', sha1):
         return path, 1
 
-    check_and_upload(filepage.fileUrl(), path + filename, sha1)
+    if force_upload:
+        check_and_upload(filepage.fileUrl(), path + filename, sha1)
     return path, 0
 
 
@@ -230,13 +234,10 @@ def do_hocr_tesseract(filename, user, codelang):
 
     return ret_val(E_OK, "do_hocr_tesseract() finished:" + filename)
 
-# FIXME: the response is slow because we upload the used file while the
-# connection is alive, we should let the internal queue upload the file
-# and only check here if the File: exists.
 def do_hocr(page, user, codelang):
     book_name = re.sub('^(.*)/[0-9]+$', '\\1', page)
 
-    path, uptodate = is_uptodate(book_name, codelang)
+    path, uptodate = is_uptodate(book_name, codelang, force_upload = False)
     if uptodate < 0:
         return ret_val(E_ERROR, "do_hocr_tesseract(): book not found (file deleted since initial request ?) or exception: " + book_name)
     elif uptodate == 1:
