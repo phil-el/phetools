@@ -6,6 +6,7 @@ import os
 import ocr
 import multiprocessing
 import utils
+import traceback
 
 djvulibre_path = '/home/phe/bin/'
 
@@ -54,16 +55,30 @@ def do_one_page(opt, page_nr, filename):
 
         utils.compress_file(filename, filename, opt.compress)
         os.remove(filename)
-            
+
 def do_file(job_queue, opt, filename):
     while True:
         page_nr = job_queue.get()
         if page_nr == None:
             print "Stopping thread"
             return
-        do_one_page(opt, page_nr, filename)
+        try:
+            do_one_page(opt, page_nr, filename)
+        except Exception, e:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            try:
+                print >> sys.stderr, 'TRACEBACK'
+                print >> sys.stderr, filename
+                traceback.print_exception(exc_type, exc_value, exc_tb)
+            finally:
+                del exc_tb
 
 def ocr_djvu(opt, filename):
+
+    fd = open('/home/phe/wsbot/log/tesseract.log', 'a')
+    print >> fd, "Starting to process:", filename
+    fd.close()
+
     if not opt.out_dir.endswith('/'):
         opt.out_dir += '/'
 

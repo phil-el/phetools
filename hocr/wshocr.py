@@ -51,6 +51,7 @@ import djvu_text_to_hocr
 import ocr_djvu
 import ocr
 import urllib
+import multiprocessing
 
 mylock = thread.allocate_lock()
 
@@ -226,6 +227,15 @@ def do_hocr_djvu(request):
         add_job(lock, jobs['hocr_tesseract_queue'], request)
         return ret_val(E_ERROR, "do_hocr_djvu() failure, moving to slow queue: " + filename)
 
+def nr_thread():
+    # FIXME: we could use os.getloadavg() to tweak the number of thread but
+    # how can we know if a high loadavg wasn't caused by a previous instance
+    # of this application w/o sleeping at least a minute ? And anyway
+    # a dynamic balancing will be better, i.e. starting as many thread
+    # as they are processor then send to them SIGPAUSE/SIGCONT.
+    cpu_count = multiprocessing.cpu_count() / 2
+    return max(cpu_count, 1)
+
 # Don't try to move the job to the fast queue, even if it look like
 # possible, else if the fast queue fail the job will be queued in this
 # (slow) queue and it'll ping-pong between the queues forever.
@@ -233,18 +243,12 @@ def do_hocr_tesseract(request):
 
     filename = request.cache_path + request.book_name
 
-    # FIXME: inhibited atm
-    #if os.path.exists(filename):
-    #    os.remove(filename)
-    #return ret_val(E_ERROR, "tesseract job queue not available atm: " + filename)
-
     options = ocr_djvu.default_options()
 
     options.silent = True
     options.compress = 'bzip2'
     options.config = 'hocr'
-    # FIXME ?
-    options.num_thread = 4
+    options.num_thread = nr_thread()
     options.lang = ocr.tesseract_languages.get(request.lang, 'eng')
 
     options.out_dir = request.cache_path
@@ -285,7 +289,7 @@ def do_hocr(request):
         add_job(lock, jobs['hocr_tesseract_queue'], request)
         queue_type = "slow"
 
-    return ret_val(E_OK, "job queued and waiting processing in the %s queue: %s" % (queue_type, request.page))
+    return ret_val(E_OK, "job queued and waiting processing in the %s queue: %s path %s" % (queue_type, request.page, request.cache_path))
 
 def do_get(request):
     page_nr = re.sub('^.*/([0-9]+)$', '\\1', request.page)
@@ -436,6 +440,7 @@ def job_thread(lock, queue, func):
         out = func(request)
 
         if request.conn:
+            print "Closing conn", os.getpid()
             request.conn.sendall(json.dumps(out))
             request.conn.close()
 
