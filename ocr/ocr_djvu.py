@@ -7,6 +7,7 @@ import ocr
 import multiprocessing
 import utils
 import traceback
+import errno
 
 djvulibre_path = '/home/phe/bin/'
 
@@ -73,7 +74,7 @@ def do_file(job_queue, opt, filename):
             finally:
                 del exc_tb
 
-def ocr_djvu(opt, filename):
+def ocr_djvu(opt, filename, task_scheduler = None):
 
     fd = open('/home/phe/wsbot/log/tesseract.log', 'a')
     print >> fd, "Starting to process:", filename
@@ -83,6 +84,12 @@ def ocr_djvu(opt, filename):
         opt.out_dir += '/'
 
     nr_pages = get_nr_pages_djvu(filename)
+
+    if opt.num_thread == -1:
+        opt.num_thread = multiprocessing.cpu_count()
+        if not task_scheduler:
+            opt.num_thread = max(int(opt.num_thread/2), 1)
+
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
             if not opt.silent:
@@ -90,7 +97,7 @@ def ocr_djvu(opt, filename):
             do_one_page(opt, nr, filename)
     else:
         thread_array = []
-        job_queue = multiprocessing.Queue(opt.num_thread * 16)
+        job_queue = multiprocessing.Queue(opt.num_thread)
         args = (job_queue, opt, filename)
         for i in range(opt.num_thread):
             if not opt.silent:
@@ -98,6 +105,8 @@ def ocr_djvu(opt, filename):
             t = multiprocessing.Process(target=do_file, args=args)
             t.daemon = True
             t.start()
+            if task_scheduler:
+                task_scheduler.job_started(t)
             thread_array.append(t)
 
         for nr in range(1, nr_pages + 1):
@@ -108,8 +117,14 @@ def ocr_djvu(opt, filename):
         for i in range(opt.num_thread):
             job_queue.put(None)
 
-        for t in thread_array:
-            t.join()
+        while len(thread_array):
+            for i in range(len(thread_array) - 1, -1, -1):
+                try:
+                    thread_array[i].join()
+                    del thread_array[i]
+                except OSError, ose:
+                    if ose.errno != errno.EINTR:
+                        raise ose
 
         if not opt.silent:
             print "all thread finished"
