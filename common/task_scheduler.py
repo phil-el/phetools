@@ -36,7 +36,7 @@ def sanitize_thread_array(thread_array, silent):
             del thread_array[i]
 
 class TaskScheduler:
-    def __init__(self, alarm_time = 5, silent = False):
+    def __init__(self, alarm_time = 1, silent = False):
         self.running_thread = []
         self.paused_thread = []
         self.alarm_time = alarm_time
@@ -51,7 +51,7 @@ class TaskScheduler:
         if not self.silent:
             print "pausing:", self.running_thread[0].pid
         self.paused_thread.append(self.running_thread[0])
-        os.kill(self.running_thread[0].pid, signal.SIGSTOP)
+        os.killpg(os.getpgid(self.running_thread[0].pid), signal.SIGSTOP)
         del self.running_thread[0]
 
     # helper function, caller must ensure it exists at least one paused thread
@@ -59,7 +59,7 @@ class TaskScheduler:
         if not self.silent:
             print "wakeup:",  self.paused_thread[0].pid
         self.running_thread.append(self.paused_thread[0])
-        os.kill(self.paused_thread[0].pid, signal.SIGCONT)
+        os.killpg(os.getpgid(self.paused_thread[0].pid), signal.SIGCONT)
         del self.paused_thread[0]
 
     def __call__(self, a, b):
@@ -75,15 +75,26 @@ class TaskScheduler:
         elif nr_free_proc < 0.25 and len(self.running_thread) > 1:
             self.pause_process()
         elif len(self.paused_thread):
-            self.wakeup_process()
-            # Now len(self.running_thread) >= 2
             self.pause_process()
+            self.wakeup_process()
+            # Now len(self.running_thread) >= 1
+
         signal.alarm(self.alarm_time)
 
     def job_started(self, t):
+        os.setpgid(t.pid, 0)
         self.running_thread.append(t)
         # avoid to overload the box at startup
         self("", "")
+
+    def reset_group(self, thread_array):
+        for t in thread_array:
+            if t.exitcode != None:
+                os.setpgid(t.pid, os.getprgp())
+
+    def reset_all_group(self):
+        self.reset_group(self.paused_thread)
+        self.reset_group(self.running_thread)
 
 if __name__ == "__main__":
 
