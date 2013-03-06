@@ -29,6 +29,7 @@ __module_name__ = "wshocr"
 __module_version__ = "1.0"
 __module_description__ = "wikisource hocr server"
 
+import errno
 import os
 import socket
 import re
@@ -48,12 +49,14 @@ import wikipedia
 import align
 sys.path.append("/home/phe/tools")
 import djvu_text_to_hocr
+import task_scheduler
 import ocr_djvu
 import ocr
 import urllib
-import multiprocessing
 
 mylock = thread.allocate_lock()
+
+task_s = task_scheduler.TaskScheduler(silent = True)
 
 E_ERROR = 1
 E_OK = 0
@@ -227,15 +230,6 @@ def do_hocr_djvu(request):
         add_job(lock, jobs['hocr_tesseract_queue'], request)
         return ret_val(E_ERROR, "do_hocr_djvu() failure, moving to slow queue: " + filename)
 
-def nr_thread():
-    # FIXME: we could use os.getloadavg() to tweak the number of thread but
-    # how can we know if a high loadavg wasn't caused by a previous instance
-    # of this application w/o sleeping at least a minute ? And anyway
-    # a dynamic balancing will be better, i.e. starting as many thread
-    # as they are processor then send to them SIGPAUSE/SIGCONT.
-    cpu_count = multiprocessing.cpu_count() / 2
-    return max(cpu_count, 1)
-
 # Don't try to move the job to the fast queue, even if it look like
 # possible, else if the fast queue fail the job will be queued in this
 # (slow) queue and it'll ping-pong between the queues forever.
@@ -248,7 +242,7 @@ def do_hocr_tesseract(request):
     options.silent = True
     options.compress = 'bzip2'
     options.config = 'hocr'
-    options.num_thread = nr_thread()
+    options.num_thread = -1
     options.lang = ocr.tesseract_languages.get(request.lang, 'eng')
 
     options.out_dir = request.cache_path
@@ -260,7 +254,9 @@ def do_hocr_tesseract(request):
     elif uptodate == 1:
         return ret_val(E_ERROR, "do_hocr_tesseract(): book already hocred: " + filename)
 
-    if ocr_djvu.ocr_djvu(options, filename) == 0:
+    global task_s
+
+    if ocr_djvu.ocr_djvu(options, filename, task_s) == 0:
         sha1 = utils.sha1(filename)
         utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
@@ -353,6 +349,8 @@ def stop_queue(queue):
 def on_exit(sign_nr, frame):
         print "STOP"
 
+        task_s.reset_all_group()
+
         # no value to save the get queue but we must close conn.
         stop_queue(jobs['get_queue'])
         jobs['get_queue'] = []
@@ -396,8 +394,14 @@ def bot_listening(lock):
 
     try:
         while True:
-            conn, addr = sock.accept()
-            data = conn.recv(1024)
+            try:
+                conn, addr = sock.accept()
+                data = conn.recv(1024)
+            except socket.error as s_err:
+                if s_err.errno != errno.EINTR:
+                    raise ose
+                continue
+
             try:
                 json_data = json.loads(data, object_hook=utf8_encode_dict)
                 request = Request(json_data, conn)
