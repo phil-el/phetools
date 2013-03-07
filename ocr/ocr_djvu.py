@@ -45,8 +45,6 @@ def do_one_page(opt, page_nr, filename):
 
     ocr.ocr(tiff_name, opt.out_dir + 'page_%04d' % page_nr, opt.lang, opt.config)
 
-    os.remove(tiff_name)
-
     if opt.compress:
         filename = opt.out_dir + "page_%04d" % page_nr
         if opt.config == 'hocr':
@@ -56,6 +54,8 @@ def do_one_page(opt, page_nr, filename):
 
         utils.compress_file(filename, filename, opt.compress)
         os.remove(filename)
+
+    os.remove(tiff_name)
 
 def do_file(job_queue, opt, filename):
     while True:
