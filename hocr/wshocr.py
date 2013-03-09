@@ -200,7 +200,7 @@ def is_uptodate(request):
         return 1
 
     if not os.path.exists(request.cache_path):
-        os.makedirs(path)
+        os.makedirs(request.cache_path)
     check_and_upload(filepage.fileUrl(), request.cache_path + request.book_name, sha1)
     return 0
 
@@ -247,6 +247,8 @@ def do_hocr_tesseract(request):
 
     options.out_dir = request.cache_path
 
+    t1 = time.time()
+
     # Needed if the same job was queued twice before the first run terminate.
     uptodate = is_uptodate(request)
     if uptodate < 0:
@@ -262,6 +264,8 @@ def do_hocr_tesseract(request):
         os.remove(filename)
     else:
         return ret_val(E_ERROR, "do_hocr_tesseract() unable to process: " + filename)
+
+    print "elapsed: %.2f" % (time.time() - t1)
 
     return ret_val(E_OK, "do_hocr_tesseract() finished: " + filename)
 
