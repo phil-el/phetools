@@ -6,6 +6,7 @@ import hashlib
 import bz2
 import gzip
 import os
+import errno
 
 # a simple serializer
 def save_obj(filename, data):
@@ -82,3 +83,20 @@ def uncompress_file(filename, compress_type):
         return data
 
     raise ValueError('Empty compression scheme: ' + str(compress_type))
+
+# Protected a call against EINTR.
+def _retry_on_eintr(func, *args):
+    while True:
+        try:
+            return func(*args)
+        except (IOError, OSError) as e:
+            #print "EINTR, retrying"
+            if e.errno != errno.EINTR:
+                raise
+            continue
+
+def safe_read(fd):
+    return _retry_on_eintr(fd.read)
+
+def safe_write(fd, text):
+    return _retry_on_eintr(fd.write, text)

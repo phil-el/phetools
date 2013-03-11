@@ -11,12 +11,12 @@ import errno
 
 djvulibre_path = '/home/phe/bin/'
 
+# FIXME: all read/write must be protected against EINTR
 def get_nr_pages_djvu(filename):
     text = ''
     cmdline = djvulibre_path + 'djvused -e n "' + filename + '"'
     fd = os.popen(cmdline)
-    for t in fd.readlines():
-        text += t
+    text = utils.safe_read(fd)
     ret = fd.close()
     if ret != None:
         print "Error:", cmdline, "fail to exec", ret
@@ -93,7 +93,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
             if not opt.silent:
-                print >> sys.stderr, str(nr) + '/' + str(nr_pages), '\r',
+                utils.safe_write(sys.stderr, str(nr) + '/' + str(nr_pages) + '\r')
             do_one_page(opt, nr, filename)
     else:
         thread_array = []
@@ -111,7 +111,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
 
         for nr in range(1, nr_pages + 1):
             if not opt.silent:
-                print >> sys.stderr, str(nr) + '/' + str(nr_pages), '\r',
+                utils.safe_write(sys.stderr, str(nr) + '/' + str(nr_pages) + '\r')
             job_queue.put(nr)
 
         for i in range(opt.num_thread):
@@ -130,7 +130,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
             print "all thread finished"
 
     if not opt.silent:
-        print >> sys.stderr
+        utils.safe_write(sys.stderr, "\n")
 
     return 0
 
