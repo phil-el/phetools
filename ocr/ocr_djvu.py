@@ -8,40 +8,44 @@ import multiprocessing
 import utils
 import traceback
 import errno
+import subprocess
+import resource
 
 djvulibre_path = '/home/phe/bin/'
 
+def setrlimits():
+    resource.setrlimit(resource.RLIMIT_AS, (1<<30, 1<<30))
+    resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
+    resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
+
 # FIXME: all read/write must be protected against EINTR
 def get_nr_pages_djvu(filename):
-    text = ''
-    cmdline = djvulibre_path + 'djvused -e n "' + filename + '"'
-    fd = os.popen(cmdline)
-    text = utils.safe_read(fd)
-    ret = fd.close()
-    if ret != None:
-        print "Error:", cmdline, "fail to exec", ret
+    djvused = djvulibre_path + 'djvused'
+    ls = subprocess.Popen([ djvused, "-e", "n", filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    text = utils.safe_read(ls.stdout)
+    ls.wait()
+    if ls.returncode != 0:
+        print "Error: djvused fail to exec", ls.returncode
         return None
     return int(text)
 
-def do_exec(cmdline):
-    fd = os.popen(cmdline)
-    for t in fd.readlines():
-        print t.strip("\n")
-    ret = fd.close()
-    if ret != None:
-        # on error ret is a tuple (pid, status) status low byte is signal
-        # number, high byte is exit status (if low byte = 0), bit 7 of low
-        # byte is set if a core file has been generated
-        print "Error:", cmdline, "fail to exec", ret
-        return False
-    return True
+def extract_image(opt, page_nr, filename):
+    tiff_name = opt.out_dir + 'page_%04d.tif' % page_nr
+    ddjvu = djvulibre_path + 'ddjvu'
+    ls = subprocess.Popen([ ddjvu, "-format=tiff", "-page=%d" % page_nr, filename, tiff_name], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    text = utils.safe_read(ls.stdout)
+    if text:
+        print text
+    ls.wait()
+    if ls.returncode != 0:
+        print >> sys.stderr, "extract_image fail: ", ls.returncode
+        return None
+    return tiff_name
 
 def do_one_page(opt, page_nr, filename):
-    tiff_name = opt.out_dir + 'page_%04d.tif' % page_nr
-    cmdline  = djvulibre_path + 'ddjvu -format=tiff -page=%d ' % page_nr
-    cmdline += '"' + filename + '" ' + tiff_name
-
-    do_exec(cmdline)
+    tiff_name = extract_image(opt, page_nr, filename)
+    if not tiff_name:
+        return
 
     ocr.ocr(tiff_name, opt.out_dir + 'page_%04d' % page_nr, opt.lang, opt.config)
 
@@ -84,6 +88,9 @@ def ocr_djvu(opt, filename, task_scheduler = None):
         opt.out_dir += '/'
 
     nr_pages = get_nr_pages_djvu(filename)
+    if nr_pages == None:
+        print >> sys.stderr, "unable to get_nr_pages for file:", filename
+        return 1
 
     if opt.num_thread == -1:
         opt.num_thread = multiprocessing.cpu_count()
