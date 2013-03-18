@@ -75,7 +75,8 @@ class TaskScheduler:
         elif nr_free_proc < 0.25 and len(self.running_thread) > 1:
             self.pause_process()
         elif len(self.paused_thread):
-            self.pause_process()
+            if len(self.running_thread):
+                self.pause_process()
             self.wakeup_process()
             # Now len(self.running_thread) >= 1
 
