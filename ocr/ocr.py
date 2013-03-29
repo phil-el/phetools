@@ -5,6 +5,7 @@ import os
 import subprocess
 import resource
 import utils
+import sys
 
 tesseract_languages = {
         'fr':"fra",
