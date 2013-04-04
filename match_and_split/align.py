@@ -86,6 +86,8 @@ def quote_filename(filename):
     return result
 
 def extract_djvu_text(url, filename, sha1):
+    # FIXME: either here or in copy_file_from_url() we must check the sha1
+    # checksum of the uploaded file, as copy_file_from_url() can fail silently.
     copy_file_from_url(url, filename)
     data = []
     cmdline = "/home/phe/bin/djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
