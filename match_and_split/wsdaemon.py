@@ -258,7 +258,7 @@ def do_match(mysite, maintitle, user, codelang, server):
 
     filename = align.get_djvu(mysite, djvuname, True)
     if not filename:
-        return ret_val(E_ERROR, "unable to read djvu")
+        return ret_val(E_ERROR, "unable to read djvu, if the File: exists, please retry")
 
     data = align.do_match(text, filename, djvuname, number, verbose = False, prefix = prefix)
     if not data['error']:

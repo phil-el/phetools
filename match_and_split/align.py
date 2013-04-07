@@ -11,6 +11,7 @@ import sys
 sys.path.append("/home/phe/pywikipedia")
 import wikipedia
 import urllib
+import utils
 
 def url_opener():
     opener = urllib.URLopener()
@@ -89,6 +90,9 @@ def extract_djvu_text(url, filename, sha1):
     # FIXME: either here or in copy_file_from_url() we must check the sha1
     # checksum of the uploaded file, as copy_file_from_url() can fail silently.
     copy_file_from_url(url, filename)
+    if sha1 != utils.sha1(filename):
+        print "upload failure, sha1 mismatch:", filename
+        return False
     data = []
     cmdline = "/home/phe/bin/djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
     print cmdline
@@ -108,6 +112,8 @@ def extract_djvu_text(url, filename, sha1):
     global pickle_obj, pickle_filename
     pickle_filename = filename
     pickle_obj = (sha1, data)
+
+    return True
 
 def ret_val(error, text):
     if error:
@@ -282,7 +288,8 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
             return False
 
         print "extracting text layer"
-        extract_djvu_text(url, filename, filepage.getHash())
+        if not extract_djvu_text(url, filename, filepage.getHash()):
+            return False
     else:
         if check_timestamp:
             try:
@@ -299,6 +306,7 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
                 except:
                     return filename
                 print "extracting text layer"
-                extract_djvu_text(url, filename, filepage.getHash())
+                if not extract_djvu_text(url, filename, filepage.getHash()):
+                    return False
 
     return filename
