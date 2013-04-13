@@ -8,6 +8,17 @@ import gzip
 import os
 import errno
 
+def read_file(filename):
+    fd = open(filename)
+    text =  unicode(fd.read(), 'utf-8')
+    fd.close()
+    return text
+
+def write_file(filename, text):
+    fd = open(filename, 'w')
+    fd.write(text.encode('utf-8'))
+    fd.close()
+
 # a simple serializer
 def save_obj(filename, data):
     fd = open(filename, 'wb')
