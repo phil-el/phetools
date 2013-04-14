@@ -1,0 +1,4 @@
+#!/bin/bash
+cd $HOME/wsbot
+exec nohup python -u verify_match_web.py >> log/verify_match.log
+
