@@ -324,8 +324,8 @@ def do_diff(ocr_text, text):
 
     diff = run_diff(ocr_text, text)
 
-    diff = re.sub('^--- /tmp/[^\n]*\n', '', diff)
-    diff = re.sub('^\+\+\+ /tmp/[^\n]*\n', '', diff)
+    diff = re.sub('^--- /[^\n]+/[^\n]+\n', '', diff)
+    diff = re.sub('^\+\+\+ /[^\n]+/[^\n]+\n', '', diff)
 
     diff = re.split(u'(?ms)@@.*?@@\n', diff)
     diff = [x for x in diff if x]
@@ -341,14 +341,6 @@ def filter_diff(diff):
 
     return result
 
-def do_rate(diff):
-    rate = 0.0
-    for d in diff:
-        for word in [x for x in d.split(u'\n') if len(x)]:
-            if word[0] == u'-':
-                rate += 1
-    return rate
-
 def verify_match(page_name, ocr_text, text, opt):
     has_nr = has_nr_template(text)
 
@@ -358,7 +350,7 @@ def verify_match(page_name, ocr_text, text, opt):
     ocr_text = transform_ocr_text(ocr_text, opt)
 
     diff = do_diff(ocr_text, text)
-    if opt.ignore_nr or (not has_nr and opt.rate):
+    if opt.ignore_nr or not has_nr:
         ocr_text = ocr_text.split(u'\n')
         ocr_text = u'\n'.join(ocr_text[1:])
         diff2 = do_diff(ocr_text, text)
@@ -368,10 +360,6 @@ def verify_match(page_name, ocr_text, text, opt):
 
     diff = filter_diff(diff)
 
-    rate = 0.0
-    if opt.rate:
-        rate += do_rate(diff)
-
     result = u''
     if len(diff):
             result += u'* [[' + page_name + u']]\n'
@@ -380,7 +368,7 @@ def verify_match(page_name, ocr_text, text, opt):
         d = u'\n'.join([x for x in d if len(x) > 1 and x[0] in u'-+'])
         result += u'<pre>' + d + u'\n</pre>' + u'\n'
 
-    return (result, rate)
+    return result
 
 def read_djvu(book_name, datas, opt):
     try:
@@ -417,21 +405,18 @@ def main(book_name, opt):
     keys.sort()
 
     result = u'[[Livre:' + book_name + u']]\n\n'
-    rate = 0.0
     for key in keys:
         if len(datas[key]) == 2:
             page_name = u'Page:' + book_name + u'/' + unicode(key)
-            temp_result, temp_rate = verify_match(page_name, datas[key][1], datas[key][0], opt)
-            result += temp_result
-            rate += temp_rate
+            result += verify_match(page_name, datas[key][1], datas[key][0], opt)
 
     #print result.encode('utf-8')
     if opt.save:
-        out_page = u'Discussion Livre:' + book_name + u'/Différence'
+        out_page = u'Discussion Livre:' + book_name + u'/Diff'
         page = wikipedia.Page(site = opt.site, title = out_page)
         page.put(result, comment = u'Mise à jour')
 
-    return rate
+    return True
 
 def default_options():
     class Options:
@@ -441,7 +426,6 @@ def default_options():
     options.lang = u'fr'
     options.site = wikipedia.getSite(code = options.lang, fam = 'wikisource')
     options.save = True
-    options.rate = False
     options.ignore_nr = False
 
     return options
@@ -456,13 +440,10 @@ if __name__ == "__main__":
             name = unicode(name, 'utf-8')
             extraParms = { u'gplnamespace' : 112 }
             gen = query_ext.PreloadingLinkedPage([name], site = options.site, extraParams = extraParms)
-        elif arg == '-rate':
-            options.rate = True
-            options.save = False
         elif arg == '-ignore_nr':
             options.ignore_nr = True
         elif arg == '-help':
-            print sys.argv[0], "-links -rate -ignore_nr"
+            print sys.argv[0], "-links -ignore_nr"
             sys.exit(1)
         else:
             gen = [ { u'title' : unicode(arg, 'utf-8') } ]
@@ -477,9 +458,6 @@ if __name__ == "__main__":
                 continue
             if not found:
                 continue
-            rate = main(p[u'title'], options)
-            if options.rate:
-                print '#', rate, '[[' + p[u'title'].encode('utf-8') + ']]'
-                sys.stdout.flush()
+            main(p[u'title'], options)
     finally:
         wikipedia.stopme()
