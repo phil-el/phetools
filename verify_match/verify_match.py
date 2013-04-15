@@ -80,9 +80,11 @@ def remove_template_pass(text):
     text = re.sub(u'{{[Cc]aché\|[^{}]*?}}', u'', text)
     text = re.sub(u'(?ms){{([Cc]|[Cc]entré)\|([^{}]*?)(\|[^{}]*)*}}', u'\\2', text)
     text = re.sub(u'{{[PpSs]c\|([^{}]*?)}}', u'\\1', text)
-    text = re.sub(u'{{[tT][234]\|([^{}|]*?)}}', u'\\1', text)
+    text = re.sub(u'{{[tT][234]\|([^{}]*?)(\|(fs|sp|lh|align)[ ]*=[ ]*[^}]*)*}}', u'\\1', text)  
     text = re.sub(u'{{[tT][234]\|([^{}]*?)\|([^{}]*?)(\|(fs|sp|lh|align)[ ]*=[ ]*[^}]*)*}}', u'\\2 \\1', text)
+    text = re.sub(u'{{[tT][234]\|([^{}|]*?)}}', u'\\1', text)
     text = re.sub(u'{{[tT][234]\|([^{}]*?)\|([^{}]*?)}}', u'\\2 \\1', text)
+    text = re.sub(u'{{[tT][1234]mp\|([^{}|]*?)}}', u'\\1', text)
     text = re.sub(u'{{[lL]ettrine\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[Rr]efa\|([^{}|]*)\|([^{}]*)}}', u'\\2', text)
     text = re.sub(u'{{[Rr]efa\|([^{}|]*)}}', u'\\1', text)
@@ -92,6 +94,9 @@ def remove_template_pass(text):
     text = re.sub(u'{{[Pp]li\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{-[-]+(\|[^{}]*)*}}', u'', text)
     text = re.sub(u'{{[Bb]rn\|[^{}]*}}', u'', text)
+    text = re.sub(u'{{[Pp]ersonnage\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
+    text = re.sub(u'{{[Aa]stérisme(\|[^{}]*)*}}', u'', text)
+    text = re.sub(u'{{[Aa]stérisque(\|[^{}]*)*}}', u'', text)
 
     return text
 
@@ -115,6 +120,7 @@ def remove_ocr_template(text):
 
 def remove_tag_pass(text):
     text = re.sub(u'(?msi)<div[^>]*?>(.*?)</div>', u'\\1', text)
+    text = re.sub(u'(?msi)<sup[^>]*?>(.*?)</sup>', u'\\1', text)
     text = re.sub(u'(?msi)<includeonly[^>]*?>(.*?)</includeonly>', u'', text)
     text = re.sub(u'(?msi)<span[^>]*?>(.*?)</span>', u'\\1', text)
     text = re.sub(u'(?msi)<big[^>]*?>(.*?)</big>', u'\\1', text)
@@ -252,8 +258,11 @@ def run_diff(ocr_text, text):
     return diff
 
 def white_list(left, right):
-    lst = { u'À' : u'DE',
-            u'DE' : u'À', }
+    lst = {
+        u'CLANS' : 'DANS',
+        u'CELTE' : u'CETTE'
+        }
+
     if left in lst and right == lst[left]:
         return True
     return False
@@ -295,7 +304,7 @@ def check_diff(text):
         if re.search(u'[0-9]', left) or re.search(u'[0-9]', right):
             return False
     if white_list(left, right):
-        return True
+        return False
     #print left.encode('utf-8')
     #print right.encode('utf-8')
     if check_distance(left, right):
@@ -408,7 +417,11 @@ def main(book_name, opt):
     for key in keys:
         if len(datas[key]) == 2:
             page_name = u'Page:' + book_name + u'/' + unicode(key)
-            result += verify_match(page_name, datas[key][1], datas[key][0], opt)
+            temp = verify_match(page_name, datas[key][1], datas[key][0], opt)
+            if len(temp) + len(result) > 384 * 1024:
+                result = u"\n\n'''Diff trop volumineux, résultat tronqué'''\n\n" + result
+                break
+            result += temp
 
     #print result.encode('utf-8')
     if opt.save:
