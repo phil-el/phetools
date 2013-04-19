@@ -97,6 +97,8 @@ def remove_template_pass(text):
     text = re.sub(u'{{[Pp]ersonnage\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[Aa]stérisme(\|[^{}]*)*}}', u'', text)
     text = re.sub(u'{{[Aa]stérisque(\|[^{}]*)*}}', u'', text)
+    text = re.sub(u'{{[Pp]etitTitre\|([^{}|]*)}}', u'\\1', text)
+    text = re.sub(u'{{[Pp]etitTitre2|([^{}|]*)}}', u'\\1', text)
 
     return text
 
@@ -171,6 +173,7 @@ def transform_text(text, opt):
     text = re.sub(u'(?msi)<section[^>]*?/>', u'', text)
     text = re.sub(u'(?msi)<br[^>]*?>', u'', text)
     text = re.sub(u'(?msi)<nowiki[^>]*?>', u'', text)
+    text = re.sub(u'(?msi)</nowiki[^>]*?>', u'', text)
     text = remove_template(text)
     text = re.sub(u'\[\[([^\]]*?)\]\]', strip_link, text)
     text = text.replace(u'__NOTOC__', u'')
@@ -260,7 +263,18 @@ def run_diff(ocr_text, text):
 def white_list(left, right):
     lst = {
         u'CLANS' : 'DANS',
-        u'CELTE' : u'CETTE'
+        u'CELTE' : u'CETTE',
+        u"CLOUTE" : u"DOUTE",
+        u"INONDE" : u"MONDE",
+        u"CLOUTAIS" : u"DOUTAIS",
+        u"GRECLINS" : u"GREDINS",
+        u"GRECLIN" : u"GREDIN",
+        u"CLOUTER" : u"DOUTER",
+        u"CLOUTÂT" : u"DOUTÂT",
+        u"CLIGNE" : u"DIGNE",
+        u"US" : u"ILS",
+        u"CLAMES" : u"DAMES",
+        u"CLAME" : u"DAME",
         }
 
     if left in lst and right == lst[left]:
@@ -287,6 +301,7 @@ def transform_ocr_diff(diff):
     diff = diff.replace(u'COEUR', u'CŒUR')
     diff = diff.replace(u'OEUVRE', u'ŒUVRE')
     diff = diff.replace(u'GOETHE', u'GŒTHE')
+    diff = diff.replace(u'HAENDEL', u'HÆNDEL')
     diff = diff.replace(u'OEIL', u'ŒIL')
     diff = diff.replace(u'OEUF', u'ŒUF')
     diff = diff.replace(u'A', u'À')
