@@ -91,7 +91,7 @@ def extract_djvu_text(url, filename, sha1):
     # checksum of the uploaded file, as copy_file_from_url() can fail silently.
     copy_file_from_url(url, filename)
     if sha1 != utils.sha1(filename):
-        print "upload failure, sha1 mismatch:", filename
+        print "upload failure, sha1 mismatch:", filename.encode('utf-8')
         return False
     data = []
     cmdline = "/home/phe/bin/djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
