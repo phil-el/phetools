@@ -8,6 +8,7 @@ import utils
 import sys
 
 tesseract_languages = {
+        'bn':'ben',
         'fr':"fra",
         'en':"eng",
         'de':"deu",
