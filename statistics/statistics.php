@@ -4,9 +4,9 @@
 $header= <<<EOT
 <html>
 <head>
-<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/vector/screen.css" type="text/css" media="screen" />
-<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/common/shared.css" type="text/css" media="screen" />
-<link rel="stylesheet" href="http://bits.wikimedia.org/skins-1.5/common/commonPrint.css" type="text/css" media="print" />
+<link rel="stylesheet" href="screen.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="shared.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="commonPrint.css" type="text/css" media="print" />
 <style type="text/css">
 .quality4 { background:#90ff90; }
 .quality3 { background:#ffe867; }
