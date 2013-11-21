@@ -38,6 +38,13 @@ domain_urls = {
         "Without_text",
         "Problematic",
         ),
+    'bn': (
+        104,
+        "প্রুফরিড",
+        "বৈধকরণ",
+        "লেখাবিহীন",
+        "\xe0\xa6\xb8\xe0\xa6\xae\xe0\xa6\xb8\xe0\xa7\x8d\xe0\xa6\xaf\xe0\xa6\xbe\xe0\xa6\xb8\xe0\xa6\x99\xe0\xa7\x8d\xe0\xa6\x95\xe0\xa7\x81\xe0\xa6\xb2",
+        ),
     'br': (
         102,
         "Reizhet",
@@ -92,7 +99,7 @@ domain_urls = {
         "Õigsus_tõendatud",
         "Heakskiidetud",
         "Ilma_tekstita",
-        "Problemaatiline",
+        "Probleemne",
         ),
     'fr': (
         104,
@@ -153,8 +160,8 @@ domain_urls = {
     'ml' : (
         106,
         "തെറ്റുതിരുത്തൽ_വായന_കഴിഞ്ഞവ",
-        "സാധുകരിച്ചവ",
-        "എഴുത്ത്_ഇല്ലാത്തവ",
+        "\xe0\xb4\xb8\xe0\xb4\xbe\xe0\xb4\xa7\xe0\xb5\x82\xe0\xb4\x95\xe0\xb4\xb0\xe0\xb4\xbf\xe0\xb4\x9a\xe0\xb5\x8d\xe0\xb4\x9a\xe0\xb4\xb5",
+        "\xe0\xb4\x8e\xe0\xb4\xb4\xe0\xb5\x81\xe0\xb4\xa4\xe0\xb5\x8d\xe0\xb4\xa4\xe0\xb5\x8d_\xe0\xb4\x87\xe0\xb4\xb2\xe0\xb5\x8d\xe0\xb4\xb2\xe0\xb4\xbe\xe0\xb4\xa4\xe0\xb5\x8d\xe0\xb4\xa4\xe0\xb4\xb5",
         "പ്രശ്നമുള്ളവ",
         ),
     'nl': (
@@ -266,7 +273,7 @@ def check_quality_cat(domain):
         msg_name = "Proofreadpage_" + cat_name
         result.append(site.mediawiki_message(msg_name).replace(u' ', u'_'))
     if [ unicode(x, 'utf-8') for x in domain_urls[domain][1:] ] != result:
-        print domain, domain_urls[domain], result
+        print domain, domain_urls[domain], [x.encode('utf-8') for x in result]
         print domain_urls[domain][0],
         for r in domain_urls[domain][1:]:
             print unicode(r, 'utf-8'),
@@ -274,23 +281,31 @@ def check_quality_cat(domain):
         print domain_urls[domain][0],
         print result[0], result[1], result[2], result[3]
 
-def check_all_quality_cat():
+def check_all_quality_cat(domains):
     for dom in domains:
         if dom == 'old':
             continue
         check_quality_cat(dom)
 
+def dump_pagenum_template(domain):
+    site = wikipedia.getSite(domain,fam='wikisource')
+    page = wikipedia.Page(site,"Mediawiki:Proofreadpage_pagenum_template")
+    #page = wikipedia.Page(site,"Mediawiki:Disambiguationspage")
+    print domain,
+    try:
+        t = page.get()
+        print repr(t)
+    except:
+        pass
+
+def dump_all_pagenum_template(domains):
+    for dom in domains:
+        if dom == 'old':
+            continue
+        dump_pagenum_template(dom)
 
 if __name__ == "__main__":
     import wikipedia
     domains = domain_urls.keys()
-    for dom in domains:
-        if dom=='old':continue
-	site = wikipedia.getSite(dom,fam='wikisource')
-        page = wikipedia.Page(site,"Mediawiki:Proofreadpage_pagenum_template")
-        #page = wikipedia.Page(site,"Mediawiki:Disambiguationspage")
-        try:
-            t = page.get()
-        except:continue
-        print dom, repr(t)
-    check_all_quality_cat()
+    #dump_all_pagenum_template(domains)
+    check_all_quality_cat(domains)

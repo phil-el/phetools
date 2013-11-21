@@ -127,11 +127,13 @@ def spaced_int(i,sep):
 
 
 def write_templates(res,keys):
-    for dom in ['fr','en']:
+    for dom in ['fr','en', 'bn']:
 	if dom=='fr':
 	    sep=' '
-	else:
+	elif dom == 'en':
 	    sep=','
+        else:
+            sep = ''
 
         num, num_q0, num_q2, num_q3, num_q4, num_tr, num_texts, num_disambig = decode_res( res[dom] )
         percent = num_tr*100./(num_texts-num_disambig)
