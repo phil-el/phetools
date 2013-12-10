@@ -411,7 +411,13 @@ def do_split(mysite, rootname, user, codelang, server):
                     if m2 :
                         # FIXME: shouldn't use an hardcoded name here
                         print "ok, quality 1, second try"
-                        content = "<noinclude><pagequality level=\"1\" user=\"ThomasBot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
+                        content = "<noinclude><pagequality level=\"1\" user=\"Phe-bot\" />"+m2.group(2)+"</noinclude>"+content+"<noinclude>"+m2.group(4)+"</noinclude>"
+
+        else:
+            header = u'<noinclude><pagequality level="1" user="Phe-bot" /><div class="pagetext">\n\n\n</noinclude>'
+            footer = u'<noinclude>\n<references/></div></noinclude>'
+            content = header + content + footer
+            
 
         safe_put(pl,content,user+": split")
 
