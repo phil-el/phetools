@@ -238,7 +238,7 @@ if __name__ == "__main__":
 	lines=[]
 
         if opt_diff:
-            print "date: Difference between " + ' '.join(time.ctime(old_time).split()[:3]) +" and "+' '.join(time.ctime(stats_time).split()[:3])
+            print "date: Difference between " + ' '.join(time.ctime(old_time).split()[:3]) + " " + time.ctime(old_time).split()[4] +" and "+' '.join(time.ctime(stats_time).split()[:3]) + ' ' + time.ctime(stats_time).split()[4]
         else:
             print "date: Statistics on " + time.ctime(stats_time)
         print "            all      q1     q2      q0   q3+q4      q4  |     all       pr    naked   disamb   percent"
