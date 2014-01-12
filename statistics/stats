@@ -75,17 +75,23 @@ def get_stats(domains):
         num_texts = int(row[0])
 
         #disambiguation pages
-        #first test if the message is a template...
-        q = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title in ( select pl_title from page left join pagelinks on page_id=pl_from where pl_namespace=10 and page_namespace=8 and page_title='Disambiguationspage' )"
-        cursor.execute (q)
+        # first try the __DISAMBIG__ keyword
+        cursor.execute("select count(page_title) from page where page_namespace = 0 and page_is_redirect = 0 and page_id in (select pp_page from page_props where pp_propname = 'disambiguation')")
         row = cursor.fetchone ()
         num_disambig = int(row[0])
 
-        if num_disambig==0 and disambiguations.get(dom) :
-            q = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'"%disambiguations.get(dom)
+        if num_disambig == 0:
+            #then test if the message is a template...
+            q = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title in ( select pl_title from page left join pagelinks on page_id=pl_from where pl_namespace=10 and page_namespace=8 and page_title='Disambiguationspage' )"
             cursor.execute (q)
             row = cursor.fetchone ()
             num_disambig = int(row[0])
+
+            if num_disambig==0 and disambiguations.get(dom) :
+                q = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'"%disambiguations.get(dom)
+                cursor.execute (q)
+                row = cursor.fetchone ()
+                num_disambig = int(row[0])
 
         if dom=='no':
             qq = "select /* SLOW_OK */ page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q.replace("count(page_title)","page_id")
