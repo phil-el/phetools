@@ -95,6 +95,8 @@ def remove_template_pass(text):
     text = re.sub(u'{{-[-]+(\|[^{}]*)*}}', u'', text)
     text = re.sub(u'{{[Bb]rn\|[^{}]*}}', u'', text)
     text = re.sub(u'{{[Pp]ersonnage\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
+    text = re.sub(u'{{[Pp]ersonnageD\|([^{}|]*)\|[^|{}]*\|([^|{}]*)(\|[^{}]*)*}}', u'\\1 \\2', text)
+    text = re.sub(u'{{[Dd]idascalie\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[Aa]stérisme(\|[^{}]*)*}}', u'', text)
     text = re.sub(u'{{[Aa]stérisque(\|[^{}]*)*}}', u'', text)
     text = re.sub(u'{{[Pp]etitTitre\|([^{}|]*)}}', u'\\1', text)
