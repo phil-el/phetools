@@ -1216,7 +1216,7 @@ class PreloadingContents:
     """
     Wraps around another generator to mass load pages.
     """
-    def __init__(self, generator, site = None, page_number = 50):
+    def __init__(self, generator, site = None, page_number = 60):
         self.site = getSite(site)
         self.generator = generator
         self.pageNumber = page_number
@@ -1225,7 +1225,7 @@ class PreloadingContents:
         somePages = []
         for page in self.generator:
             somePages.append(page[u'title'])
-            if len(somePages) >= self.pageNumber:
+            if len(somePages) >= self.pageNumber or len(u"\n".join(somePages)) > 4096 - 256:
                 result = PreloadingHistory(somePages, depth = 1, site = self.site, contents = True)
                 for refpage in result:
                     yield refpage
