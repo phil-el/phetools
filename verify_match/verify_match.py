@@ -176,7 +176,7 @@ def common_transform(text):
 def transform_text(text, opt):
     text = remove_tag(text)
     text = re.sub(u'(?msi)<section[^>]*?/>', u'', text)
-    text = re.sub(u'(?msi)<br[^>]*?>', u'', text)
+    text = re.sub(u'(?msi)<br[^>]*?>', u' ', text)
     text = re.sub(u'(?msi)<nowiki[^>]*?>', u'', text)
     text = re.sub(u'(?msi)</nowiki[^>]*?>', u'', text)
     text = remove_template(text)
