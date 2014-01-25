@@ -104,6 +104,7 @@ def remove_template_pass(text):
     text = re.sub(u'(?ms){{[Éé]pigraphe\|([^{}|]*)}}', u'\\1', text)
     text = re.sub(u'(?ms){{[Éé]pigraphe\|([^{}]*?)\|([^{}]*?)}}', u'\\1 \\2', text)
     text = re.sub(u'{{—[ ]*\|([^{}]*)}}', u'', text)
+    text = re.sub(u'{{\.\.\.|([^{}]*)}}', u'', text)
 
     return text
 
