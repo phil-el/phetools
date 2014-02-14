@@ -10,11 +10,12 @@ import sys
 tesseract_languages = {
         'bn':'ben',
         'fr':"fra",
+        'he': 'heb',
         'en':"eng",
         'de':"deu",
         'de-f':"deu-frak",
         'la':"ita",
-        'is':'isl', # needs tess 3.02                                           
+        'is':'isl', # needs tess 3.02
         'it':"ita",
         'es':"spa",
         'pt':"spa",
