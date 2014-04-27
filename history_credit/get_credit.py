@@ -60,7 +60,7 @@ def get_revision(cursor, rev_ids):
     if len(rev_ids):
         rev_id_str = [str(x) for x in rev_ids ]
         q = """SELECT rev_user
-               FROM revision_no_user_index
+               FROM revision
                WHERE rev_page IN (%s)
             """ % ( ",".join(rev_id_str), )
         cursor.execute(q)
