@@ -1,18 +1,14 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import re
 import sys
-import urllib
 import types
 
-fd_log = open("/home/phe/wsbot/log/credits.log", "a", 0)
+fd_log = open("../credits.log", "a", 0)
 sys.stderr = fd_log
 
-sys.path.append("/home/phe/wsbot")
 import get_credit
 
-# php sérializer, support only base type, list, tuple and dict, no support
+# php serializer, support only base type, list, tuple and dict, no support
 # for set nor object
 def serialize_php_int(var):
     return "i:%d;" % (var)

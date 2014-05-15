@@ -3,6 +3,8 @@
 import MySQLdb
 import os
 import sys
+sys.path.append('/data/project/phetools/wikisource')
+import namespaces
 
 def default_userdict(count = 0):
     # credits are returned in a dict with user name associated with this value
@@ -15,21 +17,14 @@ def database_name(domain, family):
         dbname = domain + family + '_p'
     return dbname
 
-def get_source_ns(conn, domain, family):
-    dbname = database_name(domain, family)
+def get_source_ns(domain, family):
+    return namespaces.namespaces[family][domain]
 
-    cursor = conn.cursor()
-    cursor.execute('use toolserver')
+def get_index_ns(domain, family):
+    return namespaces.index[family][domain]
 
-    cursor.execute("""SELECT ns_name, ns_id
-                      FROM namespacename
-                      WHERE dbname = %s
-                   """,
-                   [ dbname ] )
-    result = {}
-    for r in cursor.fetchall():
-        result[r[0]] = r[1]
-    return result
+def get_page_ns(domain, family):
+    return namespaces.page[family][domain]
 
 def use_db(conn, domain, family):
     q = 'use ' + database_name(domain, family)
@@ -96,9 +91,9 @@ def merge_contrib(a, b):
             if not flag in a[key]['flags']:
                 a[key]['flags'].append(flag)
 
-def book_pages_id(cursor, book, ns):
+def book_pages_id(cursor, book, page_ns):
     book = book.replace(' ', '_')
-    pages_id = [ x[1] for x in prefix_index(cursor, book + '/', ns['Page']) ]
+    pages_id = [ x[1] for x in prefix_index(cursor, book + '/', page_ns) ]
     return pages_id
 
 def credit_from_pages_id(cursor, pages_id):
@@ -120,9 +115,10 @@ def credit_from_pages_id(cursor, pages_id):
 
     return results
 
-def get_book_credit(cursor, book, ns):
+def get_book_credit(domain, family, cursor, book, ns):
     book = book.replace(' ', '_')
-    pages_id = book_pages_id(cursor, book, ns)
+    page_ns = ns[get_page_ns(domain, family)]
+    pages_id = book_pages_id(cursor, book, page_ns)
     return credit_from_pages_id(cursor, pages_id)
 
 def get_page_id(cursor, ns_nr, pages):
@@ -181,7 +177,7 @@ def get_images_credit(cursor, images):
     images = [ x.replace(' ', '_') for x in images ]
     results = []
 
-    conn = create_conn('commons', 'wiki', 4)
+    conn = create_conn('commons', 'wiki')
     use_db(conn, 'commons', 'wiki')
     for r in get_images_credit_db(conn.cursor(), images):
         results.append(r[0])
@@ -193,16 +189,16 @@ def get_images_credit(cursor, images):
     return results
 
 def get_credit(domain, family, books, pages, images):
-    conn = create_conn(domain, family, 3)
-    ns = get_source_ns(conn, domain, family)
+    conn = create_conn(domain, family)
+    ns = get_source_ns(domain, family)
     cursor = use_db(conn, domain, family)
 
     books_name = []
     results = {}
     for book in books:
-        contribs = get_book_credit(cursor, book, ns)
+        contribs = get_book_credit(domain, family, cursor, book, ns)
         merge_contrib(results, contribs)
-        books_name.append('Index:' + book )
+        books_name.append(get_index_ns(domain, family) + ':' + book)
 
     contribs = get_pages_credit(cursor, pages + books_name, ns)
     merge_contrib(results, contribs)
@@ -213,33 +209,15 @@ def get_credit(domain, family, books, pages, images):
 
     return results
 
-def cluster_from_domain(conn, domain, family):
-    cursor = conn.cursor()
-    cursor.execute("""
-                   SELECT server
-                   FROM toolserver.wiki
-                   WHERE dbname = %s
-                   """,
-                   [ database_name(domain, family)])
-    return cursor.fetchone()[0]
-
 # hint can be used by application to get directly the right cluster
-def create_conn(domain, family, hint):
+def create_conn(domain, family):
     conn_params = {
-        'user' : 'phe',
-        'read_default_file' : os.path.expanduser("~/.my.cnf"),
+        'read_default_file' : os.path.expanduser("~/replica.my.cnf"),
         }
-    conn = MySQLdb.connect(host = 'sql-s%s' % hint, **conn_params)
-    cluster = cluster_from_domain(conn, domain, family)
-    if cluster != hint:
-        conn.close()
-        # FIXME: log it somewhere, caller application would prolly redirect
-        # sys.stderr to a log file
-        #print >> sys.stderr, "bad hint, expect %d found %d" % (hint, cluster)
-        conn = MySQLdb.connect(host = 'sql-s%d' % cluster, **conn_params)
-    return conn
+    db_server = domain + family + '.labsdb'
+    return MySQLdb.connect(host = db_server, **conn_params)
 
 if __name__ == "__main__":
     domain = 'fr'
     family = 'wikisource'
-    get_credit(domain, family, [ "foo.djvu" ], [ "" ], [ "" ])
+    print get_credit(domain, family, [ "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ], [ ], [ ])
