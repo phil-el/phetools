@@ -6,7 +6,7 @@ import types
 fd_log = open("../credits.log", "a", 0)
 sys.stderr = fd_log
 
-import get_credit
+from get_credit import get_credit
 
 # php serializer, support only base type, list, tuple and dict, no support
 # for set nor object
@@ -149,23 +149,28 @@ def split_param(params):
 def query_params(environ):
     import cgi
     field = cgi.FieldStorage(environ['wsgi.input'])
-    rdict = { 'format' : 'text', 'book' : '', 'page' : '', 'image' : '' }
+    rdict = { 'format' : 'text',
+              'book' : '',
+              'page' : '',
+              'image' : '',
+              'lang' : '' }
     for name in field:
         rdict[name] = field[name].value
     rdict['book'] = split_param(rdict['book'])
     rdict['page'] = split_param(rdict['page'])
     rdict['image'] = split_param(rdict['image'])
+
     print >> sys.stderr, str(rdict)
+
     return rdict
 
-def myapp(environ, start_response):
-    params = query_params(environ)
-
-    result = get_credit.get_credit(domain = params['lang'],
-                                   family = 'wikisource',
-                                   books = params['book'],
-                                   pages = params['page'],
-                                   images = params['image'])
+def handle_query(params, start_response):
+    # FIXME: handle ill formed request (400)
+    result = get_credit(domain = params['lang'],
+                        family = 'wikisource',
+                        books = params['book'],
+                        pages = params['page'],
+                        images = params['image'])
 
     formater = get_formater(params['format'])
     text = formater.format(result)
@@ -174,6 +179,25 @@ def myapp(environ, start_response):
                               ('Content-Length', len(text)),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
+
+def handle_status(start_response):
+    text = "I'm up"
+    start_response('200 OK', [('Content-Type',
+                               'text/plain; charset=UTF-8'),
+                              ('Content-Length', len(text)),
+                              ('Access-Control-Allow-Origin', '*')])
+    return [ text ]
+
+def myapp(environ, start_response):
+    params = query_params(environ)
+
+    # Note than &status or &status= doesn't works cgi.FieldStorage expect
+    # &status=something to accept to store a parameter, so ?lang=fr&status=
+    # will return 200 and an empty answer, counter-intuitive...
+    if params['lang'] and not params.has_key('status'):
+        return handle_query(params, start_response)
+    else:
+        return handle_status(start_response)
 
 if __name__ == "__main__":
     import traceback
