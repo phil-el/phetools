@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
+# GPL V2, author phe
 
 import sys
-sys.path.append("/home/phe/pywikipedia")
-import wikipedia
-import query_ext
+# FIXME: is there a better way to do this?
+sys.path.append('/data/project/phetools/phe/common')
+sys.path.append('/data/project/phetools/phe/match_and_split')
 import lev_dist
 import re
 import tempfile
 import os
 import ws_utils
 import utils
+import pywikibot
+from pywikibot import pagegenerators as pagegen
 
 def is_imported_page(text):
     if re.search(u'{{[iI]wpage[ ]*\|[^}]+}}', text):
@@ -17,14 +20,13 @@ def is_imported_page(text):
     return False
 
 def load_pages(book_name, opt):
-    gen = query_ext.PreloadingPagesStartswith(u'Page:' + book_name + u'/',
-                                              site = opt.site)
     pages = []
-    for p in query_ext.PreloadingContents(gen, site = opt.site):
-        #print >> sys.stderr, p[u'title'].encode('utf-8')
-        text = p[u'revisions'][0]['*']
-        if not is_imported_page(text):
-            page_nr = int(re.match(u'.*/(\d+)$', p[u'title']).group(1))
+    gen = pagegen.PrefixingPageGenerator(u'Page:' + book_name + u'/',
+                                         site = opt.site, content = True)
+    for p in gen:
+        text = p.get()
+        if not is_imported_page(text):                                         
+            page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
             pages.append( ( text, page_nr ) )
     return pages
 
@@ -402,6 +404,8 @@ def verify_match(page_name, ocr_text, text, opt):
 
 def read_djvu(book_name, datas, opt):
     try:
+        # FIXME: look like dead code, used when I run this script on my local
+        # box, must be removed (or replaced by something better ?)
         import ocr_rate
         filename = get_djvu_name(book_name)
         for it in ocr_rate.read_objects(filename):
@@ -444,11 +448,12 @@ def main(book_name, opt):
                 break
             result += temp
 
-    #print result.encode('utf-8')
     if opt.save:
         out_page = u'Discussion Livre:' + book_name + u'/Diff'
-        page = wikipedia.Page(site = opt.site, title = out_page)
+        page = pywikibot.Page(site = opt.site, title = out_page)
         page.put(result, comment = u'Mise à jour')
+    else:
+        print result.encode('utf-8')
 
     return True
 
@@ -458,7 +463,8 @@ def default_options():
 
     options = Options()
     options.lang = u'fr'
-    options.site = wikipedia.getSite(code = options.lang, fam = 'wikisource')
+    options.site = pywikibot.getSite(code = options.lang, fam = 'wikisource')
+    # By default this script write on a wiki page.
     options.save = True
     options.ignore_nr = False
 
@@ -467,31 +473,22 @@ def default_options():
 if __name__ == "__main__":
 
     options = default_options()
+    options.save = False
 
     for arg in sys.argv[1:]:
-        if arg.startswith('-links:'):
-            name = arg[len('-links:'):]
-            name = unicode(name, 'utf-8')
-            extraParms = { u'gplnamespace' : 112 }
-            gen = query_ext.PreloadingLinkedPage([name], site = options.site, extraParams = extraParms)
-        elif arg == '-ignore_nr':
+        if arg == '-ignore_nr':
             options.ignore_nr = True
         elif arg == '-help':
-            print sys.argv[0], "-links -ignore_nr"
+            print sys.argv[0], "-ignore_nr"
             sys.exit(1)
         else:
             gen = [ { u'title' : unicode(arg, 'utf-8') } ]
 
     try:
-        found = False
         for p in gen:
             print >> sys.stderr, p[u'title'].encode('utf-8')
-            #if p[u'title'] == u'Livre:Régnier Double maîtresse 1900.djvu':
-            found = True
             if p[u'title'].endswith(u'.pdf'):
-                continue
-            if not found:
                 continue
             main(p[u'title'], options)
     finally:
-        wikipedia.stopme()
+        pywikibot.stopme()

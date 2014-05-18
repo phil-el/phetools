@@ -8,8 +8,7 @@ import os, re, random
 import pickle
 import difflib
 import sys
-sys.path.append("/home/phe/pywikipedia")
-import wikipedia
+import pywikibot
 import urllib
 import utils
 
@@ -94,7 +93,8 @@ def extract_djvu_text(url, filename, sha1):
         print "upload failure, sha1 mismatch:", filename.encode('utf-8')
         return False
     data = []
-    cmdline = "/home/phe/bin/djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
+    # FIXME: check return code
+    cmdline = "djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
     print cmdline
     fd = os.popen(cmdline)
     text = fd.read()
@@ -183,7 +183,7 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
                 if 2*i+1 < len(ftext1):
                     mstr = mstr + ss + ftext1[2*i+1]
         if verbose:
-            wikipedia.output(mstr)
+            pywikibot.output(mstr)
             print "--------------------------------"
 
         mstr = ""
@@ -206,7 +206,7 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
                     mstr = mstr + ss + ftext2[2*i+1]
                     no_color = no_color + ftext2[2*i] + ftext2[2*i+1]
         if verbose:
-            wikipedia.output(mstr)
+            pywikibot.output(mstr)
             print "===================================="
 
         if is_poem:
@@ -253,13 +253,13 @@ def do_match(target, filename, djvuname, number, verbose, prefix):
 
 def get_filepage(site, djvuname):
     try:
-        filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+        filepage = pywikibot.ImagePage(site, "File:" + djvuname)
         # required to get the SHA1 when the file is on commons.
-        if filepage.fileIsOnCommons():
-            site = wikipedia.getSite(code = 'commons', fam = 'commons')
-            filepage = wikipedia.ImagePage(site, "File:" + djvuname)
+        if filepage.fileIsShared():
+            site = pywikibot.getSite(code = 'commons', fam = 'commons')
+            filepage = pywikibot.ImagePage(site, "File:" + djvuname)
         return filepage
-    except wikipedia.NoPage:
+    except pywikibot.NoPage:
         return None
 
 # It's possible to get a name collision if two different wiki have local
@@ -268,16 +268,18 @@ def get_filepage(site, djvuname):
 def get_djvu(mysite, djvuname, check_timestamp = False):
     print "get_djvu", repr(djvuname)
 
+    cache_path = '/data/project/phetools/cache/djvu/'
+
     djvuname = djvuname.replace(" ", "_")
-    filename = "/home/phe/wsbot/cache/djvu/" + djvuname
+    filename = cache_path + djvuname
     if not os.path.exists(data_filename(filename)):
         # FIXME: use a LRU rather to randomly delete a file in the cache.
         print "CACHE MISS"
-        o = os.listdir("/home/phe/wsbot/cache/djvu")
+        o = os.listdir(cache_path)
         if len(o) >= 32:
             k = random.randint(0, len(o) - 1)
             print "deleting " + o[k]
-            os.unlink("/home/phe/wsbot/cache/djvu/" + o[k])
+            os.unlink(cache_path + o[k])
 
         try:
             filepage = get_filepage(mysite, djvuname)
@@ -288,7 +290,7 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
             return False
 
         print "extracting text layer"
-        if not extract_djvu_text(url, filename, filepage.getHash()):
+        if not extract_djvu_text(url, filename, filepage.getFileSHA1Sum()):
             return False
     else:
         if check_timestamp:
@@ -299,14 +301,14 @@ def get_djvu(mysite, djvuname, check_timestamp = False):
             except: # can occur if file has been deleted.
                 return False
             obj = get_pickle_obj(filename)
-            if obj[0] != filepage.getHash():
-                print "OUTDATED FILE", obj[0], filepage.getHash()
+            if obj[0] != filepage.getFileSHA1Sum():
+                print "OUTDATED FILE", obj[0], filepage.getFileSHA1Sum()
                 try:
                     url = filepage.fileUrl()
                 except:
                     return filename
                 print "extracting text layer"
-                if not extract_djvu_text(url, filename, filepage.getHash()):
+                if not extract_djvu_text(url, filename, filepage.getFileSHA1Sum()):
                     return False
 
     return filename
