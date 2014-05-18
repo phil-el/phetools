@@ -9,12 +9,12 @@ port = 8001
 nick = 'phe-log-bot' ## Change this, of course.
 channels = ['#wikisource-fr'] # LOWERCASE ONLY
 name = 'IRC Log Bot - http://code.google.com/p/pyirclogs/'
-password = 'to-253-you'
 
-if os.name == 'nt':
-    LOG_PATH = 'C:/logs/'
-else:
-    LOG_PATH = '/home/phe/log-irc/'
+fd = open('/data/project/phetools/password/password-ircbot.txt')
+password = fd.read()
+fd.close()
+
+LOG_PATH = '/data/project/phetools/log/log-irc/'
 
 
 __author__ = "Base code designed by Chris Oliver <excid3@gmail.com>, heavily modified by Harry Strongburg <lolwutaf2@gmail.com>"
@@ -159,6 +159,7 @@ def handleQuit(connection,event):
 
 def handleKick(connection,event):
     if nick == event.arguments() [ 0 ]:
+        # FIXME: broken as we use a global ? never tried it -- Phe
         server.join(event.target())
     _real_handler(event.arguments() [ 0 ] + ' a été éjecté par : ' +event.source().split ( '!' ) [ 0 ] + ': ' + event.arguments()[ 1 ],name=event.target())
 
@@ -195,26 +196,29 @@ irc.add_global_handler('mode', handleMode)  ## hence if you log multiple rooms, 
 #irc.add_global_handler('nick',handleNick)  ##  echo into the logs for all your rooms, which is not wanted.       ##
                                             ########################################################################
 
-# Create a server object, connect and join the channel
-server = irc.server()
-server.connect(network, port, nick, ircname=name,ssl=False)
-if password: server.privmsg("nickserv","identify %s"%password)
-time.sleep(10) ## Waiting on the IRCd to accept your password before joining rooms
-for channel in channels:
-    server.join(channel)
+server = None
+
+def connect():
+    global server
+    server.connect(network, port, nick, ircname=name,ssl=False)
+    if password:
+        server.privmsg("nickserv","identify %s"%password)
+        time.sleep(10) ## Waiting on the IRCd to accept your password before joining rooms
+    for channel in channels:
+        server.join(channel)
 
 def _connected_checker():
     global server
     server.execute_delayed(120, _connected_checker)
     if not server.is_connected():
-        print >> sys.stdout, "disconnected, reconnect"
-        server.connect(network, port, nick, ircname=name,ssl=False)
-        if password: server.privmsg("nickserv","identify %s"%password)
-        time.sleep(10) ## Waiting on the IRCd to accept your password before joining rooms
-        for channel in channels:
-            server.join(channel)
+        print >> sys.stderr, "disconnected, reconnect"
+        connect()
 
-server.execute_delayed(120, _connected_checker)
+if __name__ == "__main__":
+    server = irc.server()
 
-# Jump into an infinite loop
-irc.process_forever()
+    connect()
+    server.execute_delayed(120, _connected_checker)
+
+    irc.process_forever()
+
