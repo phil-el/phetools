@@ -1,42 +1,28 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#    This program is free software; you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation; either version 2 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-#
-#
-#    copyright thomasv1 at gmx dot de
+# GPL V2, author thomasv1 at gmx dot de, phe
 
-__module_name__ = "wikisourcedaemon"
+__module_name__ = "match_and_split_daemon"
 __module_version__ = "1.0"
-__module_description__ = "wikisource daemon"
+__module_description__ = "match and split daemon"
 
-import match_and_split_config as config
+import sys
+sys.path.append('/data/project/phetools/phe/match_and_split')
+sys.path.append('/data/project/phetools/phe/common')
 
+import simple_redis_ipc
 import os
-import socket
 import re
 import thread
 import time
 import copy
-import json
 import align
 import common_html
 import utils
 import signal
+import urllib
 
-import wikipedia, pywikibot
+import pywikibot
 
 mylock = thread.allocate_lock()
 
@@ -86,8 +72,7 @@ def get_pl(year, vol):
     if pl != None:
         return pl
 
-    # This presume wikipedia.setSite() has been called.
-    indexpage = wikipedia.Page(wikipedia.getSite(), "Livre:" + rddm_name(year, vol))
+    indexpage = pywikibot.Page(pywikibot.getSite(), "Livre:" + rddm_name(year, vol))
     text = indexpage.get()
     m = re.search("(?ms)<pagelist\s+(.*?)/>",text)
     if m:
@@ -134,11 +119,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            title, codelang, user, server, t, conn = queue[-1]
+            title, codelang, user, t, request = queue[-1]
             got_it = True
         lock.release()
 
-    return title, codelang, user, server, t, conn
+    return title, codelang, user, t, request
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -157,12 +142,12 @@ def ret_val(error, text):
 
 # FIXME, here and everywhere, can't we use mysite.lang and mysite.family.name
 # to remove some parameters, does this work for old wikisource?
-def do_match(mysite, maintitle, user, codelang, server):
+def do_match(mysite, maintitle, user, codelang):
     prefix = page_prefixes.get(codelang)
     if not prefix:
         return ret_val(E_ERROR, "no prefix")
 
-    page = wikipedia.Page(mysite, maintitle)
+    page = pywikibot.Page(mysite, maintitle)
     try:
         text = page.get()
     except:
@@ -174,7 +159,7 @@ def do_match(mysite, maintitle, user, codelang, server):
         p0 = re.compile("\{\{R2Mondes\|(\d+)\|(\d+)\|(\d+)\}\}\s*\n")
         try:
             new_text = p0.sub(repl, text)
-        except wikipedia.NoPage:
+        except pywikibot.NoPage:
             return ret_val(E_ERROR, "Erreur : impossible de trouver l'index")
         p = re.compile('==\[\[Page:([^=]+)\]\]==\n')
         bl= p.split(new_text)
@@ -234,7 +219,8 @@ def do_match(mysite, maintitle, user, codelang, server):
 
         safe_put(page,new_text,user+": match")
         jobs['number_of_split_job'] += 1
-        add_job(lock, jobs['split_queue'], (maintitle.encode("utf8"), codelang, user.encode("utf8"), server, time.time(), None))
+        # FIXME: can we pass the request here and use a callbackin the js?
+        add_job(lock, jobs['split_queue'], (maintitle, codelang, user, time.time(), None))
         # FIXME: that's an abuse of E_ERROR
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
@@ -250,7 +236,7 @@ def do_match(mysite, maintitle, user, codelang, server):
     else:
         return ret_val(E_ERROR, "match tag not found")
 
-    wikipedia.output(djvuname + " " + number)
+    pywikibot.output(djvuname + " " + number)
     try:
         number = int(number)
     except:
@@ -276,21 +262,16 @@ def safe_put(page,text,comment):
     # pass the comment directly to put, but is put() thread safe? Actually not
     # a trouble, only one instance of the bot can run but better to check that
     mylock.acquire()
-    wikipedia.setAction(comment)
+    pywikibot.setAction(comment)
 
     while 1:
         try:
-            status, reason, data = page.put(text)
-            if reason != u'OK':
-                print "put error", status, reason, data
-                time.sleep(10)
-                continue
-            else:
-                break
-        except wikipedia.LockedPage:
+            page.put(text)
+            break
+        except pywikibot.LockedPage:
             print "put error : Page %s is locked?!" % page.aslink().encode("utf8")
             break
-        except wikipedia.NoPage:
+        except pywikibot.NoPage:
             print "put error : Page does not exist %s" % page.aslink().encode("utf8")
             break
         except pywikibot.NoUsername:
@@ -298,19 +279,20 @@ def safe_put(page,text,comment):
             break
         except:
             print "put error: unknown exception"
+            raise
             time.sleep(5)
             break
     mylock.release()
 
 
-def do_split(mysite, rootname, user, codelang, server):
+def do_split(mysite, rootname, user, codelang):
     prefix = page_prefixes.get(codelang)
     if not prefix:
         return ret_val(E_ERROR, "no Page: prefix")
     prefix = prefix.decode('utf-8')
 
     try:
-        page = wikipedia.Page(mysite,rootname)
+        page = pywikibot.Page(mysite, rootname)
         text = page.get()
     except:
         return ret_val(E_ERROR, "unable to read page")
@@ -342,7 +324,7 @@ def do_split(mysite, rootname, user, codelang, server):
 
         content = content.rstrip("\n ")
 
-        pl = wikipedia.Page(mysite, pagetitle)
+        pl = pywikibot.Page(mysite, pagetitle)
 
         m =  re.match(prefix + ':(.*?)/(\d+)', pagetitle)
         if m:
@@ -454,19 +436,20 @@ jobs = None
 def html_for_queue(queue):
     html = ''
     for i in queue:
-        mtitle = i[0].decode('utf-8')
+        print i
+        mtitle = i[0]
         codelang = i[1]
         try:
-            msite = wikipedia.getSite(codelang, config.family)
-            page = wikipedia.Page(msite, mtitle)
-            path = msite.nice_get_address(page.urlname())
+            msite = pywikibot.getSite(codelang, 'wikisource')
+            page = pywikibot.Page(msite, mtitle)
+            path = msite.nice_get_address(page.title(asUrl = True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:
             url = ""
-        html += date_s(i[4])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
+        html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
     return html
 
-def do_status(lock, conn):
+def do_status(lock):
     lock.acquire()
     m_queue = copy.deepcopy(jobs['match_queue'])
     s_queue = copy.deepcopy(jobs['split_queue'])
@@ -474,23 +457,20 @@ def do_status(lock, conn):
 
     html = common_html.get_head('Match and split')
 
-    html += "<body><div>the robot is running.<br/><hr/>"
-    html += "<br/>%d jobs in match queue.<br/>" % len(m_queue)
+    html += u"<body><div>the robot is running.<br/><hr/>"
+    html += u"<br/>%d jobs in match queue.<br/>" % len(m_queue)
     html += html_for_queue(m_queue)
-    html += "<br/>%d jobs in split queue.<br/>" % len(s_queue)
+    html += u"<br/>%d jobs in split queue.<br/>" % len(s_queue)
     html += html_for_queue(s_queue)
-    html += "<br/>%(number_of_match_job)d match, %(number_of_split_job)d split since server start<br/>" % jobs
-    html += '</div></body></html>'
+    html += u"<br/>%(number_of_match_job)d match, %(number_of_split_job)d split since server start<br/>" % jobs
+    html += u'</div></body></html>'
 
-    conn.sendall(html)
-    conn.close()
+    return html
 
 def stop_queue(queue):
     for i in range(len(queue)):
-        title, lang, user, server, t, conn = queue[i]
-        queue[i] = (title, lang, user, server, t, None)
-        if conn:
-            conn.close()
+        title, lang, user, t, request = queue[i]
+        queue[i] = (title, lang, user, t, request)
 
 # either called through a SIGUSR2 or a finally clause.
 def on_exit(sig_nr, frame):
@@ -503,98 +483,72 @@ def on_exit(sig_nr, frame):
 
 def bot_listening(lock):
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        sock.bind(('', config.port))
-    except:
-        print "could not start listener : socket already in use"
-        thread.interrupt_main()
-        return
-
     print date_s(time.time())+ " START"
-    sock.listen(1)
-    sock.settimeout(None)
-
-    # The other side needs to know the server name where the daemon run to open
-    # the connection. We write it after bind() because we want to ensure than
-    # only one instance of the daemon is running. FIXME: this is not sufficient
-    # if the job is migrated so migration is disabled for this daemon.
-    if os.path.exists(config.servername_filename):
-        os.chmod(config.servername_filename, 0644)
-    fd = open(config.servername_filename, "w")
-    fd.write(socket.gethostname())
-    fd.close()
-    os.chmod(config.servername_filename, 0444)
 
     try:
         while True:
-            conn, addr = sock.accept()
-            data = conn.recv(1024)
-            try:
-                cmd, title, lang, user, server = data.split('|')
-            except:
-                print "error", data
-                conn.close()
+            request = simple_redis_ipc.wait_for_request('match_and_split_daemon')
+            if not request:
                 continue
+            try:
+                print request
+
+                cmd = request['cmd']['cmd']
+                title = request['cmd'].get('title', '')
+                title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
+                lang = request['cmd'].get('lang', '')
+                user = request['cmd'].get('user', '')
+            except:
+                # FIXME: don't raise but return an error with the request as
+                # error msg ?
+                print "error", request
+                raise
 
             t = time.time()
             user = user.replace(' ', '_')
 
-            print date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title + ' ' + server
+            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
 
             if cmd == "status":
-                do_status(lock, conn)
+                html = do_status(lock)
+                simple_redis_ipc.send_reply(request, html)
             elif cmd == "match":
                 jobs['number_of_match_job'] += 1
-                add_job(lock, jobs['match_queue'], (title, lang, user, server, t, conn))
+                add_job(lock, jobs['match_queue'], (title, lang, user, t, request))
             elif cmd == "split":
                 jobs['number_of_split_job'] += 1
-                add_job(lock, jobs['split_queue'], (title, lang, user, server, t, conn))
+                add_job(lock, jobs['split_queue'], (title, lang, user, t, request))
             else:
-                out = ret_val(E_ERROR, "unknown command: " + cmd)
-                conn.sendall(json.dumps(out));
-                conn.close()
+                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
 
     finally:
-        sock.close()
         on_exit(0, None)
 
 def date_s(at):
     t = time.gmtime(at)
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
-def get_family(server):
-    # Kludge
-    print "server", server
-    if server.endswith('wikilivres.info'):
-        return 'wikilivres'
-    return config.family
-
 def job_thread(lock, queue, func):
     while True:
-        title, codelang, user, server, t, conn = get_job(lock, queue)
+        title, codelang, user, t, request = get_job(lock, queue)
 
         time1 = time.time()
         out = ''
         try:
-            mysite = wikipedia.getSite(codelang, get_family(server))
+            # FIXME: don't harcode family name
+            mysite = pywikibot.getSite(codelang, 'wikisource')
         except:
             out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
         if mysite:
-            wikipedia.setSite(mysite)
             print mysite, title
-            title = title.decode('utf-8')
-            user = user.decode('utf-8')
-            out = func(mysite, title, user, codelang, server)
+            out = func(mysite, title, user, codelang)
 
-        if conn:
-            conn.sendall(json.dumps(out))
-            conn.close()
+        if request and mysite:
+            simple_redis_ipc.send_reply(request, out)
 
         time2 = time.time()
-        print date_s(time2), title.encode('utf-8'), user.encode("utf8"), codelang, server, " (%.2f)" % (time2-time1), out
+        print (date_s(time2) + ' ' + title + ' ' + user + ' ' +  codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
 
         remove_job(lock, queue)
 
@@ -607,14 +561,20 @@ def default_jobs():
         }
 
 if __name__ == "__main__":
-    # qdel send a SIGUSR2 if -notify is used when starting the job.
-    signal.signal(signal.SIGUSR2, on_exit)
     try:
-        jobs = utils.load_obj("wsdaemon.jobs")
-    except:
-        jobs = default_jobs()
+        # qdel send a SIGUSR2 if -notify is used when starting the job.
+        signal.signal(signal.SIGUSR2, on_exit)
+        try:
+            jobs = utils.load_obj("wsdaemon.jobs")
+        except:
+            jobs = default_jobs()
 
-    lock = thread.allocate_lock()
-    thread.start_new_thread(job_thread, (lock, jobs['match_queue'], do_match))
-    thread.start_new_thread(job_thread, (lock, jobs['split_queue'], do_split))
-    bot_listening(lock)
+        lock = thread.allocate_lock()
+        thread.start_new_thread(job_thread, (lock, jobs['match_queue'], do_match))
+        thread.start_new_thread(job_thread, (lock, jobs['split_queue'], do_split))
+        bot_listening(lock)
+    except KeyboardInterrupt:
+        pywikibot.stopme()
+        os._exit(1)
+    finally:
+        pywikibot.stopme()
