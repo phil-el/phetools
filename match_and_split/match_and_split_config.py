@@ -14,8 +14,7 @@ if socket.gethostname() == 'zaniah':
     family = 'wikisourcelocal'
     djvulibre_path = ""
     servername_filename = '/usr/src/phe/botpywi/thomasv/public_html/match_and_split.server'
-else: # toolserver, solaris currently
-    sys.path.append("/home/phe/pywikipedia")
+else: # wmflabs
     family = 'wikisource'
-    djvulibre_path = "/opt/ts/bin/"
-    servername_filename = os.getenv('HOME') + '/public_html/match_and_split.server'
+    djvulibre_path = "/usr/bin/"
+    servername_filename = '/data/project/phetools/match_and_split.server'

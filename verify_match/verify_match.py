@@ -450,7 +450,7 @@ def main(book_name, opt):
 
     if opt.save:
         out_page = u'Discussion Livre:' + book_name + u'/Diff'
-        page = pywikibot.Page(site = opt.site, title = out_page)
+        page = pywikibot.Page(source = opt.site, title = out_page)
         page.put(result, comment = u'Mise à jour')
     else:
         print result.encode('utf-8')
