@@ -16,7 +16,6 @@ import thread
 import time
 import copy
 
-import json
 import pywikibot
 import common_html
 import verify_match
@@ -142,7 +141,7 @@ def bot_listening(lock):
                 html = do_status(lock, verify_queue)
                 simple_redis_ipc.send_reply(request, html)
             else:
-                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd));
+                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
 
     finally:
         print >> sys.stderr, "STOP"
@@ -182,4 +181,7 @@ if __name__ == "__main__":
         ident = thread.start_new_thread(job_thread, (lock, verify_queue, do_match))
         bot_listening(lock)
     except KeyboardInterrupt:
+        pywikibot.stopme()
         os._exit(1)
+    finally:
+        pywikibot.stopme()

@@ -424,6 +424,7 @@ def read_djvu(book_name, datas, opt):
     return True
 
 def main(book_name, opt):
+    # FIXME: do not hardcode the namespace here.
     book_name = book_name[len(u'Livre:'):]
 
     pages = load_pages(book_name, opt)
