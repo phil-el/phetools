@@ -11,7 +11,6 @@ sys.path.append('/data/project/phetools/phe/common')
 import simple_redis_ipc
 
 import os
-import socket
 import re
 import thread
 import time
@@ -178,12 +177,9 @@ def job_thread(lock, queue, func):
 
 
 if __name__ == "__main__":
-    if True:
-        try:
-            lock = thread.allocate_lock()
-            ident = thread.start_new_thread(job_thread, (lock, verify_queue, do_match))
-            bot_listening(lock)
-        except KeyboardInterrupt:
-            os._exit(1)
-    else:
-        pass
+    try:
+        lock = thread.allocate_lock()
+        ident = thread.start_new_thread(job_thread, (lock, verify_queue, do_match))
+        bot_listening(lock)
+    except KeyboardInterrupt:
+        os._exit(1)
