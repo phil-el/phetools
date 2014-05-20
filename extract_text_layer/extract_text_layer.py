@@ -1,27 +1,14 @@
 #!/usr/bin/python
-#    This program is free software; you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation; either version 2 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-#
-#
-#    copyright phe at some dot where
-
+# GPL V2, author phe                                                            
 __module_name__ = "extract_text_layer_daemon"
 __module_version__ = "1.0"
 __module_description__ = "extract text layer daemon"
 
-import match_and_split_config as config
+
+import sys
+sys.path.append('/data/project/phetools/phe/match_and_split')
+sys.path.append('/data/project/phetools/phe/common')
+import simple_redis_ipc
 
 import os
 import socket
@@ -31,8 +18,8 @@ import time
 import copy
 
 import align
-import json
-import wikipedia, pywikibot
+import pywikibot
+import urllib
 import common_html
 
 mylock = thread.allocate_lock()
@@ -83,11 +70,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            title, codelang, user, t, conn = queue[-1]
+            title, codelang, user, t, request = queue[-1]
             got_it = True
         lock.release()
 
-    return title, codelang, user, t, conn
+    return title, codelang, user, t, request
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -121,7 +108,7 @@ def do_extract(mysite, maintitle, user, codelang):
         text += u'==[[' + prefix + u':' + maintitle + u'/' + unicode(i+1) + u']]==\n'
         text += align.read_djvu_page(filename, i+1) + u'\n'
 
-    page = wikipedia.Page(site = mysite, title = u'user:' + user + u'/Text')
+    page = pywikibot.Page(mysite, u'User:' + user + u'/Text')
     safe_put(page, text, comment = u'extract text')
 
     return ret_val(E_OK, "")
@@ -135,21 +122,16 @@ def safe_put(page,text,comment):
     # pass the comment directly to put, but is put() thread safe? Actually not
     # a trouble, only one instance of the bot can run but better to check that
     mylock.acquire()
-    wikipedia.setAction(comment)
+    pywikibot.setAction(comment)
 
     while 1:
         try:
-            status, reason, data = page.put(text)
-            if reason != u'OK':
-                print "put error", status, reason, data
-                time.sleep(10)
-                continue
-            else:
-                break
-        except wikipedia.LockedPage:
+            page.put(text)
+            break
+        except pywikibot.LockedPage:
             print "put error : Page %s is locked?!" % page.aslink().encode("utf8")
             break
-        except wikipedia.NoPage:
+        except pywikibot.NoPage:
             print "put error : Page does not exist %s" % page.aslink().encode("utf8")
             break
         except pywikibot.NoUsername:
@@ -165,90 +147,73 @@ def safe_put(page,text,comment):
 extract_queue = []
 
 def html_for_queue(queue):
-    html = ''
+    html = u''
     for i in queue:
-        mtitle = i[0].decode('utf-8')
+        mtitle = i[0]
         codelang = i[1]
         try:
             # FIXME: do not harcode the family
-            msite = wikipedia.getSite(codelang, 'wikisource')
-            page = wikipedia.Page(msite, mtitle)
-            path = msite.nice_get_address(page.urlname())
+            msite = pywikibot.getSite(codelang, 'wikisource')
+            # FIXME: do not hardcide the namespace here.
+            page = pywikibot.Page(msite, u'Livre:' + mtitle)
+            path = msite.nice_get_address(page.title(asUrl = True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:
             url = ""
         html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
     return html
 
-# title user lang t conn
+# title user lang t request
 def do_status(lock, queue):
     lock.acquire()
     queue = copy.copy(queue)
     lock.release()
 
     html = common_html.get_head('Extract text layer')
-    html += "<body><div>The robot is running.<br/><hr/>"
-    html += "<br/>%d jobs in extract queue.<br/>" % len(queue)
+    html += u"<body><div>The robot is running.<br/><hr/>"
+    html += u"<br/>%d jobs in extract queue.<br/>" % len(queue)
     html += html_for_queue(queue)
-    html += '</div></body></html>'
+    html += u'</div></body></html>'
     return html
 
 def bot_listening(lock):
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        sock.bind(('', 12345))
-    except:
-        print "could not start listener : socket already in use"
-        thread.interrupt_main()
-        return
-
     print date_s(time.time())+ " START"
-    sock.listen(1)
-    sock.settimeout(None)
-
-    # The other side needs to know the server name where the daemon run to open
-    # the connection. We write it after bind() because we want to ensure than
-    # only one instance of the daemon is running. FIXME: this is not sufficient
-    # if the job is migrated so migration is disabled for this daemon.
-    servername_filename = '/home/phe/public_html/extract_text_layer.server'
-    if os.path.exists(servername_filename):
-        os.chmod(servername_filename, 0644)
-    fd = open(servername_filename, "w")
-    fd.write(socket.gethostname())
-    fd.close()
-    os.chmod(servername_filename, 0444)
 
     try:
         while True:
-            conn, addr = sock.accept()
-            data = conn.recv(1024)
-            try:
-                cmd, title, lang, user = data.split('|')
-            except:
-                print "error", data
-                conn.close()
+            request = simple_redis_ipc.wait_for_request('extract_text_layer_daemon')
+            if not request:
                 continue
+            try:
+                print request
+
+                cmd = request['cmd']['cmd']
+                title = request['cmd'].get('title', '')
+                title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
+                lang = request['cmd'].get('lang', '')
+                user = request['cmd'].get('user', '')
+            except:
+                # FIXME: don't raise but return an error with the request a
+                # error msg ?
+                print "error", request
+                raise
 
             t = time.time()
             user = user.replace(' ', '_')
 
-            print date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title
+            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
 
             if cmd == "extract":
-                add_job(lock, extract_queue, (title, lang, user, t, conn))
+                add_job(lock, extract_queue, (title, lang, user, t, request))
             elif cmd == 'status':
                 html = do_status(lock, extract_queue)
-                conn.sendall(html);
-                conn.close()
+                simple_redis_ipc.send_reply(request, html)
             else:
-                conn.sendall(json.dumps(ret_val(E_ERROR, "unknown command: " + cmd)));
-                conn.close()
+                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
 
     finally:
-        sock.close()
-        print "STOP"
+        print >> sys.stderr, "STOP"
 
 def date_s(at):
     t = time.gmtime(at)
@@ -257,34 +222,35 @@ def date_s(at):
 
 def job_thread(lock, queue, func):
     while True:
-        title, codelang, user, t, conn = get_job(lock, queue)
+        title, codelang, user, t, request = get_job(lock, queue)
 
         time1 = time.time()
         out = ''
         try:
-            mysite = wikipedia.getSite(codelang, config.family)
+            mysite = pywikibot.getSite(codelang, 'wikisource')
         except:
             out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
 
         if mysite:
-            wikipedia.setSite(mysite)
-            print mysite, title
-            title = title.decode('utf-8')
-            user = user.decode('utf-8')
             out = func(mysite, title, user, codelang)
 
-        if conn:
-            conn.sendall(json.dumps(out))
-            conn.close()
+        if request:
+            simple_redis_ipc.send_reply(request, out)
 
         time2 = time.time()
-        print date_s(time2) + title.encode('utf-8') + ' ' + user.encode("utf8") + " " + codelang + " (%.2f)" % (time2-time1) + " " + str(out)
+        print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
 
         remove_job(lock, queue)
 
 
 if __name__ == "__main__":
-    lock = thread.allocate_lock()
-    thread.start_new_thread(job_thread, (lock, extract_queue, do_extract))
-    bot_listening(lock)
+    try:
+        lock = thread.allocate_lock()
+        thread.start_new_thread(job_thread, (lock, extract_queue, do_extract))
+        bot_listening(lock)
+    except KeyboardInterrupt:
+        pywikibot.stopme()
+        os._exit(1)
+    finally:
+        pywikibot.stopme()

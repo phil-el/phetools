@@ -1,3 +1,0 @@
-#!/bin/bash
-cd $HOME/wsbot
-exec nohup python -u extract_text_layer.py >> log/extract_text_layer.log
