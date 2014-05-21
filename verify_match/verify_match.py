@@ -14,27 +14,63 @@ import utils
 import pywikibot
 from pywikibot import pagegenerators as pagegen
 
+def cache_filename(djvuname):
+    cache_path = '/data/project/phetools/cache/extract_text_layer/'
+    return cache_path + djvuname + ".dat"
+
+# FIXME: we must also store in the cache the sha1 of the djvu to be able
+# to check is the file changed, if the file changed we must invalidate
+# the cache for this file.
+def read_cache(djvuname):
+    cache_path = '/data/project/phetools/cache/extract_text_layer/'
+    filename = cache_filename(djvuname)
+    
+    if not os.path.exists(filename):
+        # FIXME: use a LRU rather to randomly delete a file in the cache.
+        print "CACHE MISS"
+        o = os.listdir(cache_path)
+        if len(o) >= 32:
+            k = random.randint(0, len(o) - 1)
+            print "deleting " + o[k]
+            os.unlink(cache_path + o[k])
+        result = {}
+    else:
+        result = utils.load_obj(filename)
+
+    return result
+
+def write_cache(djvuname, data):
+    filename = cache_filename(djvuname)
+    utils.save_obj(filename, data)
+
 def is_imported_page(text):
     if re.search(u'{{[iI]wpage[ ]*\|[^}]+}}', text):
         return True
     return False
 
-def load_pages(book_name, opt):
+def load_pages(book_name, opt, cache):
+    # It's more efficient to do two pass, in the first we don't preload
+    # contents but only check if the cache is ok.
+    remaining_pages = []
     pages = []
     gen = pagegen.PrefixingPageGenerator(u'Page:' + book_name + u'/',
-                                         site = opt.site, content = True)
+                                         site = opt.site)
     for p in gen:
-        text = p.get()
-        if not is_imported_page(text):                                         
-            page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
-            pages.append( ( text, page_nr ) )
-    return pages
+        page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
+        if not cache.has_key(page_nr) or cache[page_nr][0] != p.latestRevision():
+            remaining_pages.append(p)
+        else:
+            pages.append( ( None, page_nr, p.latestRevision() ) )
 
-# return the djvu filename
-def get_djvu_name(book_name):
-    djvu_name = 'DJVU/' + book_name.encode('utf-8')
-    djvu_name = djvu_name.replace(' ', '_')
-    return djvu_name
+    # and in the second pass we preload contents for cache miss,
+    # imported pages are never cached, but that's not a no big deal
+    for p in pagegen.PreloadingGenerator(remaining_pages):
+        text = p.get()
+        if not is_imported_page(text):
+            page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
+            pages.append( ( text, page_nr, p.latestRevision() ) )
+
+    return pages
 
 # FIXME: share
 def strip_link(matchobj):
@@ -403,47 +439,45 @@ def verify_match(page_name, ocr_text, text, opt):
     return result
 
 def read_djvu(book_name, datas, opt):
-    try:
-        # FIXME: look like dead code, used when I run this script on my local
-        # box, must be removed (or replaced by something better ?)
-        import ocr_rate
-        filename = get_djvu_name(book_name)
-        for it in ocr_rate.read_objects(filename):
-            datas.setdefault(it[0], [])
-            datas[it[0]].append(it[1])
-    except:
-        import align
-        filename = align.get_djvu(opt.site, book_name, True)
-        if not filename:
-            return False
-        for i in range(1, align.get_nr_djvu_pages(filename) + 1):
-            text = align.read_djvu_page(filename, i)
-            text = re.sub(u'(?ms)<noinclude>(.*?)</noinclude>', u'', text)
-            datas.setdefault(i, [])
-            datas[i].append(text)
-    return True
+    import align
+    filename = align.get_djvu(opt.site, book_name, True)
+    for i in range(1, align.get_nr_djvu_pages(filename) + 1):
+        text = align.read_djvu_page(filename, i)
+        text = re.sub(u'(?ms)<noinclude>(.*?)</noinclude>', u'', text)
+        datas.setdefault(i, [])
+        datas[i].append(text)
 
 def main(book_name, opt):
     # FIXME: do not hardcode the namespace here.
     book_name = book_name[len(u'Livre:'):]
 
-    pages = load_pages(book_name, opt)
+    cache = read_cache(book_name)
+
+    pages = load_pages(book_name, opt, cache)
 
     datas = {}
+    rev_ids = {}
     for it in pages:
+        rev_ids[it[1]] = it[2]
         datas[it[1]] = [ it[0] ]
 
-    if not read_djvu(book_name, datas, opt):
-        return False
+    read_djvu(book_name, datas, opt)
 
     keys = datas.keys()
     keys.sort()
 
     result = u'[[Livre:' + book_name + u']]\n\n'
     for key in keys:
+        # This check is needed if some pages or all pages doesn't contain a
+        # text layer, rather to flood with a huge diff we generate nothing.
         if len(datas[key]) == 2:
             page_name = u'Page:' + book_name + u'/' + unicode(key)
-            temp = verify_match(page_name, datas[key][1], datas[key][0], opt)
+            if datas[key][0] != None:
+                temp = verify_match(page_name, datas[key][1], datas[key][0], opt)
+            else:
+                temp = cache[key][1]
+
+            cache[key] = (rev_ids[key], temp)
             if len(temp) + len(result) > 384 * 1024:
                 result = u"\n\n'''Diff trop volumineux, résultat tronqué'''\n\n" + result
                 break
@@ -456,7 +490,7 @@ def main(book_name, opt):
     else:
         print result.encode('utf-8')
 
-    return True
+    write_cache(book_name, cache)
 
 def default_options():
     class Options:
