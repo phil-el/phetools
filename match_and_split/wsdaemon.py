@@ -24,7 +24,7 @@ import urllib
 
 import pywikibot
 
-mylock = thread.allocate_lock()
+from pywikibot_utils import safe_put
 
 # FIXME: try to avoid hard-coding this, pywikipedia know them but often
 # pywikipedia code lag a bit behind new namespace creation, get it directly
@@ -72,7 +72,8 @@ def get_pl(year, vol):
     if pl != None:
         return pl
 
-    indexpage = pywikibot.Page(pywikibot.getSite(), "Livre:" + rddm_name(year, vol))
+    site = pywikibot.getSite('fr', 'wikisource')
+    indexpage = pywikibot.Page(site, "Livre:" + rddm_name(year, vol))
     text = indexpage.get()
     m = re.search("(?ms)<pagelist\s+(.*?)/>",text)
     if m:
@@ -253,38 +254,6 @@ def do_match(mysite, maintitle, user, codelang):
 
     return data
 
-
-def safe_put(page,text,comment):
-    if re.match("^[\s\n]*$", text):
-        return
-
-    # FIXME, why this is protected by a lock ? if it is only for the setAction,
-    # pass the comment directly to put, but is put() thread safe? Actually not
-    # a trouble, only one instance of the bot can run but better to check that
-    mylock.acquire()
-    pywikibot.setAction(comment)
-
-    while 1:
-        try:
-            page.put(text)
-            break
-        except pywikibot.LockedPage:
-            print "put error : Page %s is locked?!" % page.aslink().encode("utf8")
-            break
-        except pywikibot.NoPage:
-            print "put error : Page does not exist %s" % page.aslink().encode("utf8")
-            break
-        except pywikibot.NoUsername:
-            print "put error : No user name on wiki %s" % page.aslink().encode("utf8")
-            break
-        except:
-            print "put error: unknown exception"
-            raise
-            time.sleep(5)
-            break
-    mylock.release()
-
-
 def do_split(mysite, rootname, user, codelang):
     prefix = page_prefixes.get(codelang)
     if not prefix:
@@ -436,7 +405,6 @@ jobs = None
 def html_for_queue(queue):
     html = ''
     for i in queue:
-        print i
         mtitle = i[0]
         codelang = i[1]
         try:
@@ -541,7 +509,6 @@ def job_thread(lock, queue, func):
             out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
         if mysite:
-            print mysite, title
             out = func(mysite, title, user, codelang)
 
         if request and mysite:

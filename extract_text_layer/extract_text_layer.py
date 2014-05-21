@@ -22,7 +22,7 @@ import pywikibot
 import urllib
 import common_html
 
-mylock = thread.allocate_lock()
+from pywikibot_utils import safe_put
 
 # FIXME: try to avoid hard-coding this, pywikipedia know them but often
 # pywikipedia code lag a bit behind new namespace creation, get it directly
@@ -112,36 +112,6 @@ def do_extract(mysite, maintitle, user, codelang):
     safe_put(page, text, comment = u'extract text')
 
     return ret_val(E_OK, "")
-
-
-def safe_put(page,text,comment):
-    if re.match("^[\s\n]*$", text):
-        return
-
-    # FIXME, why this is protected by a lock ? if it is only for the setAction,
-    # pass the comment directly to put, but is put() thread safe? Actually not
-    # a trouble, only one instance of the bot can run but better to check that
-    mylock.acquire()
-    pywikibot.setAction(comment)
-
-    while 1:
-        try:
-            page.put(text)
-            break
-        except pywikibot.LockedPage:
-            print "put error : Page %s is locked?!" % page.aslink().encode("utf8")
-            break
-        except pywikibot.NoPage:
-            print "put error : Page does not exist %s" % page.aslink().encode("utf8")
-            break
-        except pywikibot.NoUsername:
-            print "put error : No user name on wiki %s" % page.aslink().encode("utf8")
-            break
-        except:
-            print "put error: unknown exception"
-            time.sleep(5)
-            break
-    mylock.release()
 
 
 extract_queue = []
