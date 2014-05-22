@@ -5,6 +5,7 @@ import sys
 # FIXME: is there a better way to do this?
 sys.path.append('/data/project/phetools/phe/common')
 sys.path.append('/data/project/phetools/phe/match_and_split')
+import lifo_cache
 import lev_dist
 import re
 import tempfile
@@ -13,35 +14,6 @@ import ws_utils
 import utils
 import pywikibot
 from pywikibot import pagegenerators as pagegen
-
-def cache_filename(djvuname):
-    cache_path = '/data/project/phetools/cache/extract_text_layer/'
-    return cache_path + djvuname + ".dat"
-
-# FIXME: we must also store in the cache the sha1 of the djvu to be able
-# to check is the file changed, if the file changed we must invalidate
-# the cache for this file.
-def read_cache(djvuname):
-    cache_path = '/data/project/phetools/cache/extract_text_layer/'
-    filename = cache_filename(djvuname)
-    
-    if not os.path.exists(filename):
-        # FIXME: use a LRU rather to randomly delete a file in the cache.
-        print "CACHE MISS"
-        o = os.listdir(cache_path)
-        if len(o) >= 32:
-            k = random.randint(0, len(o) - 1)
-            print "deleting " + o[k]
-            os.unlink(cache_path + o[k])
-        result = {}
-    else:
-        result = utils.load_obj(filename)
-
-    return result
-
-def write_cache(djvuname, data):
-    filename = cache_filename(djvuname)
-    utils.save_obj(filename, data)
 
 def is_imported_page(text):
     if re.search(u'{{[iI]wpage[ ]*\|[^}]+}}', text):
@@ -440,20 +412,28 @@ def verify_match(page_name, ocr_text, text, opt):
 
 def read_djvu(book_name, datas, opt):
     import align
-    filename = align.get_djvu(opt.site, book_name, True)
-    for i in range(1, align.get_nr_djvu_pages(filename) + 1):
-        text = align.read_djvu_page(filename, i)
+    # FIXME: avoid to reload the cache each time
+    cache = lifo_cache.LifoCache('verify_match_text_layer')
+    data = align.get_djvu(cache, opt.site, book_name, True)
+    for pos, text in enumerate(data):
         text = re.sub(u'(?ms)<noinclude>(.*?)</noinclude>', u'', text)
-        datas.setdefault(i, [])
-        datas[i].append(text)
+        datas.setdefault(pos + 1, [])
+        datas[pos + 1].append(text)
 
 def main(book_name, opt):
     # FIXME: do not hardcode the namespace here.
     book_name = book_name[len(u'Livre:'):]
 
-    cache = read_cache(book_name)
+    # FIXME: it's not really clever to reopen the cache for each run.
+    # FIXME: we must store in the cache the sha1 of the djvu and compare
+    # it to the one stored in the djvu cache to invalidate this one
+    # on djvu change.
+    cache = lifo_cache.LifoCache('verify_match_diff')
+    cached_diff = cache.get(book_name + '.dat')
+    if not cached_diff:
+        cached_diff = {}
 
-    pages = load_pages(book_name, opt, cache)
+    pages = load_pages(book_name, opt, cached_diff)
 
     datas = {}
     rev_ids = {}
@@ -475,9 +455,9 @@ def main(book_name, opt):
             if datas[key][0] != None:
                 temp = verify_match(page_name, datas[key][1], datas[key][0], opt)
             else:
-                temp = cache[key][1]
+                temp = cached_diff[key][1]
 
-            cache[key] = (rev_ids[key], temp)
+            cached_diff[key] = (rev_ids[key], temp)
             if len(temp) + len(result) > 384 * 1024:
                 result = u"\n\n'''Diff trop volumineux, résultat tronqué'''\n\n" + result
                 break
@@ -490,7 +470,7 @@ def main(book_name, opt):
     else:
         print result.encode('utf-8')
 
-    write_cache(book_name, cache)
+    cache.set(book_name + '.dat', cached_diff)
 
 def default_options():
     class Options:

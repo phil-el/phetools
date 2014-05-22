@@ -5,7 +5,6 @@
 # licence : GPL
 
 import os, re, random
-import pickle
 import difflib
 import sys
 import pywikibot
@@ -29,35 +28,9 @@ def copy_file_from_url(url, out_file):
     fd_in.close()
     fd_out.close()
 
-def data_filename(filename):
-    return filename[:-4] + "dat"
-
-pickle_obj = None
-pickle_filename = None
-def get_pickle_obj(filename):
-    global pickle_obj, pickle_filename
-    if pickle_filename != filename:
-        print "Mem cache miss for:", filename.encode(u'utf-8')
-        fd = open(data_filename(filename), "rb")
-        pickle_obj = pickle.load(fd)
-        fd.close()
-        pickle_filename = filename
-    return pickle_obj
-
-def read_djvu_page(filename, pagenum):
-    obj = get_pickle_obj(filename)
-    if pagenum > 0 and pagenum <= len(obj[1]):
-        return obj[1][pagenum-1]
-    else:
-        return u""
-
-def get_nr_djvu_pages(filename):
-    obj = get_pickle_obj(filename)
-    return len(obj[1])
-
-def match_page(target, filename, pagenum):
+def match_page(target, source):
     s = difflib.SequenceMatcher()
-    text1 = read_djvu_page(filename, pagenum)
+    text1 = source
     text2 = target
     p = re.compile(ur'[\W]+')
     text1 = p.split(text1)
@@ -88,10 +61,11 @@ def quote_filename(filename):
 def extract_djvu_text(url, filename, sha1):
     # FIXME: either here or in copy_file_from_url() we must check the sha1
     # checksum of the uploaded file, as copy_file_from_url() can fail silently.
+    print "extracting text layer"
     copy_file_from_url(url, filename)
     if sha1 != utils.sha1(filename):
         print "upload failure, sha1 mismatch:", filename.encode('utf-8')
-        return False
+        return None
     data = []
     # FIXME: check return code
     cmdline = "djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
@@ -106,14 +80,9 @@ def extract_djvu_text(url, filename, sha1):
         data.append(t)
     fd.close()
     os.remove(filename)
-    fd = open(data_filename(filename), "wb")
-    pickle.dump((sha1, data), fd)
-    fd.close()
-    global pickle_obj, pickle_filename
-    pickle_filename = filename
-    pickle_obj = (sha1, data)
 
-    return True
+    return sha1, data
+
 
 def ret_val(error, text):
     if error:
@@ -124,22 +93,21 @@ E_ERROR = 1
 E_OK = 0
 
 # returns result, status
-def do_match(target, filename, djvuname, number, verbose, prefix):
+def do_match(target, cached_text, djvuname, number, verbose, prefix):
     s = difflib.SequenceMatcher()
     offset = 0
     output = ""
     is_poem = False
 
-    max_pages = get_nr_djvu_pages(filename)
-    last_page = read_djvu_page(filename, number)
+    last_page = cached_text[number-1]
 
-    for pagenum in range(number, min(number + 1000, max_pages)):
+    for pagenum in range(number, min(number + 1000, len(cached_text))):
 
         if pagenum - number == 10 and offset == 0:
             return ret_val(E_ERROR, "error : could not find a text layer.")
 
         page1 = last_page
-        last_page = page2 = read_djvu_page(filename, pagenum + 1)
+        last_page = page2 = cached_text[pagenum]
 
         text1 = page1+page2
         text2 = target[offset:offset+ int(1.5*len(text1))]
@@ -265,50 +233,41 @@ def get_filepage(site, djvuname):
 # It's possible to get a name collision if two different wiki have local
 # file with the same name but different contents. In this case the cache will
 # be ineffective but no wrong data can be used as we check its sha1.
-def get_djvu(mysite, djvuname, check_timestamp = False):
+def get_djvu(cache, mysite, djvuname, check_timestamp = False):
+
     print "get_djvu", repr(djvuname)
 
-    cache_path = '/data/project/phetools/cache/djvu/'
-
     djvuname = djvuname.replace(" ", "_")
-    filename = cache_path + djvuname
-    if not os.path.exists(data_filename(filename)):
-        # FIXME: use a LRU rather to randomly delete a file in the cache.
+    cache_filename = djvuname + '.dat'
+
+    obj = cache.get(cache_filename)
+    if not obj:
         print "CACHE MISS"
-        o = os.listdir(cache_path)
-        if len(o) >= 32:
-            k = random.randint(0, len(o) - 1)
-            print "deleting " + o[k]
-            os.unlink(cache_path + o[k])
-
+        filepage = get_filepage(mysite, djvuname)
+        if not filepage:
+            # can occur if File: has been deleted
+            return None
         try:
-            filepage = get_filepage(mysite, djvuname)
-            if filepage == None:
-                return False
             url = filepage.fileUrl()
+            obj = extract_djvu_text(url, djvuname, filepage.getFileSHA1Sum())
         except:
-            return False
-
-        print "extracting text layer"
-        if not extract_djvu_text(url, filename, filepage.getFileSHA1Sum()):
-            return False
+            pass
+        if obj:
+            cache.set(cache_filename, obj)
     else:
         if check_timestamp:
-            try:
-                filepage = get_filepage(mysite, djvuname)
-                if filepage == None:
-                    return False
-            except: # can occur if file has been deleted.
-                return False
-            obj = get_pickle_obj(filename)
-            if obj[0] != filepage.getFileSHA1Sum():
-                print "OUTDATED FILE", obj[0], filepage.getFileSHA1Sum()
+            filepage = get_filepage(mysite, djvuname)
+            if not filepage:
+                # can occur if File: has been deleted
+                return None
+            sha1 = filepage.getFileSHA1Sum()
+            if sha1 != obj[0]:
+                print "OUTDATED FILE"
+                url = filepage.fileUrl()
                 try:
-                    url = filepage.fileUrl()
+                    obj = extract_djvu_text(url, djvuname, sha1)
+                    cache.set(cache_filename, obj)
                 except:
-                    return filename
-                print "extracting text layer"
-                if not extract_djvu_text(url, filename, filepage.getFileSHA1Sum()):
-                    return False
+                    return None
 
-    return filename
+    return obj[1]

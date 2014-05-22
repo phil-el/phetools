@@ -10,6 +10,8 @@ import sys
 sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
 
+import lifo_cache
+
 import simple_redis_ipc
 import os
 import re
@@ -163,23 +165,25 @@ def do_match(mysite, maintitle, user, codelang):
         except pywikibot.NoPage:
             return ret_val(E_ERROR, "Erreur : impossible de trouver l'index")
         p = re.compile('==\[\[Page:([^=]+)\]\]==\n')
+
+        cache = lifo_cache.LifoCache('match_and_split_text_layer')
         bl= p.split(new_text)
         for i in range(len(bl)/2):
             title  = bl[i*2+1]
             content = bl[i*2+2]
             filename, pagenum = title.split('/')
             if i == 0:
-                filename = align.get_djvu(mysite, filename, True)
+                cached_text = align.get_djvu(cache, mysite, filename, True)
             else:
-                filename = align.get_djvu(mysite, filename, False)
-            if not filename:
+                cached_text = align.get_djvu(cache, mysite, filename, False)
+            if not cached_text:
                 return ret_val(E_ERROR, "Erreur : fichier absent")
             if content.find("R2Mondes") != -1:
                 p0 = re.compile("\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
                 bl0 = p0.split(text)
                 title0 = bl0[i*2+1].encode("utf8")
                 return ret_val(E_ERROR, "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page "+title0)
-            r = align.match_page(content, filename, int(pagenum))
+            r = align.match_page(content, cached_text[int(pagenum)-1])
             print "%s %s  : %f"%(filename, pagenum, r)
             if r < 0.1:
                 return ret_val(E_ERROR, "Erreur : Le texte ne correspond pas, page %s" % pagenum)
@@ -243,11 +247,12 @@ def do_match(mysite, maintitle, user, codelang):
     except:
         return ret_val(E_ERROR, "illformed __MATCH__: no page number ?")
 
-    filename = align.get_djvu(mysite, djvuname, True)
-    if not filename:
+    cache = lifo_cache.LifoCache('match_and_split_text_layer')
+    cached_text = align.get_djvu(cache, mysite, djvuname, True)
+    if not cached_text:
         return ret_val(E_ERROR, "unable to read djvu, if the File: exists, please retry")
 
-    data = align.do_match(text, filename, djvuname, number, verbose = False, prefix = prefix)
+    data = align.do_match(text, cached_text, djvuname, number, verbose = False, prefix = prefix)
     if not data['error']:
         safe_put(page, head + data['text'], user + ": match")
         data['text'] = ""

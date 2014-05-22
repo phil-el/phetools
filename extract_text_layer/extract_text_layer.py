@@ -9,6 +9,7 @@ import sys
 sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
 import simple_redis_ipc
+import lifo_cache
 
 import os
 import socket
@@ -99,14 +100,17 @@ def do_extract(mysite, maintitle, user, codelang):
     djvuname = maintitle.replace(u' ', u'_')
     print djvuname.encode('utf-8')
 
-    filename = align.get_djvu(mysite, djvuname, True)
-    if not filename:
-        return ret_val(E_ERROR, "unable to retrieve djvu file")
+    # FIXME: it'll better to avoid reloading the cache at each run
+    cache = lifo_cache.LifoCache('extract_text_layer')
+
+    text_layer = align.get_djvu(cache, mysite, djvuname, True)
+    if not text_layer:
+        return ret_val(E_ERROR, "unable to retrieve text layer")
 
     text = u''
-    for i in range(align.get_nr_djvu_pages(filename)):
-        text += u'==[[' + prefix + u':' + maintitle + u'/' + unicode(i+1) + u']]==\n'
-        text += align.read_djvu_page(filename, i+1) + u'\n'
+    for pos, page_text in enumerate(text_layer):
+        text += u'==[[' + prefix + u':' + maintitle + u'/' + unicode(pos+1) + u']]==\n'
+        text += page_text + u'\n'
 
     page = pywikibot.Page(mysite, u'User:' + user + u'/Text')
     safe_put(page, text, comment = u'extract text')
