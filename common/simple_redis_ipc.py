@@ -56,7 +56,10 @@ def send_command(server_name, cmd, timeout = 25):
     r = redis.Redis(host = 'tools-redis', socket_timeout = 1)
     new_val = r.incr(key_prefix + '_cmd_token')
     channel_name = key_prefix + '_cmd_reply_channel_' + str(new_val)
-    cmd = json.dumps( { 'channel_name' : channel_name, 'cmd' : cmd } )
+    try:
+        cmd = json.dumps( { 'channel_name' : channel_name, 'cmd' : cmd } )
+    except UnicodeDecodeError:
+        return 1, json.dumps({ 'error' : 4, 'text' : 'Ill formed request' })
     queue = Queue.Queue()
     listener = channelListener(r, channel_name, queue)
     listener.start()

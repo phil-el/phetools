@@ -8,6 +8,7 @@ import sys
 sys.path.append('/data/project/phetools/phe/common')
 import simple_redis_ipc
 import json
+import types
 
 def handle_query(params):
     return simple_redis_ipc.send_command('match_and_split_daemon', params, 240)
@@ -22,7 +23,10 @@ def query_params(environ):
         'lang'  : ''
         }
     for name in field:
-        rdict[name] = field[name].value
+        if type(field[name]) == types.ListType:
+            rdict[name] = field[name][-1].value
+        else:
+            rdict[name] = field[name].value
 
     return rdict
 
