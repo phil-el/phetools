@@ -32,7 +32,7 @@ Notes:
 <ul>
 <li>The "proofread" column counts all the pages that <u>have been</u> proofread :  [category q3] + [category q4] </li>
 <li>Language subdomains are ranked by the number of page verifications : [category q3] + 2x[category q4] </li>
-<li>There may be a delay between Wikisource and the Toolserver. The replication lag (in seconds) can be checked <a href="http://toolserver.org/~bryan/stats/replag/#s3-hourly" class="external text" rel="nofollow">here</a>.</li>
+<!--<li>There may be a delay between Wikisource and the Toolserver. The replication lag (in seconds) can be checked <a href="http://toolserver.org/~bryan/stats/replag/#s3-hourly" class="external text" rel="nofollow">here</a>.</li>-->
 <li>The "with scans" column counts pages whose text is transcluded from the "Page:" namespace. 
 <li>The "disamb" column counts disambiguation pages.</li>
 <li>The "percent" column shows the percentage of texts backed with scans, excluding disambiguation pages from the total: 
@@ -47,15 +47,15 @@ EOT;
 
 
 
-$diff = $_GET["diff"];
-$daysago = $_GET["daysago"];
+$diff = isset($_GET["diff"]) ? $_GET["diff"] : 0;
+$daysago = isset($_GET["daysago"]) ? $_GET["daysago"] : 0;
 
 if($daysago || $diff>1 ) {
 	$n = $daysago+1;
 
 	if($diff) $dd =" -d$diff "; else $dd="";
         // FIXME: use a relative path
-	$cmd = "/home/phe/stats/stats -y$n $dd" ;
+	$cmd = "/data/project/phetools/phe/statistics/stats -y$n $dd" ;
 	$retval = 1; 
 	ob_start();
 	passthru( $cmd, $retval );
@@ -63,9 +63,9 @@ if($daysago || $diff>1 ) {
 	ob_end_clean();
 
 } else if($diff==1) {
-      $txt = file_get_contents('stats_diff.txt');
+      $txt = file_get_contents('data/stats_diff.txt');
 } else {
-      $txt = file_get_contents('stats.txt');
+      $txt = file_get_contents('data/stats.txt');
 }
 
 $lines = explode( "\n", $txt ) ;

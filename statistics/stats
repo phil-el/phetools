@@ -1,31 +1,38 @@
 #!/usr/bin/python
 
 import os,codecs
-import thread, Queue, time, socket,string,re,sys
+import time, sys
 
-os.chdir("/home/phe/wsbot")
-sys.path.append("../pywikipedia")
-import wikipedia, pagegenerators, catlib
-
-#import graph
-
-server = "/~thomasv/cgi-bin/pagesinns.pl?server=3"
-server2 = "/~thomasv/cgi-bin/prpages.pl?server=3"
+#os.chdir("/home/phe/wsbot")
 
 from common import domain_urls as urls
 from common import decode_res, disambiguations
 
-is_test = False
+def create_conn(domain, family):
+    import MySQLdb
+
+    conn_params = {
+        'read_default_file' : os.path.expanduser("~/replica.my.cnf"),
+        }
+    if domain in ["old", "-"]:
+        domain = 'sourceswiki'
+        family = ''
+    db_server = domain + family + '.labsdb'
+
+    return MySQLdb.connect(host = db_server, **conn_params)
+
 
 def catreq(cat, ns):
     return "select /* SLOW_OK */ count(cl_from) as num from categorylinks where cl_to='%s' and cl_from in (select page_id from page where page_namespace=%d)"%(cat,ns)
 
 def get_stats(domains):
 
-    import MySQLdb,urllib
-    res ={}
-    conn = MySQLdb.connect(host = "sql-s3", read_default_file=os.path.expanduser("~/.my.cnf"))
+    import urllib
+    res = {}
+
     for dom in domains:
+        print dom
+        conn = create_conn(dom, 'wikisource')
         cursor = conn.cursor ()
 	ns = urls[dom][0]
         if dom!='old':
@@ -94,30 +101,30 @@ def get_stats(domains):
                 num_disambig = int(row[0])
 
         if dom=='no':
+            import pywikibot
             qq = "select /* SLOW_OK */ page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q.replace("count(page_title)","page_id")
             cursor.execute(qq)
             rows = cursor.fetchall()
-	    site = wikipedia.getSite(dom,fam='wikisource')
-            f = codecs.open('/home/phe/public_html/nakedtexts_'+dom+'.html','w',"utf-8")
+	    site = pywikibot.getSite(dom,fam='wikisource')
+            f = codecs.open('/data/project/phetools/public_html/nakedtexts_'+dom+'.html','w',"utf-8")
             f.write("<html><head></head><body>")
             f.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
             f.write("<b>Naked texts at "+dom+".wikisource.org</b> (%d)</br/>"%len(rows) )
             f.write("<ul>")
             for row in rows:
                 pagename = row[0]
-                page = wikipedia.Page(site,pagename.decode('utf8'))			
-                page_path = site.nice_get_address(page.urlname())
+                page = pywikibot.Page(site, pagename.decode('utf8'))
+                page_path = site.nice_get_address(page.title(asUrl = True))
                 page_url = "http://"+dom+".wikisource.org"+page_path
                 s="<li><a href=\"%s\">%s</a></li>"%(page_url,page.title())
                 f.write(s)
             f.write("</ul>")
             f.write("</body>")
         
-
         res[dom] = (num_pages, num_q0, num_q2, num_q3, num_q4, num_trans, num_texts, num_disambig)
         
         cursor.close ()
-    conn.close ()
+        conn.close ()
     return res
             
 
@@ -133,6 +140,8 @@ def spaced_int(i,sep):
 
 
 def write_templates(res,keys):
+    import pywikibot
+
     for dom in ['fr','en', 'bn']:
 	if dom=='fr':
 	    sep=' '
@@ -145,32 +154,26 @@ def write_templates(res,keys):
         percent = num_tr*100./(num_texts-num_disambig)
         num_q1 = num - (num_q0 + num_q2 + num_q3 + num_q4 ) 
 
-	site = wikipedia.getSite(dom,fam='wikisource')
-        page = wikipedia.Page(site,"Template:PAGES_NOT_PROOFREAD")
+	site = pywikibot.getSite(dom,fam='wikisource')
+        page = pywikibot.Page(site,"Template:PAGES_NOT_PROOFREAD")
         page.put(spaced_int(num_q1,sep))
-        page = wikipedia.Page(site,"Template:ALL_PAGES")
+        page = pywikibot.Page(site,"Template:ALL_PAGES")
         page.put(spaced_int(num,sep))
-        page = wikipedia.Page(site,"Template:PR_TEXTS")
+        page = pywikibot.Page(site,"Template:PR_TEXTS")
         page.put(spaced_int(num_tr,sep))
-        page = wikipedia.Page(site,"Template:ALL_TEXTS")
+        page = pywikibot.Page(site,"Template:ALL_TEXTS")
         page.put(spaced_int(num_texts - num_disambig,sep))
-        page = wikipedia.Page(site,"Template:PR_PERCENT")
+        page = pywikibot.Page(site,"Template:PR_PERCENT")
         page.put("%.2f"%percent)
 
-
-
-
 def read_stats(offset):
-    f = open("/home/phe/stats/data/new_stats.py","r")
+    f = open("/data/project/phetools/public_html/data/new_stats.py","r")
     lines = f.readlines()
     f.close()
     t, oldres = eval( lines[offset] )
     for k in oldres.keys():
         oldres[k] = decode_res(oldres[k])
     return t, oldres 
-
-
-
 
 if __name__ == "__main__":
 
@@ -218,8 +221,7 @@ if __name__ == "__main__":
 
     if opt_write:
         write_templates(res,keys)
-        if is_test: exit(1)
-        f = open("/home/phe/stats/data/new_stats.py","a")
+        f = open("/data/project/phetools/public_html/data/new_stats.py","a")
         f.write(repr( (time.time() , res ) ) +"\n")
         f.close()
         import graph
