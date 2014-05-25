@@ -35,6 +35,15 @@ stop() {
     echo "stopping $1"
     cmd="qdel $1"
     eval $cmd
+    while true; do
+	qstat -j wsircdaemon &> /dev/null
+	if [ $? == 0 ]; then
+            echo -n "."
+	else
+            break;
+	fi
+	sleep 1
+    done
 }
 
 restart() {
