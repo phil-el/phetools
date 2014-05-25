@@ -11,7 +11,7 @@ cmdline[verify_match]="python -u phe/verify_match/verify_match_web.py"
 
 env_var[match_and_split]=PYTHONPATH=$PYTHONPATH
 memory[match_and_split]=640M
-cmdline[match_and_split]="python -u phe/match_and_split/wsdaemon.py"
+cmdline[match_and_split]="python -u phe/match_and_split/match_and_split.py"
 
 env_var[extract_text_layer]=PYTHONPATH=$PYTHONPATH
 memory[extract_text_layer]=640M
