@@ -1,7 +1,6 @@
 #!/bin/bash
-cd /data/project/phetools/public_html/graphs
+cd ~/public_html/graphs
 for i in Wikisource*.png; do convert -thumbnail 250 $i thumb/$i ; done
-cd /data/project/phetools/phe/statistics
-./stats -y > /data/project/phetools/public_html/data/stats.txt
-./stats -y -d > /data/project/phetools/public_html/data/stats_diff.txt
-
+cd ~/phe/statistics
+./gen_stats.py -y > ~/public_html/data/stats.txt
+./gen_stats.py -y -d > ~/public_html/data/stats_diff.txt
