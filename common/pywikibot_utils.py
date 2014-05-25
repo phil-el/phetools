@@ -1,8 +1,34 @@
 #!/usr/bin/python
 # GPL V2, author phe                                                            
 import pywikibot
+from pywikibot.data import api
 import time
 import re
+import types
+
+def site_matrix():
+    req = api.Request(site=pywikibot.Site('meta', 'meta'), action='sitematrix')
+    data = req.submit()
+    return data['sitematrix']
+
+def proofread_info(lang):
+    req = api.Request(site=pywikibot.getSite(lang, 'wikisource'),
+                      action='query', meta='proofreadinfo')
+    data = req.submit()
+    return data['query']
+
+def get_all_lang(family):
+    results = []
+    all_sites = site_matrix()
+    for lang in all_sites:
+        if type(all_sites[lang]) == types.DictType:
+            for site in all_sites[lang]['site']:
+                code = all_sites[lang]['code']
+                if site['code'] == family and not site.has_key('closed'):
+                    results.append(code)
+
+    results.sort()
+    return results
 
 def safe_put(page, text, comment):
     if re.match("^[\s\n]*$", text):

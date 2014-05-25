@@ -5,8 +5,17 @@ import time, sys
 
 #os.chdir("/home/phe/wsbot")
 
-from common import domain_urls as urls
+sys.path.append('/data/project/phetools/wikisource')
+from ws_category import domain_urls as urls
 from common import decode_res, disambiguations
+
+# The domain name we care.
+all_domain = set([
+    'old', 'bn',  'br',  'ca',  'da',  'de',  'en',  'el',
+    'es',  'et',  'fr',  'gu',  'he',  'hr',  'hu',  'hy',
+    'id',  'it',  'la',  'ml',  'nl',  'no',  'pl',  'pt',
+    'ru',  'sa',  'sl',  'sv',  'te',  'vec', 'vi',  'zh',
+])
 
 def create_conn(domain, family):
     import MySQLdb
@@ -142,6 +151,8 @@ def spaced_int(i,sep):
 def write_templates(res,keys):
     import pywikibot
 
+    return
+
     for dom in ['fr','en', 'bn']:
 	if dom=='fr':
 	    sep=' '
@@ -193,7 +204,8 @@ if __name__ == "__main__":
         elif arg[0:2]=="-d":
             opt_diff = int(arg[2:])
 
-        if arg in urls.keys(): opt_doms.append(arg)
+        if arg in all_domain:
+            opt_doms.append(arg)
 
         if arg=="-y":
             opt_yesterday = True
@@ -204,7 +216,7 @@ if __name__ == "__main__":
     if opt_doms:
 	domains = opt_doms
     else:
-        domains = urls.keys()
+        domains = all_domain
 
     if not opt_yesterday:
         res = get_stats(domains)

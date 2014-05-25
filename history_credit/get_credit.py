@@ -4,7 +4,7 @@ import MySQLdb
 import os
 import sys
 sys.path.append('/data/project/phetools/wikisource')
-import namespaces
+import ws_namespaces as namespaces
 
 def default_userdict(count = 0):
     # credits are returned in a dict with user name associated with this value
@@ -209,7 +209,6 @@ def get_credit(domain, family, books, pages, images):
 
     return results
 
-# hint can be used by application to get directly the right cluster
 def create_conn(domain, family):
     conn_params = {
         'read_default_file' : os.path.expanduser("~/replica.my.cnf"),

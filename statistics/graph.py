@@ -5,7 +5,7 @@ import time,datetime
 import sys
 import pylab
 
-from common import domain_urls, decode_res
+from common import decode_res
 
 colors = { 'total':'#000000',
            'en':'r',
