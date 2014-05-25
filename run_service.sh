@@ -36,7 +36,7 @@ stop() {
     cmd="qdel $1"
     eval $cmd
     while true; do
-	qstat -j wsircdaemon &> /dev/null
+	qstat -j $1 &> /dev/null
 	if [ $? == 0 ]; then
             echo -n "."
 	else
