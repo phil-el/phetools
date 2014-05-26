@@ -55,7 +55,7 @@ if($daysago || $diff>1 ) {
 
 	if($diff) $dd =" -d$diff "; else $dd="";
         // FIXME: use a relative path
-	$cmd = "/data/project/phetools/phe/statistics/stats -y$n $dd" ;
+	$cmd = "/data/project/phetools/phe/statistics/gen_stats.py -y$n $dd" ;
 	$retval = 1; 
 	ob_start();
 	passthru( $cmd, $retval );
