@@ -3,9 +3,6 @@
 import sys
 import types
 
-fd_log = open("../credits.log", "a", 0)
-sys.stderr = fd_log
-
 from get_credit import get_credit
 
 # php serializer, support only base type, list, tuple and dict, no support
