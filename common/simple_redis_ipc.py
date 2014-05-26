@@ -53,29 +53,40 @@ class channelListener(threading.Thread):
 # wait for the reply, it's simpler this way.
 # 25 seconds timeout to avoir browser side timeout, typically 30 seconds.
 def send_command(server_name, cmd, timeout = 25):
+    if cmd.has_key('cmd') and cmd['cmd'] == 'ping':
+        start = time.time()
     r = redis.Redis(host = 'tools-redis', socket_timeout = 1)
     new_val = r.incr(key_prefix + '_cmd_token')
     channel_name = key_prefix + '_cmd_reply_channel_' + str(new_val)
     try:
-        cmd = json.dumps( { 'channel_name' : channel_name, 'cmd' : cmd } )
+        cmd_redis = json.dumps( {'channel_name' : channel_name, 'cmd' : cmd} )
     except UnicodeDecodeError:
         return 1, json.dumps({ 'error' : 4, 'text' : 'Ill formed request' })
     queue = Queue.Queue()
-    listener = channelListener(r, channel_name, queue)
-    listener.start()
-    public_channel = key_prefix + '_' + server_name
-    # FIXME: this is not sufficient, as someone can listen but not the server,
-    # see the comment about key_prefix.
-    nr_subscribed = r.publish(public_channel, cmd)
-    if nr_subscribed:
-        try:
-            reply = queue.get(timeout = timeout)
-        except Queue.Empty:
+    try:
+        listener = channelListener(r, channel_name, queue)
+        listener.start()
+        public_channel = key_prefix + '_' + server_name
+        # FIXME: this is not sufficient, as someone can listen but not the
+        # server, see the comment about key_prefix.
+        nr_subscribed = r.publish(public_channel, cmd_redis)
+        if nr_subscribed:
+            try:
+                reply = queue.get(timeout = timeout)
+            except Queue.Empty:
+                reply = None
+        else:
             reply = None
-    else:
-        reply = None
+    finally:
+        listener.force_stop = True
 
-    listener.force_stop = True
+    if cmd.has_key('cmd') and cmd['cmd'] == 'ping':
+        stop = time.time()
+        if not reply:
+            reply = { 'no reply from server' : server_name }
+
+        reply.update( { 'ping' : stop-start, 'server' : server_name } )
+        return nr_subscribed, json.dumps(reply)
 
     # We really don't want this, the socket_timeout is way too long
     #listener.join()
@@ -92,15 +103,16 @@ def wait_for_request(server_name, timeout = 0.5):
     r = redis.Redis(host = 'tools-redis', socket_timeout = 0.25)
     public_channel = key_prefix + '_' + server_name
     queue = Queue.Queue()
-    listener = channelListener(r, public_channel, queue)
-    listener.start()
     try:
-        time.sleep(0)
-        cmd = queue.get(timeout = timeout)
-    except Queue.Empty:
-        cmd = None
-
-    listener.force_stop = True
+        listener = channelListener(r, public_channel, queue)
+        listener.start()
+        try:
+            time.sleep(0)
+            cmd = queue.get(timeout = timeout)
+        except Queue.Empty:
+            cmd = None
+    finally:
+        listener.force_stop = True
 
     listener.join()
 

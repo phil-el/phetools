@@ -42,7 +42,7 @@ def myapp(environ, start_response):
         text = 'Extract text layer robot is not running.\n Please try again later.'
         if params['cmd'] != 'status':
             text = json.dumps({ 'error' : 3, 'text' : text})
-    elif params['cmd'] != 'status':
+    elif params['cmd'] not in [ 'status', 'ping' ]:
         text = json.dumps(text)
     elif text:
         text = text.encode('utf-8')

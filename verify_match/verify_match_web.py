@@ -140,6 +140,8 @@ def bot_listening(lock):
             elif cmd == 'status':
                 html = do_status(lock, verify_queue)
                 simple_redis_ipc.send_reply(request, html)
+            elif cmd == 'ping':
+                simple_redis_ipc.send_reply(request, ret_val(E_OK, 'pong'))
             else:
                 simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
 

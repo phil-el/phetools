@@ -491,6 +491,8 @@ def bot_listening(lock):
             elif cmd == "split":
                 jobs['number_of_split_job'] += 1
                 add_job(lock, jobs['split_queue'], (title, lang, user, t, request))
+            elif cmd == 'ping':
+                simple_redis_ipc.send_reply(request, ret_val(E_OK, 'pong'))
             else:
                 simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
 
