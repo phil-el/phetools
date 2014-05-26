@@ -115,7 +115,7 @@ def get_stats(domains):
             cursor.execute(qq)
             rows = cursor.fetchall()
 	    site = pywikibot.getSite(dom,fam='wikisource')
-            f = codecs.open('/data/project/phetools/public_html/nakedtexts_'+dom+'.html','w',"utf-8")
+            f = codecs.open('/data/project/phetools/public_html/data/nakedtexts_'+dom+'.html','w',"utf-8")
             f.write("<html><head></head><body>")
             f.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
             f.write("<b>Naked texts at "+dom+".wikisource.org</b> (%d)</br/>"%len(rows) )
