@@ -151,8 +151,6 @@ def spaced_int(i,sep):
 def write_templates(res,keys):
     import pywikibot
 
-    return
-
     for dom in ['fr','en', 'bn']:
 	if dom=='fr':
 	    sep=' '
