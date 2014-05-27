@@ -440,17 +440,9 @@ def do_status(lock):
 
     return html
 
-def stop_queue(queue):
-    for i in range(len(queue)):
-        title, lang, user, t, request = queue[i]
-        queue[i] = (title, lang, user, t, request)
-
 # either called through a SIGUSR2 or a finally clause.
 def on_exit(sig_nr, frame):
     print "STOP"
-
-    stop_queue(jobs['match_queue'])
-    stop_queue(jobs['split_queue'])
 
     utils.save_obj('wsdaemon.jobs', jobs)
 

@@ -12,6 +12,10 @@ cmdline[verify_match]="python -u phe/verify_match/verify_match_web.py"
 env_var[match_and_split]=PYTHONPATH=$PYTHONPATH
 memory[match_and_split]=640M
 cmdline[match_and_split]="python -u phe/match_and_split/match_and_split.py"
+# FIXME: this can't work with -continuous because the wrapper script generated
+# when using -continuous doesn't trap SIGUSR2 and is killed with a SIGTERM
+# so the child die before receiving SIGUSR2.
+qalter[match_and_split]="-notify"
 
 env_var[extract_text_layer]=PYTHONPATH=$PYTHONPATH
 memory[extract_text_layer]=640M
@@ -27,14 +31,17 @@ start() {
 	cmd+="-v ${env_var[$1]} "
     fi
     cmd+="-l h_vmem=${memory[$1]} -N $1 ${cmdline[$1]}"
-    echo "starting $1"
-    eval $cmd
+    $cmd
+
+    if [ ${qalter[$2]+_} ]; then
+        qalter $1 ${qalter[$1]}
+    fi
 }
 
 stop() {
     echo "stopping $1"
     cmd="qdel $1"
-    eval $cmd
+    $cmd
     while true; do
 	qstat -j $1 &> /dev/null
 	if [ $? == 0 ]; then
