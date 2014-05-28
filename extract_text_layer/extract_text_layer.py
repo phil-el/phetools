@@ -8,6 +8,9 @@ __module_description__ = "extract text layer daemon"
 import sys
 sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
+sys.path.append('/data/project/phetools/wikisource')
+
+from ws_namespaces import page as page_prefixes, index as index_prefixes
 import simple_redis_ipc
 import lifo_cache
 
@@ -24,35 +27,6 @@ import urllib
 import common_html
 
 from pywikibot_utils import safe_put
-
-# FIXME: try to avoid hard-coding this, pywikipedia know them but often
-# pywikipedia code lag a bit behind new namespace creation, get it directly
-# from the database (is it possible?) or through the api (but does all
-# wikisource have a correct alias for the Page: namespace?)
-page_prefixes = {
-    'br' : 'Pajenn',
-    'ca' : 'P\xc3\xa0gina',
-    'de' : 'Seite',
-    'en' : 'Page',
-    'es' : 'P\xc3\xa1gina',
-    'et' : 'Lehek\xc3\xbclg',
-    'fr' : 'Page',
-    'hr' : 'Stranica',
-    'hu' : 'Oldal',
-    'hy' : '\xd4\xb7\xd5\xbb',
-    'it' : 'Pagina',
-    'la' : 'Pagina',
-    'no' : 'Side',
-    'old': 'Page',
-    'pl' : 'Strona',
-    'pt' : 'P\xc3\xa1gina',
-    'ru' : '\xd1\x81\xd1\x82\xd1\x80\xd0\xb0\xd0\xbd\xd0\xb8\xd1\x86\xd0\xb0',
-    'sl' : 'Stran',
-    'sv' : 'Sida',
-    'vec': 'Pagina',
-    'vi' : 'Trang',
-    'zh' : 'Page',
-    }
 
 E_ERROR = 1
 E_OK = 0
@@ -93,7 +67,7 @@ def ret_val(error, text):
     return  { 'error' : error, 'text' : text }
 
 def do_extract(mysite, maintitle, user, codelang):
-    prefix = page_prefixes.get(codelang)
+    prefix = unicode(page_prefixes['wikisource'].get(codelang), 'utf-8')
     if not prefix:
         return ret_val(E_ERROR, "no prefix")
 
@@ -126,10 +100,9 @@ def html_for_queue(queue):
         mtitle = i[0]
         codelang = i[1]
         try:
-            # FIXME: do not harcode the family
             msite = pywikibot.getSite(codelang, 'wikisource')
-            # FIXME: do not hardcide the namespace here.
-            page = pywikibot.Page(msite, u'Livre:' + mtitle)
+            index_prefix = unicode(index['wikisource'].get(codelang), 'utf-8')
+            page = pywikibot.Page(msite, index_prefix + u':' + mtitle)
             path = msite.nice_get_address(page.title(asUrl = True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:

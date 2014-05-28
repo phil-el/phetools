@@ -473,11 +473,11 @@ def job_thread(lock, queue, func):
         time1 = time.time()
         out = ''
         try:
-            # FIXME: don't harcode family name
             mysite = pywikibot.getSite(codelang, 'wikisource')
         except:
             out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
+
         if mysite:
             out = func(mysite, title, user, codelang)
 
