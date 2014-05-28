@@ -9,9 +9,10 @@ __module_description__ = "match and split daemon"
 import sys
 sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
+sys.path.append('/data/project/phetools/wikisource')
 
 import lifo_cache
-
+from ws_namespaces import page as page_prefixes
 import simple_redis_ipc
 import os
 import re
@@ -27,36 +28,6 @@ import urllib
 import pywikibot
 
 from pywikibot_utils import safe_put
-
-# FIXME: try to avoid hard-coding this, pywikipedia know them but often
-# pywikipedia code lag a bit behind new namespace creation, get it directly
-# from the database (is it possible?) or through the api (but does all
-# wikisource have a correct alias for the Page: namespace?)
-page_prefixes = {
-    'br' : 'Pajenn',
-    'ca' : 'P\xc3\xa0gina',
-    'de' : 'Seite',
-    'en' : 'Page',
-    'es' : 'P\xc3\xa1gina',
-    'et' : 'Lehek\xc3\xbclg',
-    'fa' : '\xd8\xa8\xd8\xb1\xda\xaf\xd9\x87',
-    'fr' : 'Page',
-    'hr' : 'Stranica',
-    'hu' : 'Oldal',
-    'hy' : '\xd4\xb7\xd5\xbb',
-    'it' : 'Pagina',
-    'la' : 'Pagina',
-    'no' : 'Side',
-    'old': 'Page',
-    'pl' : 'Strona',
-    'pt' : 'P\xc3\xa1gina',
-    'ru' : '\xd0\xa1\xd1\x82\xd1\x80\xd0\xb0\xd0\xbd\xd0\xb8\xd1\x86\xd0\xb0',
-    'sl' : 'Stran',
-    'sv' : 'Sida',
-    'vec': 'Pagina',
-    'vi' : 'Trang',
-    'zh' : 'Page',
-    }
 
 E_ERROR = 1
 E_OK = 0
@@ -146,7 +117,7 @@ def ret_val(error, text):
 # FIXME, here and everywhere, can't we use mysite.lang and mysite.family.name
 # to remove some parameters, does this work for old wikisource?
 def do_match(mysite, maintitle, user, codelang):
-    prefix = page_prefixes.get(codelang)
+    prefix = page_prefixes['wikisource'].get(codelang)
     if not prefix:
         return ret_val(E_ERROR, "no prefix")
 
@@ -260,7 +231,7 @@ def do_match(mysite, maintitle, user, codelang):
     return data
 
 def do_split(mysite, rootname, user, codelang):
-    prefix = page_prefixes.get(codelang)
+    prefix = page_prefixes['wikisource'].get(codelang)
     if not prefix:
         return ret_val(E_ERROR, "no Page: prefix")
     prefix = prefix.decode('utf-8')
