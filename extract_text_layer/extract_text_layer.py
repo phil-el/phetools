@@ -132,6 +132,7 @@ def bot_listening(lock):
             request = simple_redis_ipc.wait_for_request('extract_text_layer_daemon')
             if not request:
                 continue
+
             try:
                 print request
 
@@ -141,10 +142,9 @@ def bot_listening(lock):
                 lang = request['cmd'].get('lang', '')
                 user = request['cmd'].get('user', '')
             except:
-                # FIXME: don't raise but return an error with the request a
-                # error msg ?
-                print "error", request
-                raise
+                ret = ret_val(E_ERROR, "invalid request")
+                simple_redis_ipc.send_reply(request, ret)
+                continue
 
             t = time.time()
             user = user.replace(' ', '_')
