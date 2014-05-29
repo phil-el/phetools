@@ -5,6 +5,10 @@ import sys
 # FIXME: is there a better way to do this?
 sys.path.append('/data/project/phetools/phe/common')
 sys.path.append('/data/project/phetools/phe/match_and_split')
+sys.path.append('/data/project/phetools/wikisource')
+
+from ws_namespaces import page as page_prefixes, index as index_prefixes
+
 import lifo_cache
 import lev_dist
 import re
@@ -25,8 +29,9 @@ def load_pages(book_name, opt, cache):
     # contents but only check if the cache is ok.
     remaining_pages = []
     pages = []
-    gen = pagegen.PrefixingPageGenerator(u'Page:' + book_name + u'/',
-                                         site = opt.site)
+    page_ns_name = page_prefixes['wikisource'][opt.lang]
+    page_name = page_ns_name + u':' + book_name + u'/'
+    gen = pagegen.PrefixingPageGenerator(page_name, site = opt.site)
     for p in gen:
         page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
         if not cache.has_key(page_nr) or cache[page_nr][0] != p.latestRevision():
@@ -421,8 +426,8 @@ def read_djvu(book_name, datas, opt):
         datas[pos + 1].append(text)
 
 def main(book_name, opt):
-    # FIXME: do not hardcode the namespace here.
-    book_name = book_name[len(u'Livre:'):]
+    link = pywikibot.Link(book_name, opt.site)
+    book_name = link.title.replace(u' ', u'_')
 
     # FIXME: it's not really clever to reopen the cache for each run.
     # FIXME: we must store in the cache the sha1 of the djvu and compare
@@ -446,12 +451,15 @@ def main(book_name, opt):
     keys = datas.keys()
     keys.sort()
 
-    result = u'[[Livre:' + book_name + u']]\n\n'
+    title = book_name.replace(u'_', u' ')
+    index_ns_name = index_prefixes['wikisource'][opt.lang]
+    page_ns_name = page_prefixes['wikisource'][opt.lang]
+    result = u'[[' + index_ns_name + ':' + title + u']]\n\n'
     for key in keys:
         # This check is needed if some pages or all pages doesn't contain a
         # text layer, rather to flood with a huge diff we generate nothing.
         if len(datas[key]) == 2:
-            page_name = u'Page:' + book_name + u'/' + unicode(key)
+            page_name = page_ns_name + u':' + title + u'/' + unicode(key)
             if datas[key][0] != None:
                 temp = verify_match(page_name, datas[key][1], datas[key][0], opt)
             else:
@@ -464,8 +472,8 @@ def main(book_name, opt):
             result += temp
 
     if opt.save:
-        out_page = u'Discussion Livre:' + book_name + u'/Diff'
-        page = pywikibot.Page(source = opt.site, title = out_page)
+        page = pywikibot.Page(opt.site, link.canonical_title() + u'/Diff')
+        page = page.toggleTalkPage()
         page.put(result, comment = u'Mise à jour')
     else:
         print result.encode('utf-8')
