@@ -24,6 +24,9 @@ cmdline[extract_text_layer]="python -u phe/extract_text_layer/extract_text_layer
 memory[wsircdaemon]=256M
 cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"
 
+memory[dummy_robot]=384M
+cmdline[dummy_robot]="python -u phe/dummy_robot/dummy_robot.py"
+
 
 start() {
     cmd="jsub -once -continuous -o $LOG_DIR$1.out -e $LOG_DIR$1.err "
@@ -33,7 +36,7 @@ start() {
     cmd+="-l h_vmem=${memory[$1]} -N $1 ${cmdline[$1]}"
     $cmd
 
-    if [ ${qalter[$2]+_} ]; then
+    if [ ${qalter[$1]+_} ]; then
         qalter $1 ${qalter[$1]}
     fi
 }
