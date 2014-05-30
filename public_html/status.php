@@ -11,9 +11,10 @@ function ping_server($server) {
 }
 
 $serverlist = array(
-	'extract_text_layer_cgi.py',
-	'match_and_split_cgi.py',
-	'verify_match_cgi.py'
+	//'dummy_robot.php',
+        'match_and_split.php',
+	'extract_text_layer.php',
+	'verify_match.php'
 );
 
 foreach ($serverlist as $servername) {
@@ -21,6 +22,4 @@ foreach ($serverlist as $servername) {
 	printf("ping: %s, error: %d, %s: %s, %.0f ms\n",
 	       $servername, $answer['error'], $answer['text'],
 	       $answer['server'], $answer['ping'] * 1000);
-
-	//print json_encode($answer) . "\n";
 }

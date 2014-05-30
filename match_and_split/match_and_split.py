@@ -11,9 +11,9 @@ sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
 sys.path.append('/data/project/phetools/wikisource')
 
+import tool_connect
 import lifo_cache
 from ws_namespaces import page as page_prefixes
-import simple_redis_ipc
 import os
 import re
 import thread
@@ -93,11 +93,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            title, codelang, user, t, request = queue[-1]
+            title, codelang, user, t, tools, conn = queue[-1]
             got_it = True
         lock.release()
 
-    return title, codelang, user, t, request
+    return title, codelang, user, t, tools, conn
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -196,7 +196,7 @@ def do_match(mysite, maintitle, user, codelang):
         safe_put(page,new_text,user+": match")
         jobs['number_of_split_job'] += 1
         # FIXME: can we pass the request here and use a callbackin the js?
-        add_job(lock, jobs['split_queue'], (maintitle, codelang, user, time.time(), None))
+        add_job(lock, jobs['split_queue'], (maintitle, codelang, user, time.time(), None, None))
         # FIXME: that's an abuse of E_ERROR
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
@@ -415,29 +415,32 @@ def do_status(lock):
 def on_exit(sig_nr, frame):
     print "STOP"
 
-    utils.save_obj('wsdaemon.jobs', jobs)
+    # FIXME: broken because the queue contains tools and con, we must nullify
+    # them
+    #utils.save_obj('wsdaemon.jobs', jobs)
 
 def bot_listening(lock):
 
     print date_s(time.time())+ " START"
 
+    tools = tool_connect.ToolConnect('match_and_split', 45130)
+
     try:
         while True:
-            request = simple_redis_ipc.wait_for_request('match_and_split_daemon')
-            if not request:
-                continue
+            request, conn = tools.wait_request()
 
             try:
                 print request
 
-                cmd = request['cmd']['cmd']
-                title = request['cmd'].get('title', '')
+                cmd = request['cmd']
+                title = request.get('title', '')
                 title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
-                lang = request['cmd'].get('lang', '')
-                user = request['cmd'].get('user', '')
+                lang = request.get('lang', '')
+                user = request.get('user', '')
             except:
                 ret = ret_val(E_ERROR, "invalid request")
-                simple_redis_ipc.send_reply(request, ret)
+                tools.send_reply(conn, ret)
+                conn.close()
                 continue
 
             t = time.time()
@@ -447,19 +450,23 @@ def bot_listening(lock):
 
             if cmd == "status":
                 html = do_status(lock)
-                simple_redis_ipc.send_reply(request, html)
+                tools.send_text_reply(conn, html)
+                conn.close()
             elif cmd == "match":
                 jobs['number_of_match_job'] += 1
-                add_job(lock, jobs['match_queue'], (title, lang, user, t, request))
+                add_job(lock, jobs['match_queue'], (title, lang, user, t, tools, conn))
             elif cmd == "split":
                 jobs['number_of_split_job'] += 1
-                add_job(lock, jobs['split_queue'], (title, lang, user, t, request))
+                add_job(lock, jobs['split_queue'], (title, lang, user, t, tools, conn))
             elif cmd == 'ping':
-                simple_redis_ipc.send_reply(request, ret_val(E_OK, 'pong'))
+                tools.send_reply(conn, ret_val(E_OK, 'pong'))
+                conn.close()
             else:
-                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
+                tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
+                conn.close()
 
     finally:
+        tools.close()
         on_exit(0, None)
 
 def date_s(at):
@@ -468,7 +475,7 @@ def date_s(at):
 
 def job_thread(lock, queue, func):
     while True:
-        title, codelang, user, t, request = get_job(lock, queue)
+        title, codelang, user, t, tools, conn = get_job(lock, queue)
 
         time1 = time.time()
         out = ''
@@ -481,8 +488,9 @@ def job_thread(lock, queue, func):
         if mysite:
             out = func(mysite, title, user, codelang)
 
-        if request and mysite:
-            simple_redis_ipc.send_reply(request, out)
+        if tools and conn:
+            tools.send_reply(conn, out)
+            conn.close()
 
         time2 = time.time()
         print (date_s(time2) + ' ' + title + ' ' + user + ' ' +  codelang + " (%.2f)" % (time2-time1)).encode('utf-8')

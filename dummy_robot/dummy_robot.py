@@ -7,7 +7,7 @@ __module_description__ = "dummy robot"
 
 import sys
 sys.path.append('/data/project/phetools/phe/common')
-import simple_redis_ipc
+import tool_connect
 import common_html
 
 import os
@@ -33,11 +33,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            title, t, request = queue[-1]
+            title, t, tools, conn = queue[-1]
             got_it = True
         lock.release()
 
-    return title, t, request
+    return title, t
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -55,7 +55,7 @@ def ret_val(error, text):
     return  { 'error' : error, 'text' : text }
 
 def do_exec(title, request):
-    if request['cmd']['cmd'] == 'timeout':
+    if request['cmd'] == 'timeout':
         time.sleep(60)
         return ret_val(E_ERROR, "timeout: 60 sec: " + title)
 
@@ -88,21 +88,22 @@ def bot_listening(lock):
 
     print date_s(time.time()) + " START"
 
+    tools = tool_connect.ToolConnect('dummy_robot', 45139)
+
     try:
         while True:
-            request = simple_redis_ipc.wait_for_request('dummy_robot')
-            if not request:
-                continue
+            request, conn = tools.wait_request()
 
             try:
                 print request
 
-                cmd = request['cmd']['cmd']
-                title = request['cmd'].get('title', '')
+                cmd = request['cmd']
+                title = request.get('title', '')
                 title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
             except:
                 ret = ret_val(E_ERROR, "invalid request")
-                simple_redis_ipc.send_reply(request, ret)
+                tools.send_reply(conn, ret)
+                conn.close()
                 continue
 
             t = time.time()
@@ -110,16 +111,20 @@ def bot_listening(lock):
             print (date_s(t) + " REQUEST " + cmd + ' ' + title).encode('utf-8')
 
             if cmd in [ "exec", "timeout" ]:
-                add_job(lock, robot_queue, (title, t, request))
+                add_job(lock, robot_queue, (title, t, tools, conn))
             elif cmd == 'status':
                 html = do_status(lock, robot_queue)
-                simple_redis_ipc.send_reply(request, html)
+                tools.send_text_reply(conn, html)
+                conn.close()
             elif cmd == 'ping':
-                simple_redis_ipc.send_reply(request, ret_val(E_OK, 'pong'))
+                tools.send_reply(conn, ret_val(E_OK, 'pong'))
+                conn.close()
             else:
-                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
+                tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
+                conn.close()
 
     finally:
+        tools.close()
         print >> sys.stderr, "STOP"
 
 def date_s(at):
@@ -129,14 +134,15 @@ def date_s(at):
 
 def job_thread(lock, queue, func):
     while True:
-        title, t, request = get_job(lock, queue)
+        title, t, tools, conn = get_job(lock, queue)
 
         time1 = time.time()
 
         out = func(title, request)
 
-        if request:
-            simple_redis_ipc.send_reply(request, out)
+        if tools and conn:
+            tools.send_reply(conn, out)
+            conn.close()
 
         time2 = time.time()
         print (date_s(time2) + ' ' + title + " (%.2f)" % (time2-time1)).encode('utf-8')

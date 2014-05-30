@@ -8,7 +8,7 @@ __module_description__ = "verify match daemon"
 import sys
 sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
-import simple_redis_ipc
+import tool_connect
 
 import os
 import re
@@ -40,11 +40,11 @@ def get_job(lock, queue):
         time.sleep(0.5)
         lock.acquire()
         if queue != []:
-            title, codelang, user, t, request = queue[-1]
+            title, codelang, user, t, tools, conn = queue[-1]
             got_it = True
         lock.release()
 
-    return title, codelang, user, t, request
+    return title, codelang, user, t, tools, conn
 
 def remove_job(lock, queue):
     lock.acquire()
@@ -111,23 +111,24 @@ def bot_listening(lock):
 
     print date_s(time.time())+ " START"
 
+    tools = tool_connect.ToolConnect('verify_match', 45131)
+
     try:
         while True:
-            request = simple_redis_ipc.wait_for_request('verify_match_daemon')
-            if not request:
-                continue
+            request, conn = tools.wait_request()
 
             try:
                 print request
 
-                cmd = request['cmd']['cmd']
-                title = request['cmd'].get('title', '')
+                cmd = request['cmd']
+                title = request.get('title', '')
                 title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
-                lang = request['cmd'].get('lang', '')
-                user = request['cmd'].get('user', '')
+                lang = request.get('lang', '')
+                user = request.get('user', '')
             except:
                 ret = ret_val(E_ERROR, "invalid request")
-                simple_redis_ipc.send_reply(request, ret)
+                tools.send_reply(conn, ret)
+                conn.close()
                 continue
 
             t = time.time()
@@ -136,16 +137,20 @@ def bot_listening(lock):
             print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
 
             if cmd == "verify":
-                add_job(lock, verify_queue, (title, lang, user, t, request))
+                add_job(lock, verify_queue, (title, lang, user, t, tools, conn))
             elif cmd == 'status':
                 html = do_status(lock, verify_queue)
-                simple_redis_ipc.send_reply(request, html)
+                tools.send_text_reply(conn, html)
+                conn.close()
             elif cmd == 'ping':
-                simple_redis_ipc.send_reply(request, ret_val(E_OK, 'pong'))
+                tools.send_reply(conn, ret_val(E_OK, 'pong'))
+                conn.close()
             else:
-                simple_redis_ipc.send_reply(request, ret_val(E_ERROR, "unknown command: " + cmd))
+                tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
+                conn.close()
 
     finally:
+        tools.close()
         print >> sys.stderr, "STOP"
 
 def date_s(at):
@@ -155,7 +160,7 @@ def date_s(at):
 
 def job_thread(lock, queue, func):
     while True:
-        title, codelang, user, t, request = get_job(lock, queue)
+        title, codelang, user, t, tools, conn = get_job(lock, queue)
 
         time1 = time.time()
         out = ''
@@ -168,8 +173,9 @@ def job_thread(lock, queue, func):
         if mysite:
             out = func(mysite, title, user, codelang)
 
-        if request:
-            simple_redis_ipc.send_reply(request, out)
+        if tools and conn:
+            tools.send_reply(conn, out)
+            conn.close()
 
         time2 = time.time()
         print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
