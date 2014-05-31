@@ -4,9 +4,8 @@
 # author : phe at some dot where
 # licence : GPL
 
-import os, re, random
+import os, re
 import difflib
-import sys
 import pywikibot
 import urllib
 import utils

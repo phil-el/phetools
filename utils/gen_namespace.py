@@ -5,7 +5,6 @@ import sys
 import pywikibot
 sys.path.append('/data/project/phetools/phe/common')
 import pywikibot_utils
-from pywikibot import config
 
 def gen_lang(dict_name, result):
     for family in dict_name:
@@ -16,8 +15,8 @@ def gen_all_lang():
     result = set()
 
     # FIXME: can't we use pywikibot_utils.gen_all_lang()?
-    gen_lang(config.sysopnames, result)
-    gen_lang(config.usernames, result)
+    gen_lang(pywikibot.config.sysopnames, result)
+    gen_lang(pywikibot.config.usernames, result)
 
     return result
 

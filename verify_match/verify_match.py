@@ -189,7 +189,7 @@ def common_transform(text):
     text = text.replace(u'ſ', u's')
     return text
 
-def transform_text(text, opt):
+def transform_text(text):
     text = remove_tag(text)
     text = re.sub(u'(?msi)<section[^>]*?/>', u'', text)
     text = re.sub(u'(?msi)<br[^>]*?>', u' ', text)
@@ -258,7 +258,7 @@ def transform_text(text, opt):
     text = text.upper()
     return text
 
-def transform_ocr_text(ocr_text, opt):
+def transform_ocr_text(ocr_text):
     ocr_text = remove_ocr_template(ocr_text)
     ocr_text = ocr_text.replace(u'\\037', u'')
     ocr_text = ocr_text.replace(u'\\035', u'')

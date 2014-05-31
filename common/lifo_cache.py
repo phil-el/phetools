@@ -113,7 +113,6 @@ mem_hit ratio + disk_hit ratio:\t%(total hit ratio)7.2f%%""" % format_dict
 
 if __name__ == "__main__":
     import random
-    import sys
     base_dir = '/data/project/phetools/cache/'
     cache_name = 'test_lifo_cache'
     lifo_cache = LifoCache(cache_name, 31, 32)

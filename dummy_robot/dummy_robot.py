@@ -13,7 +13,6 @@ import common_html
 import os
 import thread
 import time
-import copy
 import urllib
 import job_queue
 
@@ -25,18 +24,18 @@ def ret_val(error, text):
         print >> sys.stderr, "Error: %d, %s" % (error, text)
     return  { 'error' : error, 'text' : text }
 
-def do_exec(title, request):
-    if request['cmd'] == 'timeout':
+def do_exec(title, cmd):
+    if cmd == 'timeout':
         time.sleep(60)
         return ret_val(E_ERROR, "timeout: 60 sec: " + title)
 
     return ret_val(E_OK, "exec ok: " + title)
 
-# title t tools conn
+# cmd title t tools conn
 def html_for_queue(queue):
     html = u''
     for i in queue:
-        mtitle = i[0]
+        mtitle = i[1]
 
         html += date_s(i[1]) + ' ' + mtitle + "<br/>"
     return html
@@ -78,7 +77,7 @@ def bot_listening(queue):
             print (date_s(t) + " REQUEST " + cmd + ' ' + title).encode('utf-8')
 
             if cmd in [ "exec", "timeout" ]:
-                queue.put(title, t, tools, conn)
+                queue.put(cmd, title, t, tools, conn)
             elif cmd == 'status':
                 html = do_status(queue)
                 tools.send_text_reply(conn, html)
@@ -101,11 +100,11 @@ def date_s(at):
 
 def job_thread(queue, func):
     while True:
-        title, t, tools, conn = queue.get()
+        cmd, title, t, tools, conn = queue.get()
 
         time1 = time.time()
 
-        out = func(title, request)
+        out = func(title, cmd)
 
         if tools and conn:
             tools.send_reply(conn, out)

@@ -69,7 +69,7 @@ class JobQueue:
 
     def _load(self, filename):
         # no need of a lock here
-        items = utils.load_obj('test_job_queue.dat')
+        items = utils.load_obj(filename)
         items.reverse()
         for d in items:
             self.put(*d)

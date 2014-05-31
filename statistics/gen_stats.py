@@ -139,16 +139,16 @@ def get_stats(domains):
 
 
 def spaced_int(i,sep):
-    str = repr(i)[-3:]
+    result = repr(i)[-3:]
     if i>999: 
-	str = repr(i)[-6:-3] + sep + str
+	result = repr(i)[-6:-3] + sep + result
     if i>999999:
-	str = repr(i)[:-6] + sep + str
-    return str
+	result = repr(i)[:-6] + sep + result
+    return result
 
 
 
-def write_templates(res,keys):
+def write_templates(res):
     import pywikibot
 
     for dom in ['fr','en', 'bn']:
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     keys.sort(lambda x,y: cmp(res[y][3]+2*res[y][4],res[x][3]+2*res[x][4]))
 
     if opt_write:
-        write_templates(res,keys)
+        write_templates(res)
         f = open("/data/project/phetools/public_html/data/new_stats.py","a")
         f.write(repr( (time.time() , res ) ) +"\n")
         f.close()

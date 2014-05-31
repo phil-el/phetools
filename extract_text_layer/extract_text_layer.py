@@ -14,11 +14,11 @@ from ws_namespaces import page as page_prefixes, index as index_prefixes
 import tool_connect
 import lifo_cache
 import job_queue
+import os
 
 import re
 import thread
 import time
-import copy
 
 import align
 import pywikibot
@@ -68,7 +68,7 @@ def html_for_queue(queue):
         codelang = i[1]
         try:
             msite = pywikibot.getSite(codelang, 'wikisource')
-            index_prefix = unicode(index['wikisource'].get(codelang), 'utf-8')
+            index_prefix = unicode(index_prefixes['wikisource'].get(codelang), 'utf-8')
             page = pywikibot.Page(msite, index_prefix + u':' + mtitle)
             path = msite.nice_get_address(page.title(asUrl = True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)

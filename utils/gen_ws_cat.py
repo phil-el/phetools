@@ -2,7 +2,6 @@
 
 import os
 import sys
-import pywikibot
 sys.path.append('/data/project/phetools/phe/common')
 import pywikibot_utils
 
