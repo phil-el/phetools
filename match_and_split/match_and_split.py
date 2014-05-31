@@ -411,13 +411,21 @@ def do_status(lock):
 
     return html
 
+def stop_queue(queue):
+    for i in range(len(queue)):
+        title, lang, user, server, t, tools, conn = queue[i]
+        queue[i] = (title, lang, user, server, t, None, None)
+        if conn:
+            conn.close()
+
 # either called through a SIGUSR2 or a finally clause.
 def on_exit(sig_nr, frame):
     print "STOP"
 
-    # FIXME: broken because the queue contains tools and con, we must nullify
-    # them
-    #utils.save_obj('wsdaemon.jobs', jobs)
+    stop_queue(jobs['match_queue'])
+    stop_queue(jobs['split_queue'])
+
+    utils.save_obj('wsdaemon.jobs', jobs)
 
 def bot_listening(lock):
 
