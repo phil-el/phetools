@@ -390,9 +390,9 @@ def verify_match(page_name, ocr_text, text, opt):
     has_nr = has_nr_template(text)
 
     text = common_transform(text)
-    text = transform_text(text, opt)
+    text = transform_text(text)
     ocr_text = common_transform(ocr_text)
-    ocr_text = transform_ocr_text(ocr_text, opt)
+    ocr_text = transform_ocr_text(ocr_text)
 
     diff = do_diff(ocr_text, text)
     if opt.ignore_nr or not has_nr:
