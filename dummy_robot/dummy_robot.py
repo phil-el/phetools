@@ -15,39 +15,10 @@ import thread
 import time
 import copy
 import urllib
+import job_queue
 
 E_ERROR = 1
 E_OK = 0
-
-# FIXME: use a real Queue object and avoid polling the queue
-
-# Get a job w/o removing it from the queue. FIXME: probably not the best
-# way, if a job can't be handled due to exception and the exception is
-# gracefully catched by the worker thread, there is no warranty than the
-# job will be removed from the queue, so the worker thread can hang forever
-# trying to do something causing an exception. This is not possible actually
-# but it's fragile to not remove the job when getting it.
-def get_job(lock, queue):
-    got_it = False
-    while not got_it:
-        time.sleep(0.5)
-        lock.acquire()
-        if queue != []:
-            title, t, tools, conn = queue[-1]
-            got_it = True
-        lock.release()
-
-    return title, t
-
-def remove_job(lock, queue):
-    lock.acquire()
-    queue.pop()
-    lock.release()
-
-def add_job(lock, queue, cmd):
-    lock.acquire()
-    queue.insert(0, cmd)
-    lock.release()
 
 def ret_val(error, text):
     if error:
@@ -61,8 +32,7 @@ def do_exec(title, request):
 
     return ret_val(E_OK, "exec ok: " + title)
 
-robot_queue = []
-
+# title t tools conn
 def html_for_queue(queue):
     html = u''
     for i in queue:
@@ -71,11 +41,8 @@ def html_for_queue(queue):
         html += date_s(i[1]) + ' ' + mtitle + "<br/>"
     return html
 
-# title t requestn
-def do_status(lock, queue):
-    lock.acquire()
-    queue = copy.copy(queue)
-    lock.release()
+def do_status(queue):
+    queue = queue.copy_items(queue)
 
     html = common_html.get_head(u'Dummy robot')
     html += u"<body><div>The robot is running.<br/><hr/>"
@@ -84,7 +51,7 @@ def do_status(lock, queue):
     html += u'</div></body></html>'
     return html
 
-def bot_listening(lock):
+def bot_listening(queue):
 
     print date_s(time.time()) + " START"
 
@@ -111,9 +78,9 @@ def bot_listening(lock):
             print (date_s(t) + " REQUEST " + cmd + ' ' + title).encode('utf-8')
 
             if cmd in [ "exec", "timeout" ]:
-                add_job(lock, robot_queue, (title, t, tools, conn))
+                queue.put(title, t, tools, conn)
             elif cmd == 'status':
-                html = do_status(lock, robot_queue)
+                html = do_status(queue)
                 tools.send_text_reply(conn, html)
                 conn.close()
             elif cmd == 'ping':
@@ -132,9 +99,9 @@ def date_s(at):
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
 
-def job_thread(lock, queue, func):
+def job_thread(queue, func):
     while True:
-        title, t, tools, conn = get_job(lock, queue)
+        title, t, tools, conn = queue.get()
 
         time1 = time.time()
 
@@ -147,16 +114,15 @@ def job_thread(lock, queue, func):
         time2 = time.time()
         print (date_s(time2) + ' ' + title + " (%.2f)" % (time2-time1)).encode('utf-8')
 
-        remove_job(lock, queue)
+        queue.remove()
 
 
 if __name__ == "__main__":
     try:
-        lock = thread.allocate_lock()
-        thread.start_new_thread(job_thread, (lock, robot_queue, do_exec))
-        bot_listening(lock)
+        queue = job_queue.JobQueue()
+        thread.start_new_thread(job_thread, (queue, do_exec))
+        bot_listening(queue)
     except KeyboardInterrupt:
-        pywikibot.stopme()
         os._exit(1)
 #    finally:
 #        pywikibot.stopme()
