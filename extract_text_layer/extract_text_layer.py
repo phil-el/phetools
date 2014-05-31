@@ -13,9 +13,8 @@ sys.path.append('/data/project/phetools/wikisource')
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 import tool_connect
 import lifo_cache
+import job_queue
 
-import os
-import socket
 import re
 import thread
 import time
@@ -30,36 +29,6 @@ from pywikibot_utils import safe_put
 
 E_ERROR = 1
 E_OK = 0
-
-# FIXME: use a real Queue object and avoid polling the queue
-
-# Get a job w/o removing it from the queue. FIXME: probably not the best
-# way, if a job can't be handled due to exception and the exception is
-# gracefully catched by the worker thread, there is no warranty than the
-# job will be removed from the queue, so the worker thread can hang forever
-# trying to do something causing an exception. This is not possible actually
-# but it's fragile to not remove the job when getting it.
-def get_job(lock, queue):
-    got_it = False
-    while not got_it:
-        time.sleep(0.5)
-        lock.acquire()
-        if queue != []:
-            title, codelang, user, t, tools, conn = queue[-1]
-            got_it = True
-        lock.release()
-
-    return title, codelang, user, t, tools, conn
-
-def remove_job(lock, queue):
-    lock.acquire()
-    queue.pop()
-    lock.release()
-
-def add_job(lock, queue, cmd):
-    lock.acquire()
-    queue.insert(0, cmd)
-    lock.release()
 
 def ret_val(error, text):
     if error:
@@ -91,9 +60,7 @@ def do_extract(mysite, maintitle, user, codelang):
 
     return ret_val(E_OK, "")
 
-
-extract_queue = []
-
+# title user lang t tools conn
 def html_for_queue(queue):
     html = u''
     for i in queue:
@@ -110,11 +77,8 @@ def html_for_queue(queue):
         html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
     return html
 
-# title user lang t request
-def do_status(lock, queue):
-    lock.acquire()
-    queue = copy.copy(queue)
-    lock.release()
+def do_status(queue):
+    queue = queue.copy_items(True)
 
     html = common_html.get_head('Extract text layer')
     html += u"<body><div>The robot is running.<br/><hr/>"
@@ -123,7 +87,7 @@ def do_status(lock, queue):
     html += u'</div></body></html>'
     return html
 
-def bot_listening(lock):
+def bot_listening(queue):
 
     print date_s(time.time())+ " START"
 
@@ -153,9 +117,9 @@ def bot_listening(lock):
             print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
 
             if cmd == "extract":
-                add_job(lock, extract_queue, (title, lang, user, t, tools, conn))
+                queue.put(title, lang, user, t, tools, conn)
             elif cmd == 'status':
-                html = do_status(lock, extract_queue)
+                html = do_status(queue)
                 tools.send_text_reply(conn, html)
                 conn.close()
             elif cmd == 'ping':
@@ -174,9 +138,9 @@ def date_s(at):
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
 
-def job_thread(lock, queue, func):
+def job_thread(queue):
     while True:
-        title, codelang, user, t, tools, conn = get_job(lock, queue)
+        title, codelang, user, t, tools, conn = queue.get()
 
         time1 = time.time()
         out = ''
@@ -187,7 +151,7 @@ def job_thread(lock, queue, func):
             mysite = False
 
         if mysite:
-            out = func(mysite, title, user, codelang)
+            out = do_extract(mysite, title, user, codelang)
 
         if tools and conn:
             tools.send_reply(conn, out)
@@ -196,14 +160,14 @@ def job_thread(lock, queue, func):
         time2 = time.time()
         print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
 
-        remove_job(lock, queue)
+        queue.remove()
 
 
 if __name__ == "__main__":
     try:
-        lock = thread.allocate_lock()
-        thread.start_new_thread(job_thread, (lock, extract_queue, do_extract))
-        bot_listening(lock)
+        queue = job_queue.JobQueue()
+        thread.start_new_thread(job_thread, (queue, ))
+        bot_listening(queue)
     except KeyboardInterrupt:
         pywikibot.stopme()
         os._exit(1)
