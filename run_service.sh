@@ -85,7 +85,9 @@ syntaxe() {
 
 if test "$2"x == "allx"; then
     for K in "${!cmdline[@]}"; do
-	do_it $1 $K;
+	if [ $K != 'dummy_robot' -o "$1"x = "stopx" ]; then
+	    do_it $1 $K;
+	fi
     done
 else
     if [ "$2"x == "x" ]; then
