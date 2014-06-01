@@ -18,12 +18,12 @@ import os
 import re
 import thread
 import time
-import copy
 import align
 import common_html
 import utils
 import signal
 import urllib
+import job_queue
 
 import pywikibot
 
@@ -78,36 +78,6 @@ def repl(m):
     pagenum = offset_pagenum(get_pl(year, vol), page)
     return "==[[Page:" + rddm_name(year, vol) + "/%d]]==\n" % pagenum
 
-
-# FIXME: use a real Queue object and avoid polling the queue
-
-# Get a job w/o removing it from the queue. FIXME: probably not the best
-# way, if a job can't be handled due to exception and the exception is
-# gracefully catched by the worker thread, there is no warranty than the
-# job will be removed from the queue, so the worker thread can hang forever
-# trying to do something causing an exception. This is not possible actually
-# but it's fragile to not remove the job when getting it.
-def get_job(lock, queue):
-    got_it = False
-    while not got_it:
-        time.sleep(0.5)
-        lock.acquire()
-        if queue != []:
-            title, codelang, user, t, tools, conn = queue[-1]
-            got_it = True
-        lock.release()
-
-    return title, codelang, user, t, tools, conn
-
-def remove_job(lock, queue):
-    lock.acquire()
-    queue.pop()
-    lock.release()
-
-def add_job(lock, queue, cmd):
-    lock.acquire()
-    queue.insert(0, cmd)
-    lock.release()
 
 def ret_val(error, text):
     if error:
@@ -196,7 +166,7 @@ def do_match(mysite, maintitle, user, codelang):
         safe_put(page,new_text,user+": match")
         jobs['number_of_split_job'] += 1
         # FIXME: can we pass the request here and use a callbackin the js?
-        add_job(lock, jobs['split_queue'], (maintitle, codelang, user, time.time(), None, None))
+        jobs['split_queue'].put(maintitle, codelang, user, time.time(), None, None)
         # FIXME: that's an abuse of E_ERROR
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
@@ -378,6 +348,7 @@ def do_split(mysite, rootname, user, codelang):
 
 jobs = None
 
+# title, codelang, user, t, tools, conn
 def html_for_queue(queue):
     html = ''
     for i in queue:
@@ -393,11 +364,9 @@ def html_for_queue(queue):
         html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
     return html
 
-def do_status(lock):
-    lock.acquire()
-    m_queue = copy.deepcopy(jobs['match_queue'])
-    s_queue = copy.deepcopy(jobs['split_queue'])
-    lock.release()
+def do_status():
+    m_queue = jobs['match_queue'].copy_items(True)
+    s_queue = jobs['split_queue'].copy_items(True)
 
     html = common_html.get_head('Match and split')
 
@@ -412,22 +381,24 @@ def do_status(lock):
     return html
 
 def stop_queue(queue):
-    for i in range(len(queue)):
-        title, lang, user, server, t, tools, conn = queue[i]
-        queue[i] = (title, lang, user, server, t, None, None)
+    new_queue = job_queue.JobQueue()
+    items = queue.copy_items()
+    for title, lang, user, server, t, tools, conn in items:
+        new_queue.put(title, lang, user, server, t, None, None)
         if conn:
             conn.close()
+    return new_queue
 
 # either called through a SIGUSR2 or a finally clause.
 def on_exit(sig_nr, frame):
     print "STOP"
 
-    stop_queue(jobs['match_queue'])
-    stop_queue(jobs['split_queue'])
+    jobs['match_queue'] = stop_queue(jobs['match_queue'])
+    jobs['split_queue'] = stop_queue(jobs['split_queue'])
 
     utils.save_obj('wsdaemon.jobs', jobs)
 
-def bot_listening(lock):
+def bot_listening():
 
     print date_s(time.time())+ " START"
 
@@ -457,15 +428,15 @@ def bot_listening(lock):
             print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
 
             if cmd == "status":
-                html = do_status(lock)
+                html = do_status()
                 tools.send_text_reply(conn, html)
                 conn.close()
             elif cmd == "match":
                 jobs['number_of_match_job'] += 1
-                add_job(lock, jobs['match_queue'], (title, lang, user, t, tools, conn))
+                jobs['match_queue'].put(title, lang, user, t, tools, conn)
             elif cmd == "split":
                 jobs['number_of_split_job'] += 1
-                add_job(lock, jobs['split_queue'], (title, lang, user, t, tools, conn))
+                jobs['split_queue'].put(title, lang, user, t, tools, conn)
             elif cmd == 'ping':
                 tools.send_reply(conn, ret_val(E_OK, 'pong'))
                 conn.close()
@@ -481,9 +452,9 @@ def date_s(at):
     t = time.gmtime(at)
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
-def job_thread(lock, queue, func):
+def job_thread(queue, func):
     while True:
-        title, codelang, user, t, tools, conn = get_job(lock, queue)
+        title, codelang, user, t, tools, conn = queue.get()
 
         time1 = time.time()
         out = ''
@@ -503,12 +474,12 @@ def job_thread(lock, queue, func):
         time2 = time.time()
         print (date_s(time2) + ' ' + title + ' ' + user + ' ' +  codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
 
-        remove_job(lock, queue)
+        queue.remove()
 
 def default_jobs():
     return { 
-        'match_queue' : [],
-        'split_queue' : [],
+        'match_queue' : job_queue.JobQueue(),
+        'split_queue' : job_queue.JobQueue(),
         'number_of_match_job' : 0,
         'number_of_split_job' : 0
         }
@@ -522,10 +493,9 @@ if __name__ == "__main__":
         except:
             jobs = default_jobs()
 
-        lock = thread.allocate_lock()
-        thread.start_new_thread(job_thread, (lock, jobs['match_queue'], do_match))
-        thread.start_new_thread(job_thread, (lock, jobs['split_queue'], do_split))
-        bot_listening(lock)
+        thread.start_new_thread(job_thread, (jobs['match_queue'], do_match))
+        thread.start_new_thread(job_thread, (jobs['split_queue'], do_split))
+        bot_listening()
     except KeyboardInterrupt:
         pywikibot.stopme()
         os._exit(1)
