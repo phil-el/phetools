@@ -35,9 +35,9 @@ def do_match(mysite, maintitle, user):
     opt.site = mysite
     maintitle = maintitle.replace(u'_', u' ')
 
-    if verify_match.main(maintitle, opt):
-        return ret_val(E_OK, "")
-    return ret_val(E_ERROR, "unknown error")
+    verify_match.main(maintitle, opt)
+
+    return ret_val(E_OK, "")
 
 # title user lang t tools conn
 def html_for_queue(queue):
