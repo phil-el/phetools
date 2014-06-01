@@ -41,7 +41,7 @@ def html_for_queue(queue):
     return html
 
 def do_status(queue):
-    queue = queue.copy_items(queue)
+    queue = queue.copy_items(True)
 
     html = common_html.get_head(u'Dummy robot')
     html += u"<body><div>The robot is running.<br/><hr/>"
