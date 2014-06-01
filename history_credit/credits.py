@@ -2,6 +2,7 @@
 
 import sys
 import types
+import json
 
 from get_credit import get_credit
 
@@ -113,7 +114,6 @@ class formater_json(formater_base):
         return 'application/json'
 
     def format(self, result):
-        import json
         return json.dumps(result)
 
 class formater_php(formater_base):
@@ -147,6 +147,7 @@ def query_params(environ):
     import cgi
     field = cgi.FieldStorage(environ['wsgi.input'])
     rdict = { 'format' : 'text',
+              'cmd' : 'history',
               'book' : '',
               'page' : '',
               'image' : '',
@@ -157,7 +158,7 @@ def query_params(environ):
     rdict['page'] = split_param(rdict['page'])
     rdict['image'] = split_param(rdict['image'])
 
-    print >> sys.stderr, str(rdict)
+    #print >> sys.stderr, str(rdict)
 
     return rdict
 
@@ -178,7 +179,13 @@ def handle_query(params, start_response):
     return [ text ]
 
 def handle_status(start_response):
-    text = "I'm up"
+    # pseudo ping, as we run on the web server, we always return 1 ms.
+    text = json.dumps( { 'error' : 0,
+                         'text' : 'pong',
+                         'server' : 'history_credit', 
+                         'ping' : 0.001
+                        } )
+
     start_response('200 OK', [('Content-Type',
                                'text/plain; charset=UTF-8'),
                               ('Content-Length', len(text)),
@@ -191,7 +198,7 @@ def myapp(environ, start_response):
     # Note than &status or &status= doesn't works cgi.FieldStorage expect
     # &status=something to accept to store a parameter, so ?lang=fr&status=
     # will return 200 and an empty answer, counter-intuitive...
-    if params['lang'] and not params.has_key('status'):
+    if params['lang'] and params['cmd'] == 'history':
         return handle_query(params, start_response)
     else:
         return handle_status(start_response)

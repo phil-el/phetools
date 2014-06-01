@@ -14,7 +14,8 @@ $serverlist = array(
 	//'dummy_robot.php',
         'match_and_split.php',
 	'extract_text_layer.php',
-	'verify_match.php'
+	'verify_match.php',
+	'credits.py'
 );
 
 foreach ($serverlist as $servername) {
