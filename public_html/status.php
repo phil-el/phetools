@@ -5,7 +5,7 @@ header('Access-Control-Allow-Origin: *');
 header('Content-type: text/plain');
 
 function ping_server($server) {
-	$url = 'http://tools-webproxy//phetools/' . $server . '?cmd=ping';
+	$url = 'http://tools-webproxy/phetools/' . $server . '?cmd=ping';
 	$response = file_get_contents($url);
 	return json_decode($response, true);
 }
