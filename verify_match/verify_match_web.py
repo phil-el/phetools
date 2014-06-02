@@ -18,7 +18,6 @@ import time
 import pywikibot
 import common_html
 import verify_match
-import urllib
 
 E_ERROR = 1
 E_OK = 0

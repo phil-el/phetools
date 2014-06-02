@@ -22,7 +22,6 @@ import align
 import common_html
 import utils
 import signal
-import urllib
 import job_queue
 
 import pywikibot

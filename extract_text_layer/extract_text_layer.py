@@ -22,7 +22,6 @@ import time
 
 import align
 import pywikibot
-import urllib
 import common_html
 
 from pywikibot_utils import safe_put
