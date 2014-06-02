@@ -12,6 +12,7 @@ import thread
 import os
 import json
 import sys
+import urllib
 
 class ToolConnect:
     def __init__(self, server_name, port):
@@ -38,6 +39,14 @@ class ToolConnect:
         fd.close()
         os.chmod(servername_filename, 0444)
 
+    def _ill_formed_request(self, conn, data):
+        try:
+            print >> sys.stderr, "ill formed request", data.encode('utf-8')
+        except:
+            pass
+        self.send_reply(conn, { 'error' : 4, 'text' : 'Ill formed request' })
+        conn.close()
+
     def wait_request(self):
         request = None
         conn = None
@@ -47,13 +56,17 @@ class ToolConnect:
             try:
                 request = json.loads(data)
             except UnicodeDecodeError:
-                try:
-                    print >> sys.stderr, "ill formed request", data.encode('utf-8')
-                except:
-                    pass
-                self.send_reply(conn, { 'error' : 4, 'text' : 'Ill formed request' })
-                conn.close()
+                self._ill_formed_request(conn, data)
                 request = None
+
+            if request:
+                for key in request:
+                    try:
+                        value = urllib.unquote(request[key].encode('utf-8'))
+                        request[key] = unicode(value, 'utf-8')
+                    except:
+                        self._ill_formed_request(conn, data)
+                        request = None
 
         return request, conn
 

@@ -413,7 +413,6 @@ def bot_listening():
 
                 cmd = request['cmd']
                 title = request.get('title', '')
-                title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
                 lang = request.get('lang', '')
                 user = request.get('user', '')
             except:
