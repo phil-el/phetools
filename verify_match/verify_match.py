@@ -10,7 +10,6 @@ sys.path.append('/data/project/phetools/wikisource')
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 
 import lifo_cache
-import lev_dist
 import re
 import tempfile
 import os
@@ -61,8 +60,9 @@ def strip_link(matchobj):
     return link
 
 def remove_template_pass(text):
+    text = re.sub(u'{{…\|[^}]*}}', u'', text)
     text = re.sub(u'{{[fF]ormatnum:([^{}]*?)}}', u'\\1', text)
-    text = re.sub(u'{{[tT]iret\|([^{}]*?)\|[^{}]*?}}', u'\\1', text)
+    text = re.sub(u'{{[tT]iret\|([^{}]*?)\|[^{}]*?}}', u'\\1-', text)
     text = re.sub(u'{{[sS]éparateur}}', u'', text)
     text = re.sub(u'{{[sS]éparateur de points(\|[^{}]*)?}}', u'', text)
     text = re.sub(u'{{[sS]p\|([^{}|]*)}}', u'\\1', text)
@@ -189,7 +189,7 @@ def common_transform(text):
     text = text.replace(u'ſ', u's')
     return text
 
-def transform_text(text):
+def transform_text(text, opt):
     text = remove_tag(text)
     text = re.sub(u'(?msi)<section[^>]*?/>', u'', text)
     text = re.sub(u'(?msi)<br[^>]*?>', u' ', text)
@@ -255,15 +255,17 @@ def transform_text(text):
 
     text = handle_table(text)
 
-    text = text.upper()
+    if opt.upper_case:
+        text = text.upper()
     return text
 
-def transform_ocr_text(ocr_text):
+def transform_ocr_text(ocr_text, opt):
     ocr_text = remove_ocr_template(ocr_text)
     ocr_text = ocr_text.replace(u'\\037', u'')
     ocr_text = ocr_text.replace(u'\\035', u'')
     ocr_text = ocr_text.replace(u'\\013', u'')
-    ocr_text = ocr_text.upper()
+    if opt.upper_case:
+        ocr_text = ocr_text.upper()
     return ocr_text
 
 def run_diff(ocr_text, text):
@@ -279,7 +281,7 @@ def run_diff(ocr_text, text):
     for t in fd.readlines():
         diff += t
     fd.close()
-    return diff
+    return unicode(diff, 'utf-8')
 
 def white_list(left, right):
     lst = {
@@ -296,17 +298,18 @@ def white_list(left, right):
         u"US" : u"ILS",
         u"CLAMES" : u"DAMES",
         u"CLAME" : u"DAME",
+        u"TON" : u"L’ON",
+        u"JUE" : u"QUE",
+        u"CJUE" : u"QUE",
+        u"FDLES" : u"FILLES",
+        u"FDLE" : u"FILLE",
+        u"H" : u"À",
+        u"A" : u"À",
+        u"I" : u"",
+        u"TÉtat" : u"L’ÉTAT",
         }
 
     if left in lst and right == lst[left]:
-        return True
-    return False
-
-def check_distance(left, right):
-    dist = lev_dist.distance(left, right)
-    if dist > 1:
-        if dist <= 4 and ((len(left) + len(right)) / dist) >= 10:
-            return False
         return True
     return False
 
@@ -329,7 +332,7 @@ def transform_ocr_diff(diff):
 
     return diff
 
-def check_diff(text):
+def check_diff(text, opt):
     text = text.split(u'\n')
     left = u''.join([ x[1:] for x in text if len(x) > 1 and x[0] == '-' ])
     right= u''.join([ x[1:] for x in text if len(x) > 1 and x[0] == '+' ])
@@ -339,14 +342,11 @@ def check_diff(text):
     if len(left) <= 3 and len(right) <= 3:
         if re.search(u'[0-9]', left) or re.search(u'[0-9]', right):
             return False
-    if white_list(left, right):
+    if white_list(left.upper(), right.upper()):
         return False
     #print left.encode('utf-8')
     #print right.encode('utf-8')
-    if check_distance(left, right):
-        left = transform_ocr_diff(left)
-        return check_distance(left, right)
-    return False
+    return True
 
 def has_nr_template(text):
     match = re.search(u'{{[Nn](r|umérotation)\|([^}]*)\|([^}]*)\|([^}]*)}}', text)
@@ -358,8 +358,11 @@ def has_nr_template(text):
             return True
     return False
 
-def do_diff(ocr_text, text):
-    p = re.compile(ur'[\W]+', re.U)
+def do_diff(ocr_text, text, opt):
+    if opt.ignore_punct:
+        p = re.compile(ur'[\W]+', re.U)
+    else:
+        p = re.compile(ur' +', re.U)
 
     ocr_text = p.split(ocr_text)
     text = p.split(text)
@@ -369,49 +372,60 @@ def do_diff(ocr_text, text):
 
     diff = run_diff(ocr_text, text)
 
-    diff = re.sub('^--- /[^\n]+/[^\n]+\n', '', diff)
-    diff = re.sub('^\+\+\+ /[^\n]+/[^\n]+\n', '', diff)
+    diff = re.sub(u'^--- /[^\n]+/[^\n]+\n', '', diff)
+    diff = re.sub(u'^\+\+\+ /[^\n]+/[^\n]+\n', '', diff)
 
     diff = re.split(u'(?ms)@@.*?@@\n', diff)
     diff = [x for x in diff if x]
 
     return diff
 
-def filter_diff(diff):
+def filter_diff(diff, opt):
     result = []
     for d in diff:
-        d = unicode(d, 'utf-8')
-        if check_diff(d):
+        if check_diff(d, opt):
             result.append(d)
 
     return result
 
+def do_transform(text, ocr_text, opt):
+    text = common_transform(text)
+    text = transform_text(text, opt)
+    ocr_text = common_transform(ocr_text)
+    ocr_text = transform_ocr_text(ocr_text, opt)
+    return text, ocr_text
+
 def verify_match(page_name, ocr_text, text, opt):
     has_nr = has_nr_template(text)
 
-    text = common_transform(text)
-    text = transform_text(text)
-    ocr_text = common_transform(ocr_text)
-    ocr_text = transform_ocr_text(ocr_text)
+    if opt.do_transform:
+        text, ocr_text = do_transform(text, ocr_text, opt)
 
-    diff = do_diff(ocr_text, text)
+    diff = do_diff(ocr_text, text, opt)
     if opt.ignore_nr or not has_nr:
         ocr_text = ocr_text.split(u'\n')
         ocr_text = u'\n'.join(ocr_text[1:])
-        diff2 = do_diff(ocr_text, text)
+        diff2 = do_diff(ocr_text, text, opt)
         if len(diff2) < len(diff):
             #print >> sys.stderr, page_name.encode('utf-8'), "removing first line"
             diff = diff2
 
-    diff = filter_diff(diff)
+    diff = filter_diff(diff, opt)
 
     result = u''
     if len(diff):
             result += u'* [[' + page_name + u']]\n'
     for d in diff:
         d = d.split(u'\n')
-        d = u'\n'.join([x for x in d if len(x) > 1 and x[0] in u'-+'])
-        result += u'<pre>' + d + u'\n</pre>' + u'\n'
+        moins = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u'-'])
+        plus = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u'+'])
+        if len(moins) + len(plus):
+            result += u'<pre>'
+            if len(moins):
+                result += u'-' + moins + u'\n'
+            if len(plus):
+                result += u'+' + plus + u'\n'
+            result += u'</pre>\n'
 
     return result
 
@@ -466,7 +480,7 @@ def main(book_name, opt):
                 temp = cached_diff[key][1]
 
             cached_diff[key] = (rev_ids[key], temp)
-            if len(temp) + len(result) > 384 * 1024:
+            if len(temp) + len(result) > 1000 * 1000:
                 result = u"\n\n'''Diff trop volumineux, résultat tronqué'''\n\n" + result
                 break
             result += temp
@@ -489,7 +503,13 @@ def default_options():
     options.site = pywikibot.getSite(code = options.lang, fam = 'wikisource')
     # By default this script write on a wiki page.
     options.save = True
+    # FIXME: If you change these options, you must stop the server, delete
+    # the cache 'extract_text_layer_diff' and restart the server. TODO
+    # save this option to the cache and detect any change.
     options.ignore_nr = False
+    options.upper_case = False
+    options.do_transform = True
+    options.ignore_punct = False
 
     return options
 
