@@ -7,6 +7,7 @@ import bz2
 import gzip
 import os
 import errno
+import urllib
 
 def read_file(filename):
     fd = open(filename)
@@ -45,6 +46,23 @@ def write_sha1(sha1, filename):
     fd = open(filename, 'w')
     fd.write(sha1)
     fd.close()
+
+def url_opener():
+    opener = urllib.URLopener()
+    opener.addheaders = [('User-agent', 'MW_match_and_split')]
+    return opener
+
+def copy_file_from_url(url, out_file):
+    opener = url_opener()
+    fd_in = opener.open(url)
+    fd_out = open(out_file, "wb")
+    data = True
+    while data:
+        data = fd_in.read(4096)
+        if data:
+            fd_out.write(data)
+    fd_in.close()
+    fd_out.close()
 
 def compress_file_data(out_filename, data, compress_type):
     if compress_type in ['bzip2', 'gzip']:

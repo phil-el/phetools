@@ -10,23 +10,6 @@ import pywikibot
 import urllib
 import utils
 
-def url_opener():
-    opener = urllib.URLopener()
-    opener.addheaders = [('User-agent', 'MW_match_and_split')]
-    return opener
-
-def copy_file_from_url(url, out_file):
-    opener = url_opener()
-    fd_in = opener.open(url)
-    fd_out = open(out_file, "wb")
-    data = True
-    while data:
-        data = fd_in.read(4096)
-        if data:
-            fd_out.write(data)
-    fd_in.close()
-    fd_out.close()
-
 def match_page(target, source):
     s = difflib.SequenceMatcher()
     text1 = source
@@ -58,10 +41,8 @@ def quote_filename(filename):
     return result
 
 def extract_djvu_text(url, filename, sha1):
-    # FIXME: either here or in copy_file_from_url() we must check the sha1
-    # checksum of the uploaded file, as copy_file_from_url() can fail silently.
     print "extracting text layer"
-    copy_file_from_url(url, filename)
+    utils.copy_file_from_url(url, filename)
     if sha1 != utils.sha1(filename):
         print "upload failure, sha1 mismatch:", filename.encode('utf-8')
         return None

@@ -163,7 +163,7 @@ def check_sha1(path, sha1):
 def check_and_upload(url, filename, sha1):
     if not os.path.exists(filename) or utils.sha1(filename) != sha1:
         # file deleted by the job queue processing this item.
-        align.copy_file_from_url(url, filename)
+        utils.copy_file_from_url(url, filename)
     else:
         ret_val(E_ERROR, "book already uploaded: " + filename)
 
