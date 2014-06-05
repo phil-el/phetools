@@ -190,6 +190,10 @@ def common_transform(text):
     return text
 
 def transform_text(text, opt):
+
+    header, text, footer = ws_utils.split_page_text(text)
+    text = re.sub(u'(?msi)<noinclude[^>]*?>(.*?)</noinclude>', u'\\1', text)
+
     text = remove_tag(text)
     text = re.sub(u"'''([^']*)'''", u'\\1', text)
     text = re.sub(u"''([^']*)''", u'\\1', text)
@@ -230,18 +234,14 @@ def transform_text(text, opt):
     text = re.sub(u'__+', u'', text)
     text = text.replace(u'&nbsp;', u' ')
 
-    header, text, footer = ws_utils.split_page_text(text)
-
-    text = re.sub(u'(?msi)<noinclude[^>]*?>(.*?)</noinclude>', u'\\1', text)
-
     # FIXME: numérotation is center|left|right
     match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)\|([^|}]*)}}', header)
     if match:
-        text = match.group(2) + u' ' + match.group(3) + u' ' + match.group(4) + u' ' + text
+        text = match.group(2) + u' ' + match.group(3) + u' ' + match.group(4) + u'\n' + text
     else:
         match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)}}', header)
         if match:
-            text = match.group(2) + u' ' + match.group(3) + u' ' + text
+            text = match.group(2) + u' ' + match.group(3) + u'\n' + text
 
     # move downward all ref. First ref follow to ensure the right order
     refs = []
@@ -270,19 +270,20 @@ def transform_ocr_text(ocr_text, opt):
         ocr_text = ocr_text.upper()
     return ocr_text
 
-def run_diff(ocr_text, text):
+def run_diff(ocr_text, text, opt):
     ocr_text = u"\n".join(ocr_text) + u"\n"
     temp1 = tempfile.NamedTemporaryFile(suffix = '.txt')
     utils.write_file(temp1.name, ocr_text)
     text = u"\n".join(text) + u"\n"
     temp2 = tempfile.NamedTemporaryFile(suffix = '.txt')
     utils.write_file(temp2.name, text)
-    cmdline = "diff -U 0 " + temp1.name + " " + temp2.name
+    cmdline = "diff -U %d " % opt.diff_context + temp1.name + " " + temp2.name
     fd = os.popen(cmdline)
     diff = ''
     for t in fd.readlines():
         diff += t
     fd.close()
+
     return unicode(diff, 'utf-8')
 
 def white_list(left, right):
@@ -364,7 +365,7 @@ def do_diff(ocr_text, text, opt):
     if opt.ignore_punct:
         p = re.compile(ur'[\W]+', re.U)
     else:
-        p = re.compile(ur' +', re.U)
+        p = re.compile(ur'[ \r\n]+', re.U)
 
     ocr_text = p.split(ocr_text)
     text = p.split(text)
@@ -372,7 +373,7 @@ def do_diff(ocr_text, text, opt):
     ocr_text = [x for x in ocr_text if x]
     text = [x for x in text if x]
 
-    diff = run_diff(ocr_text, text)
+    diff = run_diff(ocr_text, text, opt)
 
     diff = re.sub(u'^--- /[^\n]+/[^\n]+\n', '', diff)
     diff = re.sub(u'^\+\+\+ /[^\n]+/[^\n]+\n', '', diff)
@@ -404,12 +405,19 @@ def verify_match(page_name, ocr_text, text, opt):
         text, ocr_text = do_transform(text, ocr_text, opt)
 
     diff = do_diff(ocr_text, text, opt)
-    if opt.ignore_nr or not has_nr:
+    if not has_nr:
         ocr_text = ocr_text.split(u'\n')
         ocr_text = u'\n'.join(ocr_text[1:])
         diff2 = do_diff(ocr_text, text, opt)
         if len(diff2) < len(diff):
-            #print >> sys.stderr, page_name.encode('utf-8'), "removing first line"
+            diff = diff2
+    else:
+        ocr_text = ocr_text.split(u'\n')
+        ocr_text = u'\n'.join(ocr_text[1:])
+        text = text.split(u'\n')
+        text = u'\n'.join(text[1:])
+        diff2 = do_diff(ocr_text, text, opt)
+        if len(diff2) < len(diff):
             diff = diff2
 
     diff = filter_diff(diff, opt)
@@ -419,8 +427,8 @@ def verify_match(page_name, ocr_text, text, opt):
             result += u'* [[' + page_name + u']]\n'
     for d in diff:
         d = d.split(u'\n')
-        moins = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u'-'])
-        plus = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u'+'])
+        moins = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u' -'])
+        plus = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u' +'])
         if len(moins) + len(plus):
             result += u'<pre>'
             if len(moins):
@@ -508,10 +516,10 @@ def default_options():
     # FIXME: If you change these options, you must stop the server, delete
     # the cache 'extract_text_layer_diff' and restart the server. TODO
     # save this option to the cache and detect any change.
-    options.ignore_nr = False
     options.upper_case = False
     options.do_transform = True
     options.ignore_punct = False
+    options.diff_context = 1
 
     return options
 
@@ -521,11 +529,11 @@ if __name__ == "__main__":
     options.save = False
 
     for arg in sys.argv[1:]:
-        if arg == '-ignore_nr':
-            options.ignore_nr = True
-        elif arg == '-help':
-            print sys.argv[0], "-ignore_nr"
+        if arg == '-help':
+            print sys.argv[0], ""
             sys.exit(1)
+        elif arg.startswith('-diff_context'):
+            options.diff_context = int(arg[len('-diff_context:'):])
         else:
             gen = [ { u'title' : unicode(arg, 'utf-8') } ]
 
