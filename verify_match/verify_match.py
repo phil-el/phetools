@@ -191,6 +191,8 @@ def common_transform(text):
 
 def transform_text(text, opt):
     text = remove_tag(text)
+    text = re.sub(u"'''([^']*)'''", u'\\1', text)
+    text = re.sub(u"''([^']*)''", u'\\1', text)
     text = re.sub(u'(?msi)<section[^>]*?/>', u'', text)
     text = re.sub(u'(?msi)<br[^>]*?>', u' ', text)
     text = re.sub(u'(?msi)<nowiki[^>]*?>', u'', text)
@@ -233,11 +235,11 @@ def transform_text(text, opt):
     text = re.sub(u'(?msi)<noinclude[^>]*?>(.*?)</noinclude>', u'\\1', text)
 
     # FIXME: numérotation is center|left|right
-    match = re.search(u'{{[Nn](r|umérotation)\|([^}]*)\|([^}]*)\|([^}]*)}}', header)
+    match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)\|([^|}]*)}}', header)
     if match:
         text = match.group(2) + u' ' + match.group(3) + u' ' + match.group(4) + u' ' + text
     else:
-        match = re.search(u'{{[Nn](r|umérotation)\|([^}]*)\|([^}]*)}}', header)
+        match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)}}', header)
         if match:
             text = match.group(2) + u' ' + match.group(3) + u' ' + text
 
@@ -349,11 +351,11 @@ def check_diff(text, opt):
     return True
 
 def has_nr_template(text):
-    match = re.search(u'{{[Nn](r|umérotation)\|([^}]*)\|([^}]*)\|([^}]*)}}', text)
+    match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)\|([^|}]*)}}', text)
     if match:
         return True
     else:
-        match = re.search(u'{{[Nn](r|umérotation)\|([^}]*)\|([^}]*)}}', text)
+        match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)}}', text)
         if match:
             return True
     return False
