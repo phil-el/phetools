@@ -44,8 +44,8 @@ class JobQueue:
                 if len(self._items):
                     data = self._items.pop()
                     got_it = True
-            #if not got_it:
-            #    time.sleep(0.5)
+            if not got_it:
+                time.sleep(0.5)
         self._last = data
 
         return data
