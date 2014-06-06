@@ -1,118 +1,97 @@
 #!/usr/bin/python
-#    This program is free software; you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation; either version 2 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-#
-#
-# copyright thomasv1 at gmx dot de
-# copyright phe at nowhere
-
-
-# todo : use urllib
-
+# GPL V2, author thomasv1 at gmx dot de, phe at nowhere
 
 __module_name__ = "wikisourceocr"
 __module_version__ = "1.0"
 __module_description__ = "wikisource ocr bot"
 
-
+import sys
+sys.path.append('/data/project/phetools/phe/common')
 
 import os
-import socket
 import thread
 import time
-import json
 import hashlib
-import multiprocessing
 import re
 import common_html
 import ocr
 import utils
+import lifo_cache
+import job_queue
+import tool_connect
+import urllib
 
-task_queue = []
+E_OK = 0
+E_ERROR = 1
 
-class Request:
-    def __init__(self, data, conn):
-        self.url, self.lang, self.user = data.split('|')
-        self.user = self.user.replace(' ','_')
-        self.start_time = time.time()
-        self.filename = self.url.split('/')[-1]
-        self.conn = conn
-        self.running = False
+# url user lang t tools conn
+def html_for_queue(queue):
+    html = u''
+    for i in queue:
+        url = i[0]
+        html += date_s(i[3])+' '+i[2]+" "+i[1]+" "+url+"<br />"
+    return html
 
-    def as_str(self):
-        ret = date_s(self.start_time)+" REQUEST "+self.user+' '+self.lang+' '+self.filename+' '
-        if self.running:
-            ret += 'running'
-        else:
-            ret += 'waiting'
-        return ret
+def do_status(queue):
+    queue = queue.copy_items(True)
 
-    def key(self):
-        m = hashlib.md5()
-        m.update(self.lang + self.url)
-        return m.hexdigest()
+    html = common_html.get_head('OCR service')
+    html += '<body><div>The ocr robot is runnning.<br /><hr />'
+    html += "%d jobs in queue.<br/>" % len(queue)
+    html += html_for_queue(queue)
+    html += '</div></body></html>'
 
-    def cached_name(self):
-        return '/home/phe/wsbot/cache/tesseract/' + self.key()
+    return html
 
-    def cache_entry_exist(self):
-        return os.path.exists(self.cached_name())
+def next_pagename(match):
+    return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
 
-def bot_listening():
+def next_url(url):
+    return re.sub(u'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
 
-    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
-    try:
-        sock.bind(('',12347))
-    except:
-        print "could not start listener : socket already in use"
-        thread.interrupt_main()
-        return
+def bot_listening(queue):
 
-    print date_s(time.time())+ " START"
-    sock.listen(1)
+    print date_s(time.time()) + " START"
 
-    # The other side needs to know the server name where the daemon run to open
-    # the connection. We write it after bind() because we want to ensure than
-    # only one instance of the daemon is running. FIXME: this is not sufficient
-    # if the job is migrated so migration is disabled for this daemon.
-    servername_filename = os.getenv('HOME') + '/public_html/ocr_server.server'
-    if os.path.exists(servername_filename):
-        os.chmod(servername_filename, 0644)
-    fd = open(servername_filename, "w")
-    fd.write(socket.gethostname())
-    fd.close()
-    os.chmod(servername_filename, 0444)
+    tools = tool_connect.ToolConnect('ws_ocr_daemon', 45133)
 
-    # wait for requests
     try:
         while True:
-            conn, addr = sock.accept()
-            data = conn.recv(1024)
+            request, conn = tools.wait_request()
+
             try:
-	        request = Request(data, conn)
-	    except:
-		print "error", data
-		conn.close()
-		continue
+                url = request.get('url', '')
+                lang = request.get('lang', '')
+                user = request.get('user', '')
+                cmd = request['cmd']
+            except:
+                ret = ret_val(E_ERROR, "invalid request")
+                tools.send_reply(conn, ret)
+                conn.close()
+                continue
 
-	    print request.as_str()
-	    task_queue.append(request)
+            t = time.time()
+            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + url).encode('utf-8')
 
+            if cmd == "ocr":
+                queue.put(url, lang, user, t, tools, conn)
+
+                next_page_url = next_url(url)
+
+                queue.put(next_page_url, lang, user, t, None, None)
+
+            elif cmd == 'status':
+                html = do_status(queue)
+                tools.send_text_reply(conn, html)
+                conn.close()
+            elif cmd == 'ping':
+                tools.send_reply(conn, ret_val(E_OK, 'pong'))
+                conn.close()
+            else:
+                tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
+                conn.close()
     finally:
-	sock.close()
+	tools.close()
 
 
 def date_s(at):
@@ -124,169 +103,75 @@ def ret_val(error, text):
         print "Error: %d, %s" % (error, text)
     return  {'error' : error, 'text' : text }
 
+def image_key(url):
+    # FIXME: it'll better to use the sha1 of the image itself.
+    m = hashlib.sha1()
+    m.update(url)
+    return m.hexdigest()
 
-def ocr_image(url, codelang, thread_id):
+def ocr_image(cache, url, codelang):
+
+    url = url.encode('utf-8')
+
+    cache_key = image_key(url)
+
+    text = cache.get(cache_key)
+    if text:
+        return ret_val(0, text)
 
     lang = ocr.tesseract_languages.get(codelang, 'eng')
 
-    basename = 'tmp/tesseract/image_%d' % thread_id
+    basename = '/data/project/phetools/tmp/tesseract/image_%s' % cache_key
 
-    os.system("rm -f %s.*" % basename)
+    image_filename = basename + ".jpg"
 
-    f = basename + ".jpg"
-
-    # for debugging purpose only
-    url = url.replace('http://upload.wikimedia.zaniah.virgus/',
-                      'http://upload.wikimedia.org/')
-
-    #url = url.replace("1024px","2900px")
-    cmdline = "wget --no-check-certificate -q -O %s \"%s\"" % (f,url)
-    print cmdline
-    os.system(cmdline)
-    if not os.path.exists(f):
+    utils.copy_file_from_url(url, image_filename)
+    if not os.path.exists(image_filename):
         return ret_val(1, "could not download url: %s" % url)
 
-    # FIXME: do we really need this conversion ?
-    os.system("convert %s.jpg -compress none %s.tif" % (basename, basename))
-
-    txt = ocr.ocr(basename + '.tif', basename, lang)
-    if txt == None:
+    text = ocr.ocr(image_filename, basename, lang)
+    if text == None:
         return ret_val(2, "ocr failed")
 
-    return ret_val(0, txt)
+    os.remove(image_filename)
+    if text:
+        os.remove(basename + ".txt")
 
-def do_one_file(job_queue, done_queue, thread_id):
-    while True:
-        url, codelang, key = job_queue.get()
-        if url == None:
-            print "Stopping thread"
-            return
-        print "start threaded job"
-        # done this way to get a more accurate status, we want to know
-        # which process are running and waiting so we signal the status change
-        # to the parent process.
-        done_queue.put( (None, key, True) )
-        data = ocr_image(url, codelang, thread_id)
-        done_queue.put( (data, key, False) )
-        print "stop threaded job"
+    cache.set(cache_key, text)
+
+    return ret_val(0, text)
 
 def next_pagename(match):
     return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
 
-class JobManager:
-    def __init__(self):
-        self.job_queue = None
-        self.done_queue = None
-        self.dict_query = {}
-        self.dict_hash = {}
-        self.key = 1L
-        self.start_subprocess()
+def job_thread(queue):
+    # FIXME: the cache must be passed to job_thread() and bot_listening()
+    # to allow cache hit in bot_listening(), actually even if a page is in the
+    # cache user will get an answer only when the top of job queue will be its
+    # request. Atm the cache is not thread safe so, make it thread safe first.
+    cache = lifo_cache.LifoCache('tesseract_page')
+    while True:
+        url, codelang, user, t, tools, conn = queue.get()
 
-    def start_subprocess(self):
-        num_worker_threads = 2
-        thread_array = []
-        self.job_queue = multiprocessing.Queue(num_worker_threads * 16)
-        self.done_queue = multiprocessing.Queue()
-        args = (self.job_queue, self.done_queue)
-        for i in range(num_worker_threads):
-            print "starting thread"
-            t = multiprocessing.Process(target=do_one_file, args=args + (i, ))
-            t.daemon = True
-            t.start()
-            thread_array.append(t)
+        time1 = time.time()
+        out = ''
 
-    def finish_job(self, done_key, data):
-        print "pop job: job finished"
-        err = data['error']
-        data = json.dumps(data)
-        r = self.dict_query[done_key]
+        out = ocr_image(cache, url, codelang)
 
-        # null conn is possible if this is a prefetched job
-        if r.conn:
-            r.conn.sendall(data)
-            r.conn.close()
-
-        # error are already logged by the subprocess
-        if not err:
-            utils.save_obj(r.cached_name(), data)
+        if tools and conn:
+            tools.send_reply(conn, out)
+            conn.close()
 
         time2 = time.time()
-        print date_s(time2)+r.user+" "+r.lang+" %s (%.2f)"%(r.filename, time2-r.start_time)
-        if self.dict_query[done_key].key() in self.dict_hash:
-            del self.dict_hash[self.dict_query[done_key].key()]
-        del self.dict_query[done_key]
+        print (date_s(time2) + ' ' + url + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
 
-    def flush_done_job(self):
-        while not self.done_queue.empty():
-            data, done_key, running = self.done_queue.get()
-            if running:
-                print "pop job: status change"
-                self.dict_query[done_key].running = True
-            else:
-                self.finish_job(done_key, data)
-
-    def new_request(self, request):
-        if request.cache_entry_exist():
-            print "cache success"
-            data = utils.load_obj(request.cached_name())
-            if request.conn:
-                request.conn.sendall(data)
-                request.conn.close()
-            time2 = time.time()
-            print date_s(time2)+request.user+" "+request.lang+" %s (%.2f)"%(request.filename, time2-request.start_time)
-        else:
-            if request.key() in self.dict_hash and self.dict_hash[request.key()].user == request.user:
-                print "reusing a waiting job"
-                old_conn = self.dict_hash[request.key()].conn
-                if old_conn:
-                    old_conn.close()
-                self.dict_hash[request.key()].conn = request.conn
-            else:
-                print "push job"
-                self.push_job(request)
-        next_page = re.sub('^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, request.url)
-        if next_page:
-            prefetch_request = Request('|'.join([next_page, request.lang, request.user]), None)
-            if not prefetch_request.cache_entry_exist():
-                print "push prefetched job: ", prefetch_request.filename
-                self.push_job(prefetch_request)
-
-    def push_job(self, request):
-        self.dict_query[self.key] = request
-        self.dict_hash[request.key()] = request
-        self.job_queue.put( (request.url, request.lang, self.key) )
-        self.key += 1
-
-    def status(self, request):
-        html = common_html.get_head('OCR service')
-        html += '<body><div>The robot is runnning.<br /><hr />'
-        html += date_s(request.start_time) + " STATUS: "
-        html += "%d jobs in queue.<br/>" % len(self.dict_query)
-        for val in self.dict_query.itervalues():
-            html += val.as_str() + '<br />'
-        html += '</div></body></html>'
-
-        request.conn.sendall(html)
-        request.conn.close()
-
-    def handle_request(self, request):
-        if request.url == 'status':
-            self.status(request)
-        else:
-            self.new_request(request)
-
-def main():
-    thread.start_new_thread(bot_listening,())
-
-    job_manager = JobManager()
-
-    while True:
-        if len(task_queue):
-            job_manager.handle_request(task_queue.pop(0))
-        else:
-            time.sleep(0.5)
-
-            job_manager.flush_done_job()
+        queue.remove()
 
 if __name__ == "__main__":
-    main()
+    try:
+        queue = job_queue.JobQueue()
+        thread.start_new_thread(job_thread, (queue, ))
+        bot_listening(queue)
+    except KeyboardInterrupt:
+        os._exit(1)
+

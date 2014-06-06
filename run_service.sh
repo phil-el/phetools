@@ -21,6 +21,9 @@ env_var[extract_text_layer]=PYTHONPATH=$PYTHONPATH
 memory[extract_text_layer]=640M
 cmdline[extract_text_layer]="python -u phe/extract_text_layer/extract_text_layer.py"
 
+memory[ws_ocr_daemon]=384M
+cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
+
 memory[wsircdaemon]=256M
 cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"
 

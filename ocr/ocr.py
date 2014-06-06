@@ -27,11 +27,11 @@ tesseract_languages = {
 tesseract_path = 'tesseract'
 
 def ocr(filename, out_basename, lang, config = ''):
-    stderr = open("/data/project/phetools/log/tesseract.err.log", "a")
+    stderr = open("/data/project/phetools/log/tesseract.err", "a")
     ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, stderr=stderr, close_fds = True)
     text = utils.safe_read(ls.stdout)
     if text:
-        print text
+        print text,
     ls.wait()
     stderr.close()
     if ls.returncode != 0:
