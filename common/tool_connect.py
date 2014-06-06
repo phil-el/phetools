@@ -31,7 +31,8 @@ class ToolConnect:
         # The other side needs to know the server name where the daemon run to
         # open he connection. We write it after bind() because we want to
         # ensure only one instance of the daemon is running.
-        servername_filename = './wikisource/' + server_name + '.server'
+        home = os.path.expanduser('~/wikisource/')
+        servername_filename = home + server_name + '.server'
         if os.path.exists(servername_filename):
             os.chmod(servername_filename, 0644)
         fd = open(servername_filename, "w")
