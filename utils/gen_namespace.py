@@ -14,9 +14,8 @@ def gen_lang(dict_name, result):
 def gen_all_lang():
     result = set()
 
-    # FIXME: can't we use pywikibot_utils.gen_all_lang()?
-    gen_lang(pywikibot.config.sysopnames, result)
-    gen_lang(pywikibot.config.usernames, result)
+    for lang in pywikibot_utils.get_all_lang('wikisource'):
+        result.add(lang)
 
     return result
 
