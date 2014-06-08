@@ -10,6 +10,7 @@ sys.path.append('/data/project/phetools/phe/match_and_split')
 sys.path.append('/data/project/phetools/phe/common')
 import tool_connect
 import job_queue
+import lifo_cache
 
 import os
 import thread
@@ -28,13 +29,13 @@ def ret_val(error, text):
         print >> sys.stderr, "Error: %d, %s" % (error, text)
     return  { 'error' : error, 'text' : text }
 
-def do_match(mysite, maintitle, user):
+def do_match(mysite, cached_diff, cached_text, maintitle, user):
 
     opt = verify_match.default_options()
     opt.site = mysite
     maintitle = maintitle.replace(u'_', u' ')
 
-    verify_match.main(maintitle, opt)
+    verify_match.main(maintitle, cached_diff, cached_text, opt)
 
     return ret_val(E_OK, "")
 
@@ -119,6 +120,8 @@ def date_s(at):
 
 
 def job_thread(queue):
+    cached_diff = lifo_cache.LifoCache('verify_match_diff')
+    cached_text = lifo_cache.LifoCache('verify_match_text_layer')
     while True:
         title, codelang, user, t, tools, conn = queue.get()
 
@@ -131,7 +134,7 @@ def job_thread(queue):
             mysite = False
 
         if mysite:
-            out = do_match(mysite, title, user)
+            out = do_match(mysite, cached_diff, cached_text, title, user)
 
         if tools and conn:
             tools.send_reply(conn, out)

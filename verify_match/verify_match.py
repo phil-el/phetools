@@ -9,7 +9,6 @@ sys.path.append('/data/project/phetools/wikisource')
 
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 
-import lifo_cache
 import re
 import tempfile
 import os
@@ -439,26 +438,22 @@ def verify_match(page_name, ocr_text, text, opt):
 
     return result
 
-def read_djvu(book_name, datas, opt):
+def read_djvu(book_name, cached_text, datas, opt):
     import align
-    # FIXME: avoid to reload the cache each time
-    cache = lifo_cache.LifoCache('verify_match_text_layer')
-    data = align.get_djvu(cache, opt.site, book_name, True)
+    data = align.get_djvu(cached_text, opt.site, book_name, True)
     for pos, text in enumerate(data):
         text = re.sub(u'(?ms)<noinclude>(.*?)</noinclude>', u'', text)
         datas.setdefault(pos + 1, [])
         datas[pos + 1].append(text)
 
-def main(book_name, opt):
+def main(book_name, cached_diff_cache, cached_text_cache, opt):
     link = pywikibot.Link(book_name, opt.site)
     book_name = link.title.replace(u' ', u'_')
 
-    # FIXME: it's not really clever to reopen the cache for each run.
     # FIXME: we must store in the cache the sha1 of the djvu and compare
     # it to the one stored in the djvu cache to invalidate this one
     # on djvu change.
-    cache = lifo_cache.LifoCache('verify_match_diff')
-    cached_diff = cache.get(book_name + '.dat')
+    cached_diff = cached_diff_cache.get(book_name + '.dat')
     if not cached_diff:
         cached_diff = {}
 
@@ -470,7 +465,7 @@ def main(book_name, opt):
         rev_ids[it[1]] = it[2]
         datas[it[1]] = [ it[0] ]
 
-    read_djvu(book_name, datas, opt)
+    read_djvu(book_name, cached_text_cache, datas, opt)
 
     keys = datas.keys()
     keys.sort()
@@ -502,7 +497,7 @@ def main(book_name, opt):
     else:
         print result.encode('utf-8')
 
-    cache.set(book_name + '.dat', cached_diff)
+    cached_diff_cache.set(book_name + '.dat', cached_diff)
 
 def default_options():
     class Options:
