@@ -49,7 +49,7 @@ def next_pagename(match):
 def next_url(url):
     return re.sub(u'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
 
-def bot_listening(queue):
+def bot_listening(queue, cache):
 
     print date_s(time.time()) + " START"
 
@@ -74,12 +74,18 @@ def bot_listening(queue):
             print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + url).encode('utf-8')
 
             if cmd == "ocr":
-                queue.put(url, lang, user, t, tools, conn)
+                # bypass the job queue if the ocr is cached to ensure a cached
+                # will be returned as soon as possible.
+                text = get_from_cache(cache, url, lang)
+                if text:
+                    tools.send_reply(conn, ret_val(E_OK, text))
+                    conn.close()
+                else:
+                    queue.put(url, lang, user, t, tools, conn)
 
                 next_page_url = next_url(url)
 
                 queue.put(next_page_url, lang, user, t, None, None)
-
             elif cmd == 'status':
                 html = do_status(queue)
                 tools.send_text_reply(conn, html)
@@ -104,24 +110,34 @@ def ret_val(error, text):
     return  {'error' : error, 'text' : text }
 
 def image_key(url):
-    # FIXME: it'll better to use the sha1 of the image itself.
+    # FIXME: it'll better to use the sha1 of the image itself or rather the
+    # sha1 of the djvu/pdf (or both ?).
     m = hashlib.sha1()
     m.update(url)
     return m.hexdigest()
 
+def get_from_cache(cache, url, codelang):
+    url = url.encode('utf-8')
+
+    cache_key = image_key(url)
+
+    return cache.get(cache_key)
+
 def ocr_image(cache, url, codelang):
+    # This is checked in bot_listening but must be redone here, so if
+    # the ocr for the same page is asked multiple time, we will do the ocr
+    # only once.
+    text = get_from_cache(cache, url, codelang)
+    if text:
+        return ret_val(0, text)
 
     url = url.encode('utf-8')
 
     cache_key = image_key(url)
 
-    text = cache.get(cache_key)
-    if text:
-        return ret_val(0, text)
-
     lang = ocr.tesseract_languages.get(codelang, 'eng')
 
-    basename = '/data/project/phetools/tmp/tesseract/image_%s' % cache_key
+    basename = os.path.expanduser('~/tmp') + '/tesseract/image_%s' % cache_key
 
     image_filename = basename + ".jpg"
 
@@ -144,12 +160,7 @@ def ocr_image(cache, url, codelang):
 def next_pagename(match):
     return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
 
-def job_thread(queue):
-    # FIXME: the cache must be passed to job_thread() and bot_listening()
-    # to allow cache hit in bot_listening(), actually even if a page is in the
-    # cache user will get an answer only when the top of job queue will be its
-    # request. Atm the cache is not thread safe so, make it thread safe first.
-    cache = lifo_cache.LifoCache('tesseract_page')
+def job_thread(queue, cache):
     while True:
         url, codelang, user, t, tools, conn = queue.get()
 
@@ -169,9 +180,10 @@ def job_thread(queue):
 
 if __name__ == "__main__":
     try:
+        cache = lifo_cache.LifoCache('tesseract_page')
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, ))
-        bot_listening(queue)
+        thread.start_new_thread(job_thread, (queue, cache))
+        bot_listening(queue, cache)
     except KeyboardInterrupt:
         os._exit(1)
 

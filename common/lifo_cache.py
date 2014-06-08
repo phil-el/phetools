@@ -4,6 +4,7 @@
 # A simple lifo cache backing up object on disk, when starting ordering
 # of item is random. Doesn't support multiple reader/writer.
 
+import thread
 from collections import OrderedDict
 import os
 import utils
@@ -13,7 +14,8 @@ import types
 # FIXME: add a params to ctor to allow transparent compression.
 class LifoCache():
     def __init__(self, cache_name, mem_cache_size = 4, disk_cache_size = 32):
-        self.cache_dir = '/data/project/phetools/cache/' + cache_name + '/'
+        self._lock = thread.allocate_lock()
+        self.cache_dir = os.path.expanduser('~/cache/') + cache_name + '/'
         self.disk_cache = OrderedDict()
         self.mem_cache = OrderedDict()
         if mem_cache_size > disk_cache_size:
@@ -31,53 +33,56 @@ class LifoCache():
                 self.disk_cache[filename] = None
 
     def get(self, filename):
-        if type(filename) == types.UnicodeType:
-            filename = filename.encode('utf-8')
-        data = None
-        self.cache_access += 1
-        if filename in self.disk_cache.keys():
-            if filename in self.mem_cache:
-                data = self.mem_cache[filename]
+        with self._lock:
+            if type(filename) == types.UnicodeType:
+                filename = filename.encode('utf-8')
+            data = None
+            self.cache_access += 1
+            if filename in self.disk_cache.keys():
+                if filename in self.mem_cache:
+                    data = self.mem_cache[filename]
+                    if data:
+                        self.mem_access_hit += 1
+                    del self.mem_cache[filename]
+                del self.disk_cache[filename]
+                if not data:
+                    # FIXME: this is racy, Actually we don't allow multiple
+                    # reader/writer but someone can remove the file between
+                    # the check and the read...
+                    if os.path.exists(self.cache_dir + filename):
+                        self.disk_read_hit += 1
+                        data = utils.load_obj(self.cache_dir + filename)
                 if data:
-                    self.mem_access_hit += 1
-                del self.mem_cache[filename]
-            del self.disk_cache[filename]
-            if not data:
-                # FIXME: this is racy, Actually we don't allow multiple
-                # reader/writer but someone can remove the file between
-                # the check and the read...
-                if os.path.exists(self.cache_dir + filename):
-                    self.disk_read_hit += 1
-                    data = utils.load_obj(self.cache_dir + filename)
-            if data:
-                self.disk_cache[filename] = True
-                if len(self.mem_cache) == self.mem_cache_size:
-                    self.mem_cache.popitem(last = False)
-                self.mem_cache[filename] = data
+                    self.disk_cache[filename] = True
+                    if len(self.mem_cache) == self.mem_cache_size:
+                        self.mem_cache.popitem(last = False)
+                    self.mem_cache[filename] = data
 
         return data
 
     def set(self, filename, obj):
-        if type(filename) == types.UnicodeType:
-            filename = filename.encode('utf-8')
-        if filename in self.disk_cache:
-            del self.disk_cache[filename]
-        if filename in self.mem_cache:
-            del self.mem_cache[filename]
-        if len(self.disk_cache) == self.disk_cache_size:
-            old_filename = self.disk_cache.popitem(last = False)[0]
-            os.unlink(self.cache_dir + old_filename)
-        if len(self.mem_cache) == self.mem_cache_size:
-            self.mem_cache.popitem(last = False)
-        self.mem_cache[filename] = obj
-        self.disk_cache[filename] = True
-        self.disk_write_hit += 1
-        utils.save_obj(self.cache_dir + filename, obj)
+        with self._lock:
+            if type(filename) == types.UnicodeType:
+                filename = filename.encode('utf-8')
+            if filename in self.disk_cache:
+                del self.disk_cache[filename]
+            if filename in self.mem_cache:
+                del self.mem_cache[filename]
+            if len(self.disk_cache) == self.disk_cache_size:
+                old_filename = self.disk_cache.popitem(last = False)[0]
+                os.unlink(self.cache_dir + old_filename)
+            if len(self.mem_cache) == self.mem_cache_size:
+                self.mem_cache.popitem(last = False)
+            self.mem_cache[filename] = obj
+            self.disk_cache[filename] = True
+            self.disk_write_hit += 1
+            utils.save_obj(self.cache_dir + filename, obj)
 
     def stat_ratio(self, count):
-        result = 1.0
-        if self.cache_access:
-            result = (float(self.cache_access) - count) / self.cache_access
+        with self._lock:
+            result = 1.0
+            if self.cache_access:
+                result = (float(self.cache_access) - count) / self.cache_access
         return 1.0 - result
 
     # convenience, allowed params are 'html' or 'str' all other value
@@ -113,7 +118,7 @@ mem_hit ratio + disk_hit ratio:\t%(total hit ratio)7.2f%%""" % format_dict
 
 if __name__ == "__main__":
     import random
-    base_dir = '/data/project/phetools/cache/'
+    base_dir = os.path.expanduser('~/cache/')
     cache_name = 'test_lifo_cache'
     lifo_cache = LifoCache(cache_name, 31, 32)
 
@@ -124,7 +129,7 @@ if __name__ == "__main__":
             lifo_cache.set(str(test_nr), test_nr)
 
     # expected, 1000 access, mem_hit around 90%, disk_hit around 6%,
-    # write_hit around 6%, mem + disk hit around 99.5%
+    # write_hit around 6%, mem + disk hit around 96.5%
     if len(sys.argv) > 1:
         print lifo_cache.access_stat(sys.argv[1])
     else:
