@@ -75,7 +75,7 @@ def bot_listening(queue, cache):
 
             if cmd == "ocr":
                 # bypass the job queue if the ocr is cached to ensure a cached
-                # will be returned as soon as possible.
+                # ocr will be returned as soon as possible.
                 text = get_from_cache(cache, url, lang)
                 if text:
                     tools.send_reply(conn, ret_val(E_OK, text))
