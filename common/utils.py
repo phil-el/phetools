@@ -33,14 +33,16 @@ def load_obj(filename):
     return data
 
 def sha1(filename):
-    # FIXME: inefficient in memory usage
     fd = open(filename)
     h = hashlib.sha1()
-    h.update(fd.read())
+    data = True
+    while data:
+        data = fd.read(4096)
+        if data:
+            h.update(fd.read())
     fd.close()
-    h = h.hexdigest()
 
-    return h
+    return h.hexdigest()
 
 def write_sha1(sha1, filename):
     fd = open(filename, 'w')
