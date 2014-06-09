@@ -34,16 +34,13 @@ def ret_val(error, text):
         print "Error: %d, %s" % (error, text)
     return  { 'error' : error, 'text' : text }
 
-def do_extract(mysite, maintitle, user, codelang):
+def do_extract(mysite, maintitle, user, codelang, cache):
     prefix = unicode(page_prefixes['wikisource'].get(codelang), 'utf-8')
     if not prefix:
         return ret_val(E_ERROR, "no prefix")
 
     djvuname = maintitle.replace(u' ', u'_')
     print djvuname.encode('utf-8')
-
-    # FIXME: it'll better to avoid reloading the cache at each run
-    cache = lifo_cache.LifoCache('extract_text_layer')
 
     text_layer = align.get_djvu(cache, mysite, djvuname, True)
     if not text_layer:
@@ -136,7 +133,7 @@ def date_s(at):
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
 
-def job_thread(queue):
+def job_thread(queue, cache):
     while True:
         title, codelang, user, t, tools, conn = queue.get()
 
@@ -149,7 +146,7 @@ def job_thread(queue):
             mysite = False
 
         if mysite:
-            out = do_extract(mysite, title, user, codelang)
+            out = do_extract(mysite, title, user, codelang, cache)
 
         if tools and conn:
             tools.send_reply(conn, out)
@@ -163,8 +160,9 @@ def job_thread(queue):
 
 if __name__ == "__main__":
     try:
+        cache = lifo_cache.LifoCache('extract_text_layer')
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, ))
+        thread.start_new_thread(job_thread, (queue, cache))
         bot_listening(queue)
     except KeyboardInterrupt:
         pywikibot.stopme()
