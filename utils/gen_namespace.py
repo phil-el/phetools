@@ -66,7 +66,7 @@ if __name__ == "__main__":
     text = gen_all_namespace(langs)
 
     target = '/data/project/phetools/wikisource/ws_namespaces.py'
-    old_text = u''
+    old_text = ''
     if os.path.exists(target):
         fd = open(target, 'r')
         old_text = fd.read()

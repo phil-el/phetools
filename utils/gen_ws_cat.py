@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     #print text.encode('utf-8')
     target = '/data/project/phetools/wikisource/ws_category.py'
-    old_text = u''
+    old_text = ''
     if os.path.exists(target):
         fd = open(target, 'r')
         old_text = fd.read()
