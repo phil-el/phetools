@@ -261,6 +261,7 @@ def transform_text(text, opt):
     return text
 
 def transform_ocr_text(ocr_text, opt):
+    ocr_text = re.sub(u'\n«[ ]*', u'\n', ocr_text)
     ocr_text = remove_ocr_template(ocr_text)
     ocr_text = ocr_text.replace(u'\\037', u'')
     ocr_text = ocr_text.replace(u'\\035', u'')
