@@ -39,7 +39,7 @@ def sha1(filename):
     while data:
         data = fd.read(4096)
         if data:
-            h.update(fd.read())
+            h.update(data)
     fd.close()
 
     return h.hexdigest()
