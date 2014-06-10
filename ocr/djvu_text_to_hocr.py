@@ -6,10 +6,9 @@ import xml.etree.ElementTree as etree
 import subprocess
 import os
 import resource
-sys.path.append('home/phe/wsbot')
 import utils
 
-djvulibre_path = '/home/phe/bin/'
+djvulibre_path = ''
 djvutoxml = djvulibre_path + 'djvutoxml'
 djvutxt = djvulibre_path + 'djvutxt'
 

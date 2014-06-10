@@ -6,8 +6,6 @@ __module_version__ = "1.0"
 __module_description__ = "verify match daemon"
 
 import sys
-sys.path.append('/data/project/phetools/phe/match_and_split')
-sys.path.append('/data/project/phetools/phe/common')
 import tool_connect
 import job_queue
 import lifo_cache

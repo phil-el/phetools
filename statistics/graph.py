@@ -30,7 +30,7 @@ names = colors.keys()
 names.sort()
 names.remove("total")
 
-savepath = "/data/project/phetools/public_html/graphs/"
+savepath = os.path.expanduser('~/public_html/graphs/')
 
 count_array = {}
 for dom in names + ["total"]:
@@ -291,7 +291,7 @@ def rm29bis(pp, dom):
 
 def main():
 
-    read_from_file("/data/project/phetools/public_html/data/new_stats.py")
+    read_from_file(os.path.expanduser('~/public_html/data/new_stats.py')
 
     print "totals"
 
@@ -323,7 +323,7 @@ def main():
         draw_domain(dom)
 
     print "creating thumbnails"
-    os.system("/data/project/phetools/phe/statistics/mkthumbs")
+    os.system(os.path.expanduser('~/phe/statistics/mkthumbs')
 
 
 if __name__ == "__main__":

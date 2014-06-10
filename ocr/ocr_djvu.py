@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import sys
-sys.path.append('/home/phe/wsbot')
 import os
 import ocr
 import multiprocessing
@@ -11,7 +10,7 @@ import errno
 import subprocess
 import resource
 
-djvulibre_path = '/home/phe/bin/'
+djvulibre_path = ''
 
 def setrlimits():
     resource.setrlimit(resource.RLIMIT_AS, (1<<30, 1<<30))

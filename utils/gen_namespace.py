@@ -3,7 +3,6 @@
 import os
 import sys 
 import pywikibot
-sys.path.append('/data/project/phetools/phe/common')
 import pywikibot_utils
 
 def gen_lang(dict_name, result):
@@ -65,7 +64,7 @@ if __name__ == "__main__":
     langs = gen_all_lang()
     text = gen_all_namespace(langs)
 
-    target = '/data/project/phetools/wikisource/ws_namespaces.py'
+    target = os.path.expanduser('~/wikisource/ws_namespaces.py')
     old_text = ''
     if os.path.exists(target):
         fd = open(target, 'r')

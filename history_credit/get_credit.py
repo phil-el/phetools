@@ -3,7 +3,7 @@
 import MySQLdb
 import os
 import sys
-sys.path.append('/data/project/phetools/wikisource')
+sys.path.append(os.path.expanduser('~/wikisource'))
 import ws_namespaces as namespaces
 
 def default_userdict(count = 0):

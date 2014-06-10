@@ -2,7 +2,6 @@
 
 import os
 import sys
-sys.path.append('/data/project/phetools/phe/common')
 import pywikibot_utils
 
 def gen_ws_category(langs):
@@ -65,7 +64,7 @@ if __name__ == "__main__":
     text = gen_ws_category(langs)
 
     #print text.encode('utf-8')
-    target = '/data/project/phetools/wikisource/ws_category.py'
+    target = os.path.expanduser('~/wikisource/ws_category.py')
     old_text = ''
     if os.path.exists(target):
         fd = open(target, 'r')

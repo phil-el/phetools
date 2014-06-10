@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import sys
-sys.path.append("/home/phe/pywikipedia")
-
 
 disambiguations = {
     'old':'Disambig',

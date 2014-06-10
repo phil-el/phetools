@@ -3,9 +3,6 @@
 import os,codecs
 import time, sys
 
-#os.chdir("/home/phe/wsbot")
-
-sys.path.append('/data/project/phetools/wikisource')
 from ws_category import domain_urls as urls
 from common import decode_res, disambiguations
 
@@ -115,7 +112,7 @@ def get_stats(domains):
             cursor.execute(qq)
             rows = cursor.fetchall()
 	    site = pywikibot.getSite(dom,fam='wikisource')
-            f = codecs.open('/data/project/phetools/public_html/data/nakedtexts_'+dom+'.html','w',"utf-8")
+            f = codecs.open(os.path.expanduser('~/public_html/data/nakedtexts_')+dom+'.html','w',"utf-8")
             f.write("<html><head></head><body>")
             f.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
             f.write("<b>Naked texts at "+dom+".wikisource.org</b> (%d)</br/>"%len(rows) )
@@ -176,7 +173,7 @@ def write_templates(res):
         page.put("%.2f"%percent)
 
 def read_stats(offset):
-    f = open("/data/project/phetools/public_html/data/new_stats.py","r")
+    f = open(os.path.expanduser("~/public_html/data/new_stats.py","r")
     lines = f.readlines()
     f.close()
     t, oldres = eval( lines[offset] )
@@ -231,7 +228,7 @@ if __name__ == "__main__":
 
     if opt_write:
         write_templates(res)
-        f = open("/data/project/phetools/public_html/data/new_stats.py","a")
+        f = open(os.path.expanduser("~/public_html/data/new_stats.py"),"a")
         f.write(repr( (time.time() , res ) ) +"\n")
         f.close()
         import graph

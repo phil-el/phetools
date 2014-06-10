@@ -10,11 +10,11 @@ nick = 'phe-log-bot' ## Change this, of course.
 channels = ['#wikisource-fr'] # LOWERCASE ONLY
 name = 'IRC Log Bot - http://code.google.com/p/pyirclogs/'
 
-fd = open('/data/project/phetools/password/password-ircbot.txt')
+fd = open(os.path.expanduser('~/password/password-ircbot.txt'))
 password = fd.read()
 fd.close()
 
-LOG_PATH = '/data/project/phetools/log/log-irc/'
+LOG_PATH = os.path.expanduser('~/log/log-irc/')
 
 
 __author__ = "Base code designed by Chris Oliver <excid3@gmail.com>, heavily modified by Harry Strongburg <lolwutaf2@gmail.com>"

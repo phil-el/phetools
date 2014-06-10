@@ -2,11 +2,6 @@
 # GPL V2, author phe
 
 import sys
-# FIXME: is there a better way to do this?
-sys.path.append('/data/project/phetools/phe/common')
-sys.path.append('/data/project/phetools/phe/match_and_split')
-sys.path.append('/data/project/phetools/wikisource')
-
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 
 import re

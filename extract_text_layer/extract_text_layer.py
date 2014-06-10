@@ -6,10 +6,6 @@ __module_description__ = "extract text layer daemon"
 
 
 import sys
-sys.path.append('/data/project/phetools/phe/match_and_split')
-sys.path.append('/data/project/phetools/phe/common')
-sys.path.append('/data/project/phetools/wikisource')
-
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 import tool_connect
 import lifo_cache

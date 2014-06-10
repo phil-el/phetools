@@ -6,7 +6,6 @@ __module_version__ = "1.0"
 __module_description__ = "dummy robot"
 
 import sys
-sys.path.append('/data/project/phetools/phe/common')
 import tool_connect
 import common_html
 

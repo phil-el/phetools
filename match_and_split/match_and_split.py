@@ -7,10 +7,6 @@ __module_version__ = "1.0"
 __module_description__ = "match and split daemon"
 
 import sys
-sys.path.append('/data/project/phetools/phe/match_and_split')
-sys.path.append('/data/project/phetools/phe/common')
-sys.path.append('/data/project/phetools/wikisource')
-
 import tool_connect
 import lifo_cache
 from ws_namespaces import page as page_prefixes
