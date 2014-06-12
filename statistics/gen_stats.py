@@ -3,6 +3,7 @@
 import os,codecs
 import time, sys
 
+sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_category import domain_urls as urls
 from common import decode_res, disambiguations
 
@@ -173,7 +174,7 @@ def write_templates(res):
         page.put("%.2f"%percent)
 
 def read_stats(offset):
-    f = open(os.path.expanduser("~/public_html/data/new_stats.py","r")
+    f = open(os.path.expanduser("~/public_html/data/new_stats.py"),"r")
     lines = f.readlines()
     f.close()
     t, oldres = eval( lines[offset] )

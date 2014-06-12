@@ -291,7 +291,7 @@ def rm29bis(pp, dom):
 
 def main():
 
-    read_from_file(os.path.expanduser('~/public_html/data/new_stats.py')
+    read_from_file(os.path.expanduser('~/public_html/data/new_stats.py'))
 
     print "totals"
 
@@ -323,7 +323,7 @@ def main():
         draw_domain(dom)
 
     print "creating thumbnails"
-    os.system(os.path.expanduser('~/phe/statistics/mkthumbs')
+    os.system(os.path.expanduser('~/phe/statistics/mkthumbs'))
 
 
 if __name__ == "__main__":
