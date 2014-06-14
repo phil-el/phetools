@@ -55,7 +55,10 @@ class JobQueue:
             data = copy.copy(self._items)
             if get_last and self._last:
                 data.append(self._last)
+
         data = [x for x in data]
+        data.reverse()
+
         return data
 
     def save(self, filename):
