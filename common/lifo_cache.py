@@ -11,110 +11,141 @@ import utils
 import sys
 import types
 
-# FIXME: add a params to ctor to allow transparent compression.
-class LifoCache():
-    def __init__(self, cache_name, mem_cache_size = 4, disk_cache_size = 32):
+class LifoCacheMem(object):
+    def __init__(self, cache_size):
         self._lock = thread.allocate_lock()
-        self.cache_dir = os.path.expanduser('~/cache/') + cache_name + '/'
-        self.disk_cache = OrderedDict()
-        self.mem_cache = OrderedDict()
-        if mem_cache_size > disk_cache_size:
-            raise ValueError("LifoCache: mem_cache_size > disk_cache_size")
-        self.disk_cache_size = disk_cache_size
-        self.mem_cache_size = mem_cache_size
-        self.cache_access = 0
-        self.mem_access_hit = 0
-        self.disk_read_hit = 0
-        self.disk_write_hit = 0
-        for filename in os.listdir(self.cache_dir):
-            if len(self.disk_cache) == self.disk_cache_size:
-                os.unlink(self.cache_dir + filename)
-            else:
-                self.disk_cache[filename] = None
+        self.cache_size = cache_size
+        self.cache = OrderedDict()
+        self.read_count = 0
+        self.hit_count = 0
+        self.write_count = 0
 
-    def get(self, filename):
+    def get(self, key):
+        data = None
         with self._lock:
-            if type(filename) == types.UnicodeType:
-                filename = filename.encode('utf-8')
-            data = None
-            self.cache_access += 1
-            if filename in self.disk_cache.keys():
-                if filename in self.mem_cache:
-                    data = self.mem_cache[filename]
-                    if data:
-                        self.mem_access_hit += 1
-                    del self.mem_cache[filename]
-                del self.disk_cache[filename]
-                if not data:
-                    # FIXME: this is racy, Actually we don't allow multiple
-                    # reader/writer but someone can remove the file between
-                    # the check and the read...
-                    if os.path.exists(self.cache_dir + filename):
-                        self.disk_read_hit += 1
-                        data = utils.load_obj(self.cache_dir + filename)
-                if data:
-                    self.disk_cache[filename] = True
-                    if len(self.mem_cache) == self.mem_cache_size:
-                        self.mem_cache.popitem(last = False)
-                    self.mem_cache[filename] = data
-
+            self.read_count += 1
+            if key in self.cache:
+                self.hit_count += 1
+                data = self.cache[key]
+                del self.cache[key]
+                self.cache[key] = data
         return data
 
-    def set(self, filename, obj):
+    def set(self, key, data):
         with self._lock:
-            if type(filename) == types.UnicodeType:
-                filename = filename.encode('utf-8')
-            if filename in self.disk_cache:
-                del self.disk_cache[filename]
-            if filename in self.mem_cache:
-                del self.mem_cache[filename]
-            if len(self.disk_cache) == self.disk_cache_size:
-                old_filename = self.disk_cache.popitem(last = False)[0]
-                os.unlink(self.cache_dir + old_filename)
-            if len(self.mem_cache) == self.mem_cache_size:
-                self.mem_cache.popitem(last = False)
-            self.mem_cache[filename] = obj
-            self.disk_cache[filename] = True
-            self.disk_write_hit += 1
-            utils.save_obj(self.cache_dir + filename, obj)
+            self.write_count += 1
+            if key in self.cache:
+                del self.cache[key]
+            if len(self.cache) == self.cache_size:
+                self.cache.popitem(last = False)
+        self.cache[key] = data
 
-    def stat_ratio(self, count):
+    def stat_ratio(self, count, total = None):
+        if total == None:
+            total = self.read_count
         with self._lock:
             result = 1.0
-            if self.cache_access:
-                result = (float(self.cache_access) - count) / self.cache_access
+            if total:
+                result = (float(total) - count) / total
         return 1.0 - result
 
-    # convenience, allowed params are 'html' or 'str' all other value
-    # will return raw data.
+    # convenience, allowed params are 'html' or 'str' all other value will
+    # return raw data.
     def access_stat(self, as_type = None):
-        mem_hit = self.stat_ratio(self.mem_access_hit)
-        disk_read_hit = self.stat_ratio(self.disk_read_hit)
-        disk_write_hit = self.stat_ratio(self.disk_write_hit)
+        hit = self.stat_ratio(self.hit_count)
         if as_type == 'str' or as_type == 'html':
             format_dict = {
-                'mem cache size' : len(self.mem_cache),
-                'disk cache size' : len(self.disk_cache),
-                'nr access' : self.cache_access,
-                'mem hit ratio' : mem_hit * 100,
-                'disk hit ratio' : disk_read_hit * 100,
-                'disk write ratio' : disk_write_hit * 100, 
-                'total hit ratio' : (mem_hit + disk_read_hit) * 100
+                'cache size' : len(self.cache),
+                'read access' : self.read_count,
+                'write access' : self.write_count,
+                'hit ratio' : hit * 100,
                 }
-            result = """mem cache size:\t\t\t%(mem cache size)7d
-disk cache size:\t\t%(disk cache size)7d
-nr access:\t\t\t%(nr access)7d
-mem_hit ratio:\t\t\t%(mem hit ratio)7.2f%%
-disk hit ratio:\t\t\t%(disk hit ratio)7.2f%%
-disk write hit:\t\t\t%(disk write ratio)7.2f%%
-mem_hit ratio + disk_hit ratio:\t%(total hit ratio)7.2f%%""" % format_dict
+            result = """\
+mem cache size:\t\t%(cache size)7d
+read access:\t\t%(read access)7d
+write access:\t\t%(write access)7d
+hit ratio:\t\t%(hit ratio)7.2f%%""" % format_dict
             if as_type == 'html':
                 # FIXME: mis aligned in html... perhaps using another format
                 # string? or wrap result in a <pre>?</pre>
                 result = result.replace('\n', '<br />\n')
             return result
         else:
-            return len(self.mem_cache), len(self.disk_cache),  self.cache_access, mem_hit, disk_read_hit, disk_write_hit
+            return len(self.cache), self.read_count, self.write_count, hit
+
+# FIXME: add a params to ctor to allow transparent compression.
+class LifoCache(LifoCacheMem):
+    def __init__(self, cache_name, mem_cache_size = 4, disk_cache_size = 32):
+        super(LifoCache, self).__init__(mem_cache_size)
+        if mem_cache_size > disk_cache_size:
+            raise ValueError("LifoCache: mem_cache_size > disk_cache_size")
+        self.disk_cache_dir = os.path.expanduser('~/cache/') + cache_name + '/'
+        self.disk_cache_size = disk_cache_size
+        self.disk_cache = OrderedDict()
+        self.disk_read_hit = 0
+        self.disk_read_count = 0
+        self.disk_write_count = 0
+        self._disk_lock = thread.allocate_lock()
+        for filename in os.listdir(self.disk_cache_dir):
+            if len(self.disk_cache) == self.disk_cache_size:
+                os.unlink(self.disk_cache_dir + filename)
+            else:
+                self.disk_cache[filename] = None
+
+    def get(self, filename):
+        with self._disk_lock:
+            if type(filename) == types.UnicodeType:
+                filename = filename.encode('utf-8')        
+            data = super(LifoCache, self).get(filename)
+            if not data:
+                self.disk_read_count += 1
+                if filename in self.disk_cache:
+                    if os.path.exists(self.disk_cache_dir + filename):
+                        self.disk_read_hit += 1
+                        data = utils.load_obj(self.disk_cache_dir + filename)
+                    del self.disk_cache[filename]
+                    if data:
+                        self.disk_cache[filename] = True
+                        super(LifoCache, self).set(filename, data)
+        return data
+
+    def set(self, filename, data):
+        with self._disk_lock:
+            if type(filename) == types.UnicodeType:
+                filename = filename.encode('utf-8')
+            self.disk_write_count += 1
+            if filename in self.disk_cache:
+                del self.disk_cache[filename]
+            if len(self.disk_cache) == self.disk_cache_size:
+                old_filename = self.disk_cache.popitem(last = False)[0]
+                os.unlink(self.disk_cache_dir + old_filename)
+
+            self.disk_cache[filename] = True
+            utils.save_obj(self.disk_cache_dir + filename, data)
+            super(LifoCache, self).set(filename, data)
+
+    def access_stat(self, as_type = None):
+        result = super(LifoCache, self).access_stat(as_type)
+        hit = self.stat_ratio(self.disk_read_hit, self.disk_read_count)
+        if as_type == 'str' or as_type == 'html':
+            format_dict = {
+                'disk cache size' : len(self.disk_cache),
+                'read access' : self.disk_read_count,
+                'write access' : self.disk_write_count,
+                'hit ratio' : hit * 100,
+                }
+            result1 = """
+disk cache size:\t%(disk cache size)7d
+read access:\t\t%(read access)7d
+write access:\t\t%(write access)7d
+hit ratio:\t\t%(hit ratio)7.2f%%""" % format_dict
+            if as_type == 'html':
+                # FIXME: mis aligned in html... perhaps using another format
+                # string? or wrap result in a <pre>?</pre>
+                result1 = result1.replace('\n', '<br />\n')
+            return result + result1
+        else:
+            return result[0], result[1], result[2], result[3], len(self.disk_cache), self.disk_read_count, self.disk_write_count, hit
 
 if __name__ == "__main__":
     import random
