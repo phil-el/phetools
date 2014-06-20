@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PYTHONPATH=$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2:/shared/pywikipedia/core/scripts
+PYTHONPATH=$HOME/phe/ocr:$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2:/shared/pywikipedia/core/scripts
 LOG_DIR=/data/project/phetools/log/ # + service_name(.out|.err)
 
 declare -A env_var memory cmdline
@@ -24,6 +24,10 @@ cmdline[extract_text_layer]="python -u phe/extract_text_layer/extract_text_layer
 env_var[ws_ocr_daemon]=PYTHONPATH="$HOME/phe/common"
 memory[ws_ocr_daemon]=384M
 cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
+
+env_var[hocr_daemon]=PYTHONPATH=$PYTHONPATH
+memory[hocr_daemon]=512M
+cmdline[hocr_daemon]="python -u phe/hocr/wshocr.py"
 
 memory[wsircdaemon]=256M
 cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"

@@ -1,62 +1,32 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-#    This program is free software; you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation; either version 2 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-# TODO:
-#
-#   Allow to cancel job, bot through the web api and
-# when a job superseed a running or queued job because the File:
-# is out of date.
-#
-#   Web api and internal queue should use a dict not a tuple.
-#
-#
-#    copyright phe @ nowhere
+# GPL V2, author phe
 
 __module_name__ = "wshocr"
 __module_version__ = "1.0"
 __module_description__ = "wikisource hocr server"
 
-import errno
+import tool_connect
 import os
-import socket
 import re
 import thread
 import time
 import copy
-import json
 import common_html
 import hashlib
 import utils
 import signal
 import sys
-import utils
 import traceback
-sys.path.append("/home/phe/pywikipedia")
-import wikipedia
+import pywikibot
 import align
-sys.path.append("/home/phe/tools")
 import djvu_text_to_hocr
-import task_scheduler
+#import task_scheduler
 import ocr_djvu
 import ocr
 import urllib
+import job_queue
 
-mylock = thread.allocate_lock()
-
-task_s = task_scheduler.TaskScheduler(silent = True)
+#task_s = task_scheduler.TaskScheduler(silent = True)
 
 E_ERROR = 1
 E_OK = 0
@@ -64,21 +34,21 @@ E_OK = 0
 jobs = None
 
 class Request:
-    def __init__(self, dct, conn):
+    def __init__(self, dct, conn, tools):
+        print dct
         self.cmd = dct['cmd']
         self.conn = conn
+        self.tools = tools
         self.start_time = time.time()
-        if self.cmd != 'status':
+        if not self.cmd in [ 'status', 'ping' ]:
             self.page = dct['page']
-            if '%' in self.page:
-                self.page = urllib.unquote_plus(self.page)
             self.user = dct['user']
             # compat, FIXME, needed ?
             self.user = self.user.replace(' ', '_')
             self.lang = dct['lang']
-            self.book_name = re.sub('^(.*)/[0-9]+$', '\\1', self.page)
+            self.book_name = re.sub(u'^(.*)/[0-9]+$', '\\1', self.page)
             # compat, FIXME; needed ?
-            self.book_name = self.book_name.replace('_', ' ')
+            self.book_name = self.book_name.replace(u'_', u' ')
             # cached path cache, not reliable, used to get the path for
             # do_get() request only, don't use it for other purpose.
             # FIXME: this is obfuscation.
@@ -91,48 +61,20 @@ class Request:
             self.lang = ''
 
     def print_request_start(self):
-        print date_s(self.start_time), "REQUEST", self.user, self.lang, self.cmd, self.page
+        print (date_s(self.start_time) + u" REQUEST " + self.user + u' ' + self.lang + u' ' + self.cmd + u' ' + self.page).encode('utf-8')
 
     def print_request_end(self):
         time2 = time.time()
-        print date_s(time2), self.user, self.lang, self.page, self.cmd, " (%.2f)" % (time2-self.start_time)
+        print (date_s(time2) + u' ' + self.user + u' ' + self.lang + u' ' + self.page + u' '+ self.cmd + " (%.2f)" % (time2-self.start_time)).encode('utf-8')
 
     def to_html(self):
         return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.page + '<br/>'
 
 
-# FIXME: use a real Queue object and avoid polling the queue
-
-# Get a job w/o removing it from the queue. FIXME: probably not the best
-# way, if a job can't be handled due to exception and the exception is
-# gracefully catched by the worker thread, there is no warranty than the
-# job will be removed from the queue, so the worker thread can hang forever
-# trying to do something causing an exception. This is not possible actually
-# but it's fragile to not remove the job when getting it.
-def get_job(lock, queue):
-    got_it = False
-    while not got_it:
-        time.sleep(0.5)
-        lock.acquire()
-        if queue != []:
-            request = queue[-1]
-            got_it = True
-        lock.release()
-
-    return request
-
-def remove_job(lock, queue):
-    lock.acquire()
-    queue.pop()
-    lock.release()
-
-def add_job(lock, queue, cmd):
-    lock.acquire()
-    queue.insert(0, cmd)
-    lock.release()
-
 def cache_path(book_name, lang, family):
-    base_dir  = '/mnt/user-store/phe/cache/hocr/%s/%s/' % (family, lang)
+    if type(book_name) == type(u''):
+        book_name = book_name.encode('utf-8')
+    base_dir  = os.path.expanduser('~/cache/hocr/%s/%s/') % (family, lang)
     base_dir += '%s/%s/%s/%s/'
 
     h = hashlib.md5()
@@ -142,13 +84,13 @@ def cache_path(book_name, lang, family):
     base_dir = base_dir % (h[0:2], h[2:4], h[4:6], h[6:])
 
     if not os.path.exists(base_dir) and family != 'commons':
-        return cache_path(book_name, 'commons', 'commons')
+        base_dir = cache_path(book_name, 'commons', 'commons')
 
     return base_dir
 
-def ret_val(error, text, log = True):
-    if log:
-        print "Error: %d, %s" % (error, text)
+def ret_val(error, text):
+    if error:
+        print "Error: %d, %s" % (error, text.encode('utf-8'))
     return  { 'error' : error, 'text' : text }
 
 def check_sha1(path, sha1):
@@ -174,7 +116,7 @@ def check_and_upload(url, filename, sha1):
 # by pywikipedia
 # 0 data exist but aren't uptodate
 # 1 data exist and are uptodate
-# if it return 0 the file is uploaded if it's not already exists
+# if it return 0 the file is uploaded if it not already exists
 def is_uptodate(request):
     try:
         site = wikipedia.getSite(code = request.lang, fam = 'wikisource')
@@ -227,7 +169,7 @@ def do_hocr_djvu(request):
     else:
         request.start_time = time.time()
         jobs['number_of_hocr_tesseract_job'] += 1
-        add_job(lock, jobs['hocr_tesseract_queue'], request)
+        jobs['hocr_tesseract_queue'].put(request)
         return ret_val(E_ERROR, "do_hocr_djvu() failure, moving to slow queue: " + filename)
 
 # Don't try to move the job to the fast queue, even if it look like
@@ -279,14 +221,15 @@ def do_hocr(request):
     request = copy.copy(request)
     request.start_time = time.time()
     request.conn = None
+    request.tools = None
 
     if djvu_text_to_hocr.has_word_bbox(request.cache_path + request.book_name):
         jobs['number_of_hocr_djvu_job'] += 1
-        add_job(lock, jobs['hocr_djvu_queue'], request)
+        jobs['hocr_djvu_queue'].put(request)
         queue_type = "fast"
     else:
         jobs['number_of_hocr_tesseract_job'] += 1
-        add_job(lock, jobs['hocr_tesseract_queue'], request)
+        jobs['hocr_tesseract_queue'].put(request)
         queue_type = "slow"
 
     return ret_val(E_OK, "job queued and waiting processing in the %s queue: %s path %s" % (queue_type, request.page, request.cache_path))
@@ -306,58 +249,60 @@ def do_get(request):
     if text == None:
         return ret_val(E_ERROR, "unable to locate file %s for page %s" % (filename, request.page))
 
-    return ret_val(E_OK, text, False)
+    return ret_val(E_OK, text)
 
 def html_for_queue(queue):
-    html = ''
+    html = u''
     for request in queue:
         html += request.to_html()
     return html
 
-def do_status(lock, conn):
-    lock.acquire()
-    get_queue = copy.deepcopy(jobs['get_queue'])
-    hocr_queue = copy.deepcopy(jobs['hocr_queue'])
-    hocr_djvu_queue = copy.deepcopy(jobs['hocr_djvu_queue'])
-    hocr_tesseract_queue = copy.deepcopy(jobs['hocr_tesseract_queue'])
-    lock.release()
+def do_status():
+    get_queue = jobs['get_queue'].copy_items(get_last= True)
+    hocr_queue = jobs['hocr_queue'].copy_items(get_last = True)
+    hocr_djvu_queue = jobs['hocr_djvu_queue'].copy_items(get_last = True)
+    hocr_tesseract_queue = jobs['hocr_tesseract_queue'].copy_items(get_last = True)
 
     html = common_html.get_head('hOCR server status')
 
-    html += "<body><div>the robot is running.<br/><hr/>"
-    html += "<br/>%d get request queued.<br/>" % len(get_queue)
+    html += u"<body><div>the robot is running.<br/><hr/>"
+    html += u"<br/>%d get request queued.<br/>" % len(get_queue)
     html += html_for_queue(get_queue)
-    html += "<br/>%d hocr request queued.<br/>" % len(hocr_queue)
+    html += u"<br/>%d hocr request queued.<br/>" % len(hocr_queue)
     html += html_for_queue(hocr_queue)
-    html += "<br/>%d hocr djvu queued.<br/>" % len(hocr_djvu_queue)
+    html += u"<br/>%d hocr djvu queued.<br/>" % len(hocr_djvu_queue)
     html += html_for_queue(hocr_djvu_queue)
-    html += "<br/>%d hocr tesseract queued.<br/>" % len(hocr_tesseract_queue)
+    html += u"<br/>%d hocr tesseract queued.<br/>" % len(hocr_tesseract_queue)
     html += html_for_queue(hocr_tesseract_queue)
-    html += "<br/>%(number_of_get_job)d get since server start<br/>" % jobs
-    html += "<br/>%(number_of_hocr_job)d hocr since server start<br/>" % jobs
-    html += "<br/>%(number_of_hocr_djvu_job)d djvu hocr since server start<br/>" % jobs
-    html += "<br/>%(number_of_hocr_tesseract_job)d tesseract hocr since server start<br/>" % jobs
-    html += '</div></body></html>'
+    html += u"<br/>%(number_of_get_job)d get since server start<br/>" % jobs
+    html += u"<br/>%(number_of_hocr_job)d hocr since server start<br/>" % jobs
+    html += u"<br/>%(number_of_hocr_djvu_job)d djvu hocr since server start<br/>" % jobs
+    html += u"<br/>%(number_of_hocr_tesseract_job)d tesseract hocr since server start<br/>" % jobs
+    html += u'</div></body></html>'
 
-    conn.sendall(html)
-    conn.close()
+    return html
 
 def stop_queue(queue):
-    for request in queue:
+    new_queue = job_queue.JobQueue()
+    items = queue.copy_items()
+    for request in items:
         if request.conn:
-            request.close()
-            request.conn = None
+            request.conn.close()
+        request.tools = None
+        request.conn = Nonr
+        new_queue.put(request)
+    return new_queue
 
 # either called through a SIGUSR2 or a finally clause.
 # FIXME: unsafe, see comment when the signal handler is installed.
 def on_exit(sign_nr, frame):
         print "STOP"
 
-        task_s.reset_all_group()
+        #task_s.reset_all_group()
 
         # no value to save the get queue but we must close conn.
         stop_queue(jobs['get_queue'])
-        jobs['get_queue'] = []
+        jobs['get_queue'] = job_queue.JobQueue()
 
         stop_queue(jobs['hocr_queue'])
         stop_queue(jobs['hocr_djvu_queue'])
@@ -365,106 +310,76 @@ def on_exit(sign_nr, frame):
 
         utils.save_obj("/home/phe/wshocr.jobs", jobs)
 
-def utf8_encode_dict(data):
-    ascii_encode = lambda x: x.encode('utf-8')
-    return dict(map(ascii_encode, pair) for pair in data.items())
+def bot_listening():
 
-def bot_listening(lock):
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        sock.bind(('', 12348))
-    except:
-        print "could not start listener : socket already in use"
-        thread.interrupt_main()
-        return
-
-    print date_s(time.time())+ " START"
-    sock.listen(1)
-    sock.settimeout(None)
-
-    # The other side needs to know the server name where the daemon run to open
-    # the connection. We write it after bind() because we want to ensure than
-    # only one instance of the daemon is running. FIXME: this is not sufficient
-    # if the job is migrated so migration is disabled for this daemon.
-    servername_filename = os.getenv('HOME') + '/public_html/hocr_server.server'
-    if os.path.exists(servername_filename):
-        os.chmod(servername_filename, 0644)
-    fd = open(servername_filename, "w")
-    fd.write(socket.gethostname())
-    fd.close()
-    os.chmod(servername_filename, 0444)
+    tools = tool_connect.ToolConnect('hocr_daemon', 45134)
 
     try:
         while True:
+            request, conn = tools.wait_request()
             try:
-                conn, addr = sock.accept()
-                data = conn.recv(1024)
-            except socket.error as s_err:
-                if s_err.errno != errno.EINTR:
-                    raise ose
-                continue
-
-            try:
-                json_data = json.loads(data, object_hook=utf8_encode_dict)
-                request = Request(json_data, conn)
+                request = Request(request, conn, tools)
             except:
-                # FIXME: must return valid data to the connection.
-                print "FATAL: Ill formed request", data
+                ret = ret_val(E_ERROR, u"FATAL: Ill formed request")
+                print >> sys.stderr, request
+                tools.send_reply(conn, ret)
                 conn.close()
                 continue
 
             request.print_request_start()
 
             if request.cmd == "status":
-                do_status(lock, conn)
+                html = do_status()
+                tools.send_text_reply(conn, html)
+                conn.close()
             elif request.cmd == 'hocr':
-                jobs['number_of_hocr_job'] += 1
-                add_job(lock, jobs['hocr_queue'], request)
+                # FIXME: inhibited atm
+                pass
+                #jobs['number_of_hocr_job'] += 1
+                #jobs['hocr_queue'].put(request)
             elif request.cmd == "get":
                 jobs['number_of_get_job'] += 1
-                add_job(lock, jobs['get_queue'], request)
+                jobs['get_queue'].put(request)
+            elif request.cmd == 'ping':
+                tools.send_reply(conn, ret_val(E_OK, 'pong'))
+                conn.close()
             else:
-                out = ret_val(E_ERROR, "unknown command: " + request.cmd)
-                conn.sendall(json.dumps(out));
+                tools.send_reply(conn, ret_val(E_ERROR, u"unknown command: " + cmd))
                 conn.close()
 
     finally:
-        sock.close()
-        on_exit(0, None)
+        tools.close()
 
 def date_s(at):
     t = time.gmtime(at)
     return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
 
-def job_thread(lock, queue, func):
+def job_thread(queue, func):
     while True:
-        request = get_job(lock, queue)
+        request = queue.get()[0]
 
         # FIXME: too verbose ?
-        print request.page, request.user, request.lang
+        request.print_request_start()
 
         out = func(request)
 
-        if request.conn:
-            print "Closing conn", os.getpid()
-            request.conn.sendall(json.dumps(out))
+        if request.conn and request.tools:
+            request.tools.send_reply(request.conn, out)
             request.conn.close()
 
         request.print_request_end()
 
-        remove_job(lock, queue)
+        queue.remove()
 
 def default_jobs():
     return {
-        'get_queue' : [],
+        'get_queue' : job_queue.JobQueue(),
         'number_of_get_job' : 0,
-        'hocr_queue' : [],
+        'hocr_queue' : job_queue.JobQueue(),
         'number_of_hocr_job' : 0,
-        'hocr_djvu_queue' : [],
+        'hocr_djvu_queue' : job_queue.JobQueue(),
         'number_of_hocr_djvu_job' : 0,
-        'hocr_tesseract_queue' : [],
+        'hocr_tesseract_queue' : job_queue.JobQueue(),
         'number_of_hocr_tesseract_job' : 0,
         }
 
@@ -474,19 +389,20 @@ if __name__ == "__main__":
     # the signal handler is installed. FIXME: this is not true, there is
     # another problem elsewhere
     # qdel send a SIGUSR2 if -notify is used when starting the job.
-    signal.signal(signal.SIGUSR2, on_exit)
+    #signal.signal(signal.SIGUSR2, on_exit)
     try:
         jobs = utils.load_obj("/home/phe/wshocr.jobs")
     except:
         jobs = default_jobs()
 
-    # Backward compatibility
-    for key, value in default_jobs().iteritems():
-        jobs.setdefault(key, value)
-
-    lock = thread.allocate_lock()
-    thread.start_new_thread(job_thread, (lock, jobs['get_queue'], do_get))
-    thread.start_new_thread(job_thread, (lock, jobs['hocr_queue'], do_hocr))
-    thread.start_new_thread(job_thread, (lock, jobs['hocr_djvu_queue'], do_hocr_djvu))
-    thread.start_new_thread(job_thread, (lock, jobs['hocr_tesseract_queue'], do_hocr_tesseract))
-    bot_listening(lock)
+    try:
+        thread.start_new_thread(job_thread, (jobs['get_queue'], do_get))
+        thread.start_new_thread(job_thread, (jobs['hocr_queue'], do_hocr))
+        thread.start_new_thread(job_thread, (jobs['hocr_djvu_queue'], do_hocr_djvu))
+        thread.start_new_thread(job_thread, (jobs['hocr_tesseract_queue'], do_hocr_tesseract))
+        bot_listening()
+    except KeyboardInterrupt:
+        pywikibot.stopme()
+        os._exit(1)
+    finally:
+        pywikibot.stopme()

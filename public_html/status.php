@@ -13,6 +13,7 @@ function ping_server($server) {
 $serverlist = array(
 	//'dummy_robot.php',
 	'ocr.php',
+	'hocr.php',
 	'match_and_split.php',
 	'extract_text_layer.php',
 	'verify_match.php',
