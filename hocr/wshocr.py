@@ -43,11 +43,8 @@ class Request:
         if not self.cmd in [ 'status', 'ping' ]:
             self.page = dct['page']
             self.user = dct['user']
-            # compat, FIXME, needed ?
-            self.user = self.user.replace(' ', '_')
             self.lang = dct['lang']
             self.book_name = re.sub(u'^(.*)/[0-9]+$', '\\1', self.page)
-            # compat, FIXME; needed ?
             self.book_name = self.book_name.replace(u'_', u' ')
             # cached path cache, not reliable, used to get the path for
             # do_get() request only, don't use it for other purpose.
@@ -357,9 +354,6 @@ def date_s(at):
 def job_thread(queue, func):
     while True:
         request = queue.get()[0]
-
-        # FIXME: too verbose ?
-        request.print_request_start()
 
         out = func(request)
 
