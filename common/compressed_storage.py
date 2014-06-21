@@ -54,10 +54,10 @@ class CompressedStorageBuilder():
             'items' : {}
         }
         self.filename = filename
-        self.fd_out = open(self.filename, 'w')
+        self.fd_data = open(self.filename, 'w')
 
     def close(self):
-        self.fd_out.close()
+        self.fd_data.close()
         utils.save_obj(self.filename + '.index', self.index)
 
     # Pass None to avoid compression.
@@ -78,7 +78,7 @@ class CompressedStorageBuilder():
 
     def raw_add_item(self, key, data, compress, extra_data = None):
         self.index['items'][key] = {
-            'offset' : self.fd_out.tell(),
+            'offset' : self.fd_data.tell(),
             'size' : len(data)
         }
         if compress != self.index['compress']:
@@ -86,7 +86,7 @@ class CompressedStorageBuilder():
         if extra_data:
             self.index['items'][key]['extra_data'] = extra_data
 
-        self.fd_out.write(data)
+        self.fd_data.write(data)
 
 
 if __name__ == "__main__":
