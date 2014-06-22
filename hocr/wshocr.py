@@ -63,22 +63,17 @@ class Request:
         return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.page + '<br/>'
 
 
-def cache_path(book_name, lang, family):
+def cache_path(book_name):
     if type(book_name) == type(u''):
         book_name = book_name.encode('utf-8')
-    base_dir  = os.path.expanduser('~/cache/hocr/%s/%s/') % (family, lang)
-    base_dir += '%s/%s/%s/%s/'
+
+    base_dir  = os.path.expanduser('~/cache/hocr/') + '%s/%s/%s/%s/'
 
     h = hashlib.md5()
     h.update(book_name)
     h = h.hexdigest()
 
-    base_dir = base_dir % (h[0:2], h[2:4], h[4:6], h[6:])
-
-    if not os.path.exists(base_dir) and family != 'commons':
-        base_dir = cache_path(book_name, 'commons', 'commons')
-
-    return base_dir
+    return base_dir % (h[0:2], h[2:4], h[4:6], h[6:])
 
 def ret_val(error, text):
     if error:
@@ -95,56 +90,62 @@ def check_sha1(path, sha1):
     return False
 
 def check_and_upload(url, filename, sha1):
-    if not os.path.exists(filename) or utils.sha1(filename) != sha1:
+    real_filename = filename.encode('utf-8')
+    if not os.path.exists(real_filename) or utils.sha1(real_filename) != sha1:
         # file deleted by the job queue processing this item.
-        utils.copy_file_from_url(url, filename)
+        if not utils.copy_file_from_url(url, real_filename):
+            return False
     else:
         ret_val(E_ERROR, "book already uploaded: " + filename)
 
+    return True
+
 # check if data are uptodate
 #
-# return -1 if the File: no longer exists
-# -2 an exception occur, likely to be a network error raised
-# by pywikipedia
-# 0 data exist but aren't uptodate
-# 1 data exist and are uptodate
+# return:
+# -1 if the File: no longer exists
+# -2 an exception occur, likely to be a network error raised by pywikibot
+# -3 and exception occured during file copy 
+#  0 data exist but aren't uptodate
+#  1 data exist and are uptodate
 # if it return 0 the file is uploaded if it not already exists
 def is_uptodate(request):
+    path = cache_path(request.book_name)
+
     try:
-        site = wikipedia.getSite(code = request.lang, fam = 'wikisource')
-        filepage = align.get_filepage(site, unicode(request.book_name, 'utf-8'))
-        if filepage == None or not filepage.exists():
+        site = pywikibot.getSite(code = request.lang, fam = 'wikisource')
+        filepage = align.get_filepage(site, request.book_name)
+        if not filepage:
             # file deleted between the initial request and now 
             return -1
+        sha1 = filepage.getFileSHA1Sum()
     except Exception, e:
         exc_type, exc_value, exc_tb = sys.exc_info()
         try:
             print >> sys.stderr, 'TRACEBACK'
-            print >> sys.stderr, request.book_name
+            print >> sys.stderr, request.book_name.encode('utf-8')
             traceback.print_exception(exc_type, exc_value, exc_tb)
         finally:
             del exc_tb
         return -2
 
-    path = cache_path(request.book_name, filepage.site().lang, filepage.site().fam().name)
-
-    sha1 = filepage.getHash()
     if check_sha1(path, sha1):
         return 1
 
     if not os.path.exists(path):
         os.makedirs(path)
-    check_and_upload(filepage.fileUrl(), path + request.book_name, sha1)
+    if not check_and_upload(filepage.fileUrl(), os.path.expanduser('~/tmp/') + request.book_name, sha1):
+        return -3
     return 0
 
 def do_hocr_djvu(request):
-    path = cache_path(request.book_name, request.lang, 'wikisource')
+    path = cache_path(request.book_name)
     options = djvu_text_to_hocr.default_options()
     options.compress = 'bzip2'
     options.out_dir = path
     options.silent = True
 
-    filename = path + request.book_name
+    filename = os.path.expanduser('~/tmp/') + request.book_name
 
     # Needed if the same job was queued twice before the first run terminate.
     uptodate = is_uptodate(request)
@@ -152,6 +153,8 @@ def do_hocr_djvu(request):
         return ret_val(E_ERROR, "do_hocr_djvu(): book not found (file deleted since initial request ?) or exception: " + filename)
     elif uptodate == 1:
         return ret_val(E_OK, "do_hocr_djvu(): book already hocred: " + filename)
+
+    request.start_time = time.time()
 
     if djvu_text_to_hocr.parse(options, filename) == 0:
         sha1 = utils.sha1(filename)
@@ -169,8 +172,15 @@ def do_hocr_djvu(request):
 # (slow) queue and it'll ping-pong between the queues forever.
 def do_hocr_tesseract(request):
 
-    path = cache_path(request.book_name, request.lang, 'wikisource')
-    filename = path + request.book_name
+    request.start_time = time.time()
+
+    path = cache_path(request.book_name)
+    filename = os.path.expanduser('~/tmp/') + request.book_name
+
+    # FIXME: inhibited atm
+    if os.path.exists(filename):
+        os.remove(filename)
+    return
 
     options = ocr_djvu.default_options()
 
@@ -212,13 +222,12 @@ def do_hocr(request):
         return ret_val(E_ERROR, "do_hocr(): book already hocred: " + request.book_name)
 
     request = copy.copy(request)
-    request.start_time = time.time()
     request.conn = None
     request.tools = None
 
-    path = cache_path(request.book_name, request.lang, 'wikisource')
+    path = cache_path(request.book_name)
 
-    if djvu_text_to_hocr.has_word_bbox(path + request.book_name):
+    if djvu_text_to_hocr.has_word_bbox(os.path.expanduser('~/tmp/') + request.book_name):
         jobs['number_of_hocr_djvu_job'] += 1
         jobs['hocr_djvu_queue'].put(request)
         queue_type = "fast"
@@ -227,16 +236,16 @@ def do_hocr(request):
         jobs['hocr_tesseract_queue'].put(request)
         queue_type = "slow"
 
-    return ret_val(E_OK, "job queued and waiting processing in the %s queue: %s path %s" % (queue_type, request.page, path))
+    return ret_val(E_OK, u"job queued and waiting processing in the %s queue: %s path %s" % (queue_type, request.page, path))
 
 def do_get(request):
     page_nr = re.sub('^.*/([0-9]+)$', '\\1', request.page)
     try:
         page_nr = int(page_nr)
     except:
-        return ret_val(E_ERROR, "unable to extract page number from page: " + request.page)
+        return ret_val(E_ERROR, u"unable to extract page number from page: " + request.page)
 
-    path = cache_path(request.book_name, request.lang, 'wikisource')
+    path = cache_path(request.book_name)
 
     filename = path + 'page_%04d.html' % page_nr
 
@@ -244,14 +253,14 @@ def do_get(request):
     # actually generated by the server
     text = utils.uncompress_file(filename, [ 'bzip2', 'gzip', '' ])
     if text == None:
-        return ret_val(E_ERROR, "unable to locate file %s for page %s" % (filename, request.page))
+        return ret_val(E_ERROR, u"unable to locate file %s for page %s" % (filename, request.page))
 
     return ret_val(E_OK, text)
 
 def html_for_queue(queue):
     html = u''
     for request in queue:
-        html += request.to_html()
+        html += request[0].to_html()
     return html
 
 def do_status():
@@ -330,10 +339,8 @@ def bot_listening():
                 tools.send_text_reply(conn, html)
                 conn.close()
             elif request.cmd == 'hocr':
-                # FIXME: inhibited atm
-                pass
-                #jobs['number_of_hocr_job'] += 1
-                #jobs['hocr_queue'].put(request)
+                jobs['number_of_hocr_job'] += 1
+                jobs['hocr_queue'].put(request)
             elif request.cmd == "get":
                 jobs['number_of_get_job'] += 1
                 jobs['get_queue'].put(request)

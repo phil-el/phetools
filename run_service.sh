@@ -26,7 +26,7 @@ memory[ws_ocr_daemon]=384M
 cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
 
 env_var[hocr_daemon]=PYTHONPATH=$PYTHONPATH
-memory[hocr_daemon]=512M
+memory[hocr_daemon]=1280M
 cmdline[hocr_daemon]="python -u phe/hocr/wshocr.py"
 
 memory[wsircdaemon]=256M
@@ -44,9 +44,9 @@ start() {
     cmd+="-l h_vmem=${memory[$1]} -N $1 ${cmdline[$1]}"
     $cmd
 
-    if [ ${qalter[$1]+_} ]; then
-        qalter $1 ${qalter[$1]}
-    fi
+    #if [ ${qalter[$1]+_} ]; then
+    #    qalter $1 ${qalter[$1]}
+    #fi
 }
 
 stop() {

@@ -284,7 +284,7 @@ def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<30, 1<<30))
+    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<30))
     resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
     resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
 
@@ -318,13 +318,13 @@ def do_parse(opt, filename):
 
 def parse(opt, filename):
     try:
-        ret_code = do_parse(opt, filename)
+        ret_code = do_parse(opt, filename.encode('utf-8'))
     except Exception, e:
         #print >> sys.stderr, filename, e
         exc_type, exc_value, exc_tb = sys.exc_info()
         try:
             print >> sys.stderr, 'TRACEBACK'
-            print >> sys.stderr, filename
+            print >> sys.stderr, filename.encode('utf-8')
             traceback.print_exception(exc_type, exc_value, exc_tb)
         finally:
             # this is required for proper gargabe collection of local var
