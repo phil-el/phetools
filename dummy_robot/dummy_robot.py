@@ -12,7 +12,6 @@ import common_html
 import os
 import thread
 import time
-import urllib
 import job_queue
 
 E_ERROR = 1
@@ -64,7 +63,6 @@ def bot_listening(queue):
 
                 cmd = request['cmd']
                 title = request.get('title', '')
-                title = unicode(urllib.unquote(title.encode('utf-8')), 'utf-8')
             except:
                 ret = ret_val(E_ERROR, "invalid request")
                 tools.send_reply(conn, ret)
