@@ -201,12 +201,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix):
 
 def get_filepage(site, djvuname):
     try:
-        filepage = pywikibot.ImagePage(site, "File:" + djvuname)
-        # required to get the SHA1 when the file is on commons.
-        if filepage.fileIsShared():
-            site = pywikibot.getSite(code = 'commons', fam = 'commons')
-            filepage = pywikibot.ImagePage(site, "File:" + djvuname)
-        return filepage
+        return pywikibot.ImagePage(site, "File:" + djvuname)
     except pywikibot.NoPage:
         return None
 
