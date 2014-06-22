@@ -55,16 +55,31 @@ def url_opener():
     return opener
 
 def copy_file_from_url(url, out_file):
-    opener = url_opener()
-    fd_in = opener.open(url)
-    fd_out = open(out_file, "wb")
-    data = True
-    while data:
-        data = fd_in.read(4096)
-        if data:
-            fd_out.write(data)
-    fd_in.close()
-    fd_out.close()
+    try:
+        opener = url_opener()
+        fd_in = opener.open(url)
+        fd_out = open(out_file, "wb")
+        data = True
+        while data:
+            data = fd_in.read(4096)
+            if data:
+                fd_out.write(data)
+        fd_in.close()
+        fd_out.close()
+        return True
+    except Exception, e:
+        import traceback
+        import sys
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        try:
+            print >> sys.stderr, 'TRACEBACK'
+            print >> sys.stderr, "upload error:", url, out_file
+            traceback.print_exception(exc_type, exc_value, exc_tb)
+            if os.path.exists(out_file):
+                os.remove(out_file)
+        finally:
+            del exc_tb
+        return False
 
 def compress_file_data(out_filename, data, compress_type):
     if compress_type in ['bzip2', 'gzip']:
