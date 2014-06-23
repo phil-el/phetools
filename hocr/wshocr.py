@@ -23,7 +23,6 @@ import djvu_text_to_hocr
 #import task_scheduler
 import ocr_djvu
 import ocr
-import urllib
 import job_queue
 
 #task_s = task_scheduler.TaskScheduler(silent = True)
@@ -44,7 +43,7 @@ class Request:
             self.page = dct['page']
             self.user = dct['user']
             self.lang = dct['lang']
-            self.book_name = re.sub(u'^(.*)/[0-9]+$', '\\1', self.page)
+            self.book_name = re.sub(u'^(.*?)(/[0-9]+)?$', u'\\1', self.page)
             self.book_name = self.book_name.replace(u'_', u' ')
         else:
             self.page = ''
@@ -60,7 +59,7 @@ class Request:
         print (date_s(time2) + u' ' + self.user + u' ' + self.lang + u' ' + self.page + u' '+ self.cmd + " (%.2f)" % (time2-self.start_time)).encode('utf-8')
 
     def to_html(self):
-        return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.page + '<br/>'
+        return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.book_name + '<br/>'
 
 
 def cache_path(book_name):
