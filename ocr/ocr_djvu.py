@@ -46,17 +46,16 @@ def do_one_page(opt, page_nr, filename):
     if not tiff_name:
         return
 
+    out_filename = opt.out_dir + "page_%04d" % page_nr
+    if opt.config == 'hocr':
+        out_filename += '.html'
+    else:
+        out_filename += '.txt'
+
     ocr.ocr(tiff_name, opt.out_dir + 'page_%04d' % page_nr, opt.lang, opt.config)
-
     if opt.compress:
-        filename = opt.out_dir + "page_%04d" % page_nr
-        if opt.config == 'hocr':
-            filename += '.html'
-        else:
-            filename += '.txt'
-
-        utils.compress_file(filename, filename, opt.compress)
-        os.remove(filename)
+        utils.compress_file(out_filename, out_filename, opt.compress)
+        os.remove(out_filename)
 
     os.remove(tiff_name)
 
@@ -79,7 +78,10 @@ def do_file(job_queue, opt, filename):
 
 def ocr_djvu(opt, filename, task_scheduler = None):
 
-    fd = open('/home/phe/wsbot/log/tesseract.log', 'a')
+    if type(filename) == type(u''):
+        filename = filename.encode('utf-8')
+
+    fd = open(os.path.expanduser('~/log/tesseract.log'), 'a')
     print >> fd, "Starting to process:", filename
     fd.close()
 
@@ -89,7 +91,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
     nr_pages = get_nr_pages_djvu(filename)
     if nr_pages == None:
         print >> sys.stderr, "unable to get_nr_pages for file:", filename
-        return 1
+        return False
 
     if opt.num_thread == -1:
         opt.num_thread = multiprocessing.cpu_count()
@@ -138,7 +140,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
     if not opt.silent:
         utils.safe_write(sys.stderr, "\n")
 
-    return 0
+    return True
 
 def default_options():
     class Options:

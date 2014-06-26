@@ -20,12 +20,9 @@ import traceback
 import pywikibot
 import align
 import djvu_text_to_hocr
-#import task_scheduler
 import ocr_djvu
 import ocr
 import job_queue
-
-#task_s = task_scheduler.TaskScheduler(silent = True)
 
 E_ERROR = 1
 E_OK = 0
@@ -176,17 +173,12 @@ def do_hocr_tesseract(request):
     path = cache_path(request.book_name)
     filename = os.path.expanduser('~/tmp/') + request.book_name
 
-    # FIXME: inhibited atm
-    if os.path.exists(filename):
-        os.remove(filename)
-    return
-
     options = ocr_djvu.default_options()
 
     options.silent = True
     options.compress = 'bzip2'
     options.config = 'hocr'
-    options.num_thread = -1
+    options.num_thread = 1
     options.lang = ocr.tesseract_languages.get(request.lang, 'eng')
 
     options.out_dir = path
@@ -200,9 +192,7 @@ def do_hocr_tesseract(request):
     elif uptodate == 1:
         return ret_val(E_ERROR, "do_hocr_tesseract(): book already hocred: " + filename)
 
-    global task_s
-
-    if ocr_djvu.ocr_djvu(options, filename, task_s) == 0:
+    if ocr_djvu.ocr_djvu(options, filename):
         sha1 = utils.sha1(filename)
         utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
@@ -254,6 +244,10 @@ def do_get(request):
     if text == None:
         return ret_val(E_ERROR, u"unable to locate file %s for page %s" % (filename, request.page))
 
+    # work-around https://code.google.com/p/tesseract-ocr/issues/detail?id=690&can=1&q=utf-8 a simple patch exists: https://code.google.com/p/tesseract-ocr/source/detail?r=736# but it's easier to do a double conversion to remove invalid utf8 rather than to maintain a patched version of tesseract.
+    text = unicode(text, 'utf-8', 'ignore')
+    text = text.encode('utf-8', 'ignore') 
+
     return ret_val(E_OK, text)
 
 def html_for_queue(queue):
@@ -302,8 +296,6 @@ def stop_queue(queue):
 # FIXME: unsafe, see comment when the signal handler is installed.
 def on_exit(sign_nr, frame):
         print "STOP"
-
-        #task_s.reset_all_group()
 
         # no value to save the get queue but we must close conn.
         stop_queue(jobs['get_queue'])

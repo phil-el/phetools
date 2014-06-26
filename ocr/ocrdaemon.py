@@ -148,7 +148,7 @@ def ocr_image(cache, url, codelang):
         return ret_val(2, "ocr failed")
 
     os.remove(image_filename)
-    if text:
+    if os.path.exists(basename + ".txt"):
         os.remove(basename + ".txt")
 
     cache.set(cache_key, text)
