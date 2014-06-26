@@ -29,7 +29,7 @@ tesseract_data_prefix = '/usr/share/tesseract-ocr'
 def setrlimits():
     resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<30))
     resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
-    resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
+    resource.setrlimit(resource.RLIMIT_CPU, (10*60, 15*60))
 
 def ocr(filename, out_basename, lang, config = ''):
     if tesseract_data_prefix:
