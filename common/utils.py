@@ -51,35 +51,50 @@ def write_sha1(sha1, filename):
 
 def url_opener():
     opener = urllib.URLopener()
-    opener.addheaders = [('User-agent', 'MW_match_and_split')]
+    opener.addheaders = [('User-agent', 'MW_phetools')]
     return opener
 
-def copy_file_from_url(url, out_file):
-    try:
-        opener = url_opener()
-        fd_in = opener.open(url)
-        fd_out = open(out_file, "wb")
-        data = True
-        while data:
-            data = fd_in.read(4096)
-            if data:
-                fd_out.write(data)
-        fd_in.close()
-        fd_out.close()
-        return True
-    except Exception, e:
-        import traceback
-        import sys
-        exc_type, exc_value, exc_tb = sys.exc_info()
+def copy_file_from_url(url, out_file, max_retry = 4):
+    retry = 0
+    max_retry = min(max(1, max_retry), 5)
+    ok = False
+    while not ok and retry < max_retry:
         try:
-            print >> sys.stderr, 'TRACEBACK'
-            print >> sys.stderr, "upload error:", url, out_file
-            traceback.print_exception(exc_type, exc_value, exc_tb)
-            if os.path.exists(out_file):
-                os.remove(out_file)
-        finally:
-            del exc_tb
-        return False
+            opener = url_opener()
+            fd_in = opener.open(url)
+            fd_out = open(out_file, "wb")
+            data = True
+            while data:
+                data = fd_in.read(4096)
+                if data:
+                    fd_out.write(data)
+            fd_in.close()
+            fd_out.close()
+            ok = True
+        except Exception, e:
+            # FIXME: in its own function and reuse it anywhere.
+            import traceback
+            import sys
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            try:
+                print >> sys.stderr, 'TRACEBACK'
+                print >> sys.stderr, "upload error:", url, out_file
+                traceback.print_exception(exc_type, exc_value, exc_tb)
+                if os.path.exists(out_file):
+                    os.remove(out_file)
+            finally:
+                del exc_tb
+            retry += 1
+            if retry < max_retry:
+                time.sleep(60*(retry << 1))
+
+    if retry:
+        if ok:
+            print >> sys.stderr, "upload success after %d retry" % retry, url, out_file
+        else:
+            print >> sys.stderr, "upload failure after %d retry" % retry, url, out_file
+
+    return ok
 
 def compress_file_data(out_filename, data, compress_type):
     if compress_type in ['bzip2', 'gzip']:
@@ -130,7 +145,7 @@ def uncompress_file(filename, compress_type):
 
     raise ValueError('Empty compression scheme: ' + str(compress_type))
 
-# Protected a call against EINTR.
+# Protect a call against EINTR.
 def _retry_on_eintr(func, *args):
     while True:
         try:
