@@ -60,7 +60,7 @@ def ocr(filename, out_basename, lang, config = ''):
         del os.environ['TESSDATA_PREFIX']
 
     if ls.returncode != 0:
-        print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode
+        print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
         return None
 
     return txt
