@@ -204,11 +204,9 @@ def myapp(environ, start_response):
         return handle_status(start_response)
 
 if __name__ == "__main__":
-    import traceback
     from flup.server.cgi import WSGIServer
     try:
         WSGIServer(myapp).run()
-    except BaseException as e:
-        print >> sys.stderr, str(e)
-        print >> sys.stderr, traceback.format_exc()
-        raise
+    except BaseException:
+        import traceback
+        traceback.print_exc()

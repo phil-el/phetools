@@ -48,10 +48,8 @@ def html_for_queue(queue):
             page = pywikibot.Page(msite, mtitle)
             path = msite.nice_get_address(page.title(asUrl = True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
-        except BaseException as e:
-            import traceback
-            print >> sys.stderr, str(e)
-            print >> sys.stderr, traceback.format_exc()
+        except BaseException:
+            utils.print_traceback()
             url = ""
 
         html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"

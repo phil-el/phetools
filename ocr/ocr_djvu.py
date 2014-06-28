@@ -5,7 +5,6 @@ import os
 import ocr
 import multiprocessing
 import utils
-import traceback
 import errno
 import subprocess
 import resource
@@ -67,14 +66,8 @@ def do_file(job_queue, opt, filename):
             return
         try:
             do_one_page(opt, page_nr, filename)
-        except Exception, e:
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            try:
-                print >> sys.stderr, 'TRACEBACK'
-                print >> sys.stderr, filename
-                traceback.print_exception(exc_type, exc_value, exc_tb)
-            finally:
-                del exc_tb
+        except Exception:
+            utils.print_traceback(filename)
 
 def ocr_djvu(opt, filename, task_scheduler = None):
 

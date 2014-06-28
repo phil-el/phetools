@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import sys
-import traceback
 import re
 import xml.etree.ElementTree as etree
 import subprocess
@@ -319,17 +318,8 @@ def do_parse(opt, filename):
 def parse(opt, filename):
     try:
         ret_code = do_parse(opt, filename.encode('utf-8'))
-    except Exception, e:
-        #print >> sys.stderr, filename, e
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        try:
-            print >> sys.stderr, 'TRACEBACK'
-            print >> sys.stderr, filename.encode('utf-8')
-            traceback.print_exception(exc_type, exc_value, exc_tb)
-        finally:
-            # this is required for proper gargabe collection of local var
-            # in the traceback frames.
-            del exc_tb
+    except Exception:
+        utils.print_traceback(filename)
         ret_code = -1
 
     return ret_code

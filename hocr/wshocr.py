@@ -16,7 +16,6 @@ import hashlib
 import utils
 import signal
 import sys
-import traceback
 import pywikibot
 import align
 import djvu_text_to_hocr
@@ -115,14 +114,8 @@ def is_uptodate(request):
             # file deleted between the initial request and now 
             return -1
         sha1 = filepage.getFileSHA1Sum()
-    except Exception, e:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        try:
-            print >> sys.stderr, 'TRACEBACK'
-            print >> sys.stderr, request.book_name.encode('utf-8')
-            traceback.print_exception(exc_type, exc_value, exc_tb)
-        finally:
-            del exc_tb
+    except Exception:
+        utils.print_traceback(request.book_name)
         return -2
 
     if check_sha1(path, sha1):

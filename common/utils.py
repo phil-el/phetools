@@ -8,6 +8,7 @@ import gzip
 import os
 import errno
 import urllib
+import sys
 
 def read_file(filename):
     fd = open(filename)
@@ -71,19 +72,10 @@ def copy_file_from_url(url, out_file, max_retry = 4):
             fd_in.close()
             fd_out.close()
             ok = True
-        except Exception, e:
-            # FIXME: in its own function and reuse it anywhere.
-            import traceback
-            import sys
-            exc_type, exc_value, exc_tb = sys.exc_info()
-            try:
-                print >> sys.stderr, 'TRACEBACK'
-                print >> sys.stderr, "upload error:", url, out_file
-                traceback.print_exception(exc_type, exc_value, exc_tb)
-                if os.path.exists(out_file):
-                    os.remove(out_file)
-            finally:
-                del exc_tb
+        except Exception:
+            print_traceback("upload error:", url, out_file)
+            if os.path.exists(out_file):
+                os.remove(out_file)
             retry += 1
             if retry < max_retry:
                 time.sleep(60*(retry << 1))
@@ -161,3 +153,18 @@ def safe_read(fd):
 
 def safe_write(fd, text):
     return _retry_on_eintr(fd.write, text)
+
+def print_traceback(*kwargs):
+    import traceback
+    try:
+        traceback.print_exc()
+        if len(kwargs):
+            print >> sys.stderr, "arguments:",
+            for f in kwargs:
+                if type(f) == type(u''):
+                    f = f.encode('utf-8')
+                print >> sys.stderr, str(f),
+            print >> sys.stderr
+    except:
+        print >> sys.stderr, "ERROR: An exception occured during traceback"
+        raise
