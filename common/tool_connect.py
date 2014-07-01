@@ -68,6 +68,9 @@ class ToolConnect:
                     except:
                         self._ill_formed_request(conn, data)
                         request = None
+                        # Neeed because _ill_formed_request close the conn, so
+                        # we break the loop to avoid to call it again.
+                        break
 
         return request, conn
 
