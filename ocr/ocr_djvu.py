@@ -36,7 +36,7 @@ def extract_image(opt, page_nr, filename):
         print text
     ls.wait()
     if ls.returncode != 0:
-        print >> sys.stderr, "extract_image fail: ", ls.returncode
+        print >> sys.stderr, "extract_image fail: ", ls.returncode, filename, page_nr
         return None
     return tiff_name
 
