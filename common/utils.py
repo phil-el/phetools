@@ -9,6 +9,7 @@ import os
 import errno
 import urllib
 import sys
+import time
 
 def read_file(filename):
     fd = open(filename)
