@@ -54,6 +54,16 @@ def strip_link(matchobj):
     return link
 
 def remove_template_pass(text):
+    text = re.sub(u'{{[Ee]r}}', u'er', text)
+    text = re.sub(u'{{[Mm]me}}', u'Mme', text)
+    text = re.sub(u'{{[Mm]r}}', u'Mr', text)
+    text = re.sub(u'{{[Mm]lle}}', u'Mlle', text)
+    text = re.sub(u'{{[Mm]lles}}', u'Mlles', text)
+    text = re.sub(u'{{[Mm]mes}}', u'Mmes', text)
+    text = re.sub(u'{{[Mm]gr}}', u'Mgr', text)
+    text = re.sub(u'{{[Mm]e}}', u'Me', text)
+    text = re.sub(u'{{[Mm]ME}}', u'MME', text)
+    text = re.sub(u'{{[Dd]r}}', u'Dr', text)
     text = re.sub(u'{{…\|[^}]*}}', u'', text)
     text = re.sub(u'{{[fF]ormatnum:([^{}]*?)}}', u'\\1', text)
     text = re.sub(u'{{[tT]iret\|([^{}]*?)\|[^{}]*?}}', u'\\1-', text)
@@ -70,6 +80,7 @@ def remove_template_pass(text):
     text = re.sub(u'{{[aA]ngle\|([^{}]*)\|([^{}]*)\|([^{}]*)}}', u'\\1 \\2 \\3', text)
     text = re.sub(u'{{[aA]ngle\|([^{}]*)\|([^{}]*)}}', u'\\1 \\2 ', text)
     text = re.sub(u'{{[Ii]nitiale\|([^{}|]*(\|[^{}]*)*)}}', u'\\1', text)
+    text = re.sub(u'{{=}}', u'', text)
     text = re.sub(u'{{[sS]éparateur\|[^{}]*}}', u'', text)
     text = re.sub(u'{{[aA]\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[aA]linéa\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
@@ -113,7 +124,7 @@ def remove_template_pass(text):
     text = re.sub(u'(?ms){{[Éé]pigraphe\|([^{}|]*)}}', u'\\1', text)
     text = re.sub(u'(?ms){{[Éé]pigraphe\|([^{}]*?)\|([^{}]*?)}}', u'\\1 \\2', text)
     text = re.sub(u'{{—[ ]*\|([^{}]*)}}', u'', text)
-    text = re.sub(u'{{\.\.\.|([^{}]*)}}', u'', text)
+    text = re.sub(u'{{\.\.\.\|([^{}]*)}}', u'', text)
 
     return text
 
@@ -180,6 +191,9 @@ def handle_table(text):
     return text
 
 def common_transform(text):
+    text = re.sub(u"'''([^']*)'''", u'\\1', text)
+    text = re.sub(u"''([^']*)''", u'\\1', text)
+    text = text.replace(u"'", u"’")
     text = text.replace(u'ſ', u's')
     return text
 
@@ -257,6 +271,7 @@ def transform_text(text, opt):
 
 def transform_ocr_text(ocr_text, opt):
     ocr_text = re.sub(u'\n«[ ]*', u'\n', ocr_text)
+    ocr_text = re.sub(u'-[ ]*\n', u'', ocr_text)
     ocr_text = remove_ocr_template(ocr_text)
     ocr_text = ocr_text.replace(u'\\037', u'')
     ocr_text = ocr_text.replace(u'\\035', u'')
