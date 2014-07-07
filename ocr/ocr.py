@@ -19,7 +19,7 @@ tesseract_languages = {
         'is':'isl', # needs tess 3.02
         'it':"ita",
         'es':"spa",
-        'pt':"spa",
+        'pt':"por",
         'ru':"rus",
         }
 
@@ -27,7 +27,7 @@ tesseract_path = os.path.expanduser('~/root/bin/tesseract')
 tesseract_data_prefix = '/usr/share/tesseract-ocr'
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<30))
+    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
     resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
     resource.setrlimit(resource.RLIMIT_CPU, (10*60, 15*60))
 
