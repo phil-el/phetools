@@ -74,7 +74,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
     if type(filename) == type(u''):
         filename = filename.encode('utf-8')
 
-    fd = open(os.path.expanduser('~/log/tesseract.log'), 'a')
+    fd = open(os.path.expanduser('~/log/tesseract.out'), 'a')
     print >> fd, "Starting to process:", filename
     fd.close()
 
