@@ -26,7 +26,7 @@ memory[ws_ocr_daemon]=640M
 cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
 
 env_var[hocr_daemon]=PYTHONPATH=$PYTHONPATH
-memory[hocr_daemon]=1280M
+memory[hocr_daemon]=1404M
 cmdline[hocr_daemon]="python -u phe/hocr/wshocr.py"
 
 memory[wsircdaemon]=256M
