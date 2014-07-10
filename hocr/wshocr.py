@@ -23,6 +23,8 @@ import ocr_djvu
 import ocr
 import job_queue
 
+tmp_dir = os.path.expanduser('~/tmp/hocr/')
+
 E_ERROR = 1
 E_OK = 0
 
@@ -123,7 +125,7 @@ def is_uptodate(request):
 
     if not os.path.exists(path):
         os.makedirs(path)
-    if not check_and_upload(filepage.fileUrl(), os.path.expanduser('~/tmp/') + request.book_name, sha1):
+    if not check_and_upload(filepage.fileUrl(), tmp_dir + request.book_name, sha1):
         return -3
     return 0
 
@@ -134,7 +136,7 @@ def do_hocr_djvu(request):
     options.out_dir = path
     options.silent = True
 
-    filename = os.path.expanduser('~/tmp/') + request.book_name
+    filename = tmp_dir + request.book_name
 
     # Needed if the same job was queued twice before the first run terminate.
     uptodate = is_uptodate(request)
@@ -164,7 +166,7 @@ def do_hocr_tesseract(request):
     request.start_time = time.time()
 
     path = cache_path(request.book_name)
-    filename = os.path.expanduser('~/tmp/') + request.book_name
+    filename = tmp_dir + request.book_name
 
     options = ocr_djvu.default_options()
 
@@ -209,7 +211,7 @@ def do_hocr(request):
 
     path = cache_path(request.book_name)
 
-    if djvu_text_to_hocr.has_word_bbox(os.path.expanduser('~/tmp/') + request.book_name):
+    if djvu_text_to_hocr.has_word_bbox(tmp_dir + request.book_name):
         jobs['number_of_hocr_djvu_job'] += 1
         jobs['hocr_djvu_queue'].put(request)
         queue_type = "fast"
