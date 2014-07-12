@@ -19,6 +19,7 @@ import sys
 import pywikibot
 import align
 import djvu_text_to_hocr
+import pdf_to_djvu
 import ocr_djvu
 import ocr
 import job_queue
@@ -41,12 +42,13 @@ class Request:
             self.page = dct['page']
             self.user = dct['user']
             self.lang = dct['lang']
-            self.book_name = re.sub(u'^(.*?)(/[0-9]+)?$', u'\\1', self.page)
-            self.book_name = self.book_name.replace(u'_', u' ')
+            self.real_book_name = re.sub(u'^(.*?)(/[0-9]+)?$', u'\\1', self.page)
+            self.real_book_name = self.real_book_name.replace(u'_', u' ')
+            self.converted_book_name = self.real_book_name
         else:
             self.page = ''
             self.user = ''
-            self.book_name = ''
+            self.real_book_name = ''
             self.lang = ''
 
     def print_request_start(self):
@@ -57,7 +59,7 @@ class Request:
         print (date_s(time2) + u' ' + self.user + u' ' + self.lang + u' ' + self.page + u' '+ self.cmd + " (%.2f)" % (time2-self.start_time)).encode('utf-8')
 
     def to_html(self):
-        return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.book_name + '<br/>'
+        return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.real_book_name + '<br/>'
 
 
 def cache_path(book_name):
@@ -107,17 +109,17 @@ def check_and_upload(url, filename, sha1):
 #  1 data exist and are uptodate
 # if it return 0 the file is uploaded if it not already exists
 def is_uptodate(request):
-    path = cache_path(request.book_name)
+    path = cache_path(request.real_book_name)
 
     try:
         site = pywikibot.getSite(code = request.lang, fam = 'wikisource')
-        filepage = align.get_filepage(site, request.book_name)
+        filepage = align.get_filepage(site, request.real_book_name)
         if not filepage:
             # file deleted between the initial request and now 
             return -1
         sha1 = filepage.getFileSHA1Sum()
     except Exception:
-        utils.print_traceback(request.book_name)
+        utils.print_traceback(request.real_book_name)
         return -2
 
     if check_sha1(path, sha1):
@@ -125,18 +127,18 @@ def is_uptodate(request):
 
     if not os.path.exists(path):
         os.makedirs(path)
-    if not check_and_upload(filepage.fileUrl(), tmp_dir + request.book_name, sha1):
+    if not check_and_upload(filepage.fileUrl(), tmp_dir + request.real_book_name, sha1):
         return -3
     return 0
 
 def do_hocr_djvu(request):
-    path = cache_path(request.book_name)
+    path = cache_path(request.real_book_name)
     options = djvu_text_to_hocr.default_options()
     options.compress = 'bzip2'
     options.out_dir = path
     options.silent = True
 
-    filename = tmp_dir + request.book_name
+    filename = tmp_dir + request.real_book_name
 
     # Needed if the same job was queued twice before the first run terminate.
     uptodate = is_uptodate(request)
@@ -165,8 +167,8 @@ def do_hocr_tesseract(request):
 
     request.start_time = time.time()
 
-    path = cache_path(request.book_name)
-    filename = tmp_dir + request.book_name
+    path = cache_path(request.real_book_name)
+    filename = tmp_dir + request.converted_book_name
 
     options = ocr_djvu.default_options()
 
@@ -188,9 +190,12 @@ def do_hocr_tesseract(request):
         return ret_val(E_ERROR, "do_hocr_tesseract(): book already hocred: " + filename)
 
     if ocr_djvu.ocr_djvu(options, filename):
-        sha1 = utils.sha1(filename)
+        real_filename = tmp_dir + request.real_book_name
+        sha1 = utils.sha1(real_filename)
         utils.write_sha1(sha1, options.out_dir + "sha1.sum")
         os.remove(filename)
+        if os.path.exists(real_filename):
+            os.remove(real_filename)
     else:
         return ret_val(E_ERROR, "do_hocr_tesseract() unable to process: " + filename)
 
@@ -198,20 +203,54 @@ def do_hocr_tesseract(request):
 
     return ret_val(E_OK, "do_hocr_tesseract() finished: " + filename)
 
+def do_convert(request):
+
+    uptodate = is_uptodate(request)
+    if uptodate < 0:
+        return ret_val(E_ERROR, "do_convert(): book not found (file deleted since initial request ?) or exception: " + request.real_book_name)
+    elif uptodate == 1:
+        return ret_val(E_ERROR, "do_convert(): book already hocred: " + request.real_book_name)
+
+    filename = tmp_dir + request.real_book_name
+    # FIXME: this check doesn't seems to work?
+    if os.path.exists(filename[:-3] + "djvu"):
+        request.converted_book_name = request.real_book_name[:-3] + "djvu"
+        jobs['number_of_hocr_tesseract_job'] += 1
+        jobs['hocr_tesseract_queue'].put(request)
+        return ret_val(E_OK, u"do_convert(): book already converted and waiting processing in the slow queue: %s" % request.page)
+
+    if filename.endswith('.pdf'):
+        djvu_name = pdf_to_djvu.pdf_to_djvu(filename)
+        if djvu_name:
+            request.converted_book_name = request.real_book_name[:-3] + "djvu"
+            jobs['number_of_hocr_tesseract_job'] += 1
+            jobs['hocr_tesseract_queue'].put(request)
+            return ret_val(E_OK, u"job queued and waiting processing in the slow queue: %s" % request.page)
+        else:
+            os.remove(filename)
+            return ret_val(E_ERROR, "do_convert(), conversion to djvu failed" + filename)
+    else:
+        os.remove(filename)
+        return ret_val(E_ERROR, "do_convert(), unsuported file format" + filename)
+
 def do_hocr(request):
     uptodate = is_uptodate(request)
     if uptodate < 0:
-        return ret_val(E_ERROR, "do_hocr(): book not found (file deleted since initial request ?) or exception: " + request.book_name)
+        return ret_val(E_ERROR, "do_hocr(): book not found (file deleted since initial request ?) or exception: " + request.real_book_name)
     elif uptodate == 1:
-        return ret_val(E_ERROR, "do_hocr(): book already hocred: " + request.book_name)
+        return ret_val(E_ERROR, "do_hocr(): book already hocred: " + request.real_book_name)
 
     request = copy.copy(request)
     request.conn = None
     request.tools = None
 
-    path = cache_path(request.book_name)
+    path = cache_path(request.real_book_name)
 
-    if djvu_text_to_hocr.has_word_bbox(tmp_dir + request.book_name):
+    if not request.real_book_name.endswith(u'.djvu'):
+        jobs['number_of_hocr_convert_job'] += 1
+        jobs['hocr_convert_queue'].put(request)
+        queue_type = "convert"
+    elif djvu_text_to_hocr.has_word_bbox(tmp_dir + request.real_book_name):
         jobs['number_of_hocr_djvu_job'] += 1
         jobs['hocr_djvu_queue'].put(request)
         queue_type = "fast"
@@ -229,7 +268,7 @@ def do_get(request):
     except:
         return ret_val(E_ERROR, u"unable to extract page number from page: " + request.page)
 
-    path = cache_path(request.book_name)
+    path = cache_path(request.real_book_name)
 
     filename = path + 'page_%04d.html' % page_nr
 
@@ -256,6 +295,7 @@ def do_status():
     hocr_queue = jobs['hocr_queue'].copy_items(get_last = True)
     hocr_djvu_queue = jobs['hocr_djvu_queue'].copy_items(get_last = True)
     hocr_tesseract_queue = jobs['hocr_tesseract_queue'].copy_items(get_last = True)
+    hocr_convert_queue = jobs['hocr_convert_queue'].copy_items(get_last = True)
 
     html = common_html.get_head('hOCR server status')
 
@@ -268,10 +308,14 @@ def do_status():
     html += html_for_queue(hocr_djvu_queue)
     html += u"<br/>%d hocr tesseract queued.<br/>" % len(hocr_tesseract_queue)
     html += html_for_queue(hocr_tesseract_queue)
+    html += u"<br/>%d hocr convert queued.<br/>" % len(hocr_convert_queue)
+    html += html_for_queue(hocr_convert_queue)
     html += u"<br/>%(number_of_get_job)d get since server start<br/>" % jobs
     html += u"<br/>%(number_of_hocr_job)d hocr since server start<br/>" % jobs
     html += u"<br/>%(number_of_hocr_djvu_job)d djvu hocr since server start<br/>" % jobs
     html += u"<br/>%(number_of_hocr_tesseract_job)d tesseract hocr since server start<br/>" % jobs
+    html += u"<br/>%(number_of_hocr_convert_job)d convert hocr since serverstart<br/>" % jobs
+
     html += u'</div></body></html>'
 
     return html
@@ -368,23 +412,27 @@ def default_jobs():
         'number_of_hocr_djvu_job' : 0,
         'hocr_tesseract_queue' : job_queue.JobQueue(),
         'number_of_hocr_tesseract_job' : 0,
+        'hocr_convert_queue' : job_queue.JobQueue(),
+        'number_of_hocr_convert_job' : 0,
         }
 
-if __name__ == "__main__":
-    # FIXME: all thread will inherit that and for thread started with Thread
-    # they'll inherit the signal handler even for those started before
-    # the signal handler is installed. FIXME: this is not true, there is
-    # another problem elsewhere
-    # qdel send a SIGUSR2 if -notify is used when starting the job.
-    #signal.signal(signal.SIGUSR2, on_exit)
-    try:
-        jobs = utils.load_obj("/home/phe/wshocr.jobs")
-    except:
-        jobs = default_jobs()
+# FIXME: all thread will inherit that and for thread started with Thread
+# they'll inherit the signal handler even for those started before
+# the signal handler is installed. FIXME: this is not true, there is
+# another problem elsewhere
+# qdel send a SIGUSR2 if -notify is used when starting the job.
+#signal.signal(signal.SIGUSR2, on_exit)
+try:
+    jobs = utils.load_obj("/home/phe/wshocr.jobs")
+except:
+    jobs = default_jobs()
 
+
+if __name__ == "__main__":
     try:
         thread.start_new_thread(job_thread, (jobs['get_queue'], do_get))
         thread.start_new_thread(job_thread, (jobs['hocr_queue'], do_hocr))
+        thread.start_new_thread(job_thread, (jobs['hocr_convert_queue'], do_convert))
         thread.start_new_thread(job_thread, (jobs['hocr_djvu_queue'], do_hocr_djvu))
         thread.start_new_thread(job_thread, (jobs['hocr_tesseract_queue'], do_hocr_tesseract))
         bot_listening()
