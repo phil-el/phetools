@@ -79,7 +79,7 @@ class SgeSubmit(threading.Thread):
                 job = self.pending_jobs.get()
                 self.running_jobs[job_name] = job
 
-            args = [ jsub, '-b', 'y', '-l', 'h_vmem=1280M', '-N',  job_name, '-o', log_name + '.out', '-e', log_name + '.err' ] + [ quote_arg(x) for x in job[0] ]
+            args = [ jsub, '-b', 'y', '-l', 'h_vmem=1280M', '-N',  job_name, '-o', log_name + '.out', '-e', log_name + '.err' , '-v', 'LANG=en_US.UTF-8' ] + [ quote_arg(x) for x in job[0] ]
             print args
             ls = subprocess.Popen(args, stdin=None, stdout=subprocess.PIPE, close_fds = True)
             print ls.stdout.read()
@@ -105,9 +105,10 @@ class SgeSubmit(threading.Thread):
 if __name__ == "__main__":
     import os
     try:
-        sge_submit = SgeSubmit('manual_hocr', 16)
+        sge_submit = SgeSubmit('manual_hocr', 24)
         sge_submit.start()
         lst = [
+
             ]
         for f in lst:
             job = ('python', os.path.expanduser('~/manual_hocr.py'), f, 'fr', 'slow')

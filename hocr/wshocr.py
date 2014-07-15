@@ -213,7 +213,7 @@ def do_convert(request):
 
     filename = tmp_dir + request.real_book_name
     # FIXME: this check doesn't seems to work?
-    if os.path.exists(filename[:-3] + "djvu"):
+    if os.path.exists(filename[:-3].encode('utf-8') + "djvu"):
         request.converted_book_name = request.real_book_name[:-3] + "djvu"
         jobs['number_of_hocr_tesseract_job'] += 1
         jobs['hocr_tesseract_queue'].put(request)
