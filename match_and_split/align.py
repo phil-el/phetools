@@ -79,7 +79,10 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix):
     output = ""
     is_poem = False
 
-    last_page = cached_text[number-1]
+    try:
+        last_page = cached_text[number-1]
+    except:
+        return ret_val(E_ERROR, "Unable to retrieve text layer for page: " + str(number))
 
     for pagenum in range(number, min(number + 1000, len(cached_text))):
 
