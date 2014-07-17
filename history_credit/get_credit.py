@@ -5,6 +5,7 @@ import os
 import sys
 sys.path.append(os.path.expanduser('~/wikisource'))
 import ws_namespaces as namespaces
+import db
 
 def default_userdict(count = 0):
     # credits are returned in a dict with user name associated with this value
@@ -177,7 +178,7 @@ def get_images_credit(cursor, images):
     images = [ x.replace(' ', '_') for x in images ]
     results = []
 
-    conn = create_conn('commons', 'wiki')
+    conn = db.create_conn(domain = 'commons', family = 'wiki')
     use_db(conn, 'commons', 'wiki')
     for r in get_images_credit_db(conn.cursor(), images):
         results.append(r[0])
@@ -189,7 +190,7 @@ def get_images_credit(cursor, images):
     return results
 
 def get_credit(domain, family, books, pages, images):
-    conn = create_conn(domain, family)
+    conn = db.create_conn(domain = domain, family = family)
     ns = get_source_ns(domain, family)
     cursor = use_db(conn, domain, family)
 
@@ -208,13 +209,6 @@ def get_credit(domain, family, books, pages, images):
         results[user_name]['count'] += 1
 
     return results
-
-def create_conn(domain, family):
-    conn_params = {
-        'read_default_file' : os.path.expanduser("~/replica.my.cnf"),
-        }
-    db_server = domain + family + '.labsdb'
-    return MySQLdb.connect(host = db_server, **conn_params)
 
 if __name__ == "__main__":
     domain = 'fr'

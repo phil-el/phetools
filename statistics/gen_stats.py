@@ -6,6 +6,7 @@ import time, sys
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_category import domain_urls as urls
 from common import decode_res, disambiguations
+import db
 
 # The domain name we care.
 all_domain = set([
@@ -14,20 +15,6 @@ all_domain = set([
     'id',  'it',  'la',  'ml',  'nl',  'no',  'pl',  'pt',
     'ru',  'sa',  'sl',  'sv',  'te',  'vec', 'vi',  'zh',
 ])
-
-def create_conn(domain, family):
-    import MySQLdb
-
-    conn_params = {
-        'read_default_file' : os.path.expanduser("~/replica.my.cnf"),
-        }
-    if domain in ["old", "-"]:
-        domain = 'sourceswiki'
-        family = ''
-    db_server = domain + family + '.labsdb'
-
-    return MySQLdb.connect(host = db_server, **conn_params)
-
 
 def catreq(cat, ns):
     return "select /* SLOW_OK */ count(cl_from) as num from categorylinks where cl_to='%s' and cl_from in (select page_id from page where page_namespace=%d)"%(cat,ns)
@@ -39,7 +26,7 @@ def get_stats(domains):
 
     for dom in domains:
         print dom
-        conn = create_conn(dom, 'wikisource')
+        conn = db.create_conn(domain = dom, family = 'wikisource')
         cursor = conn.cursor ()
 	ns = urls[dom][0]
         if dom!='old':
