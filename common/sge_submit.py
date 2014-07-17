@@ -24,7 +24,7 @@ def quote_arg(arg):
 
 # Intended to be used by SgeSumbit, not thread safe and polling throttle is
 # implemented in SgeSubmit class.
-class _SgePoll:
+class SgePoll:
     def __init__(self, job_base_name):
         self.qstat_poll = set()
         self.job_base_name = job_base_name
@@ -58,7 +58,7 @@ class SgeSubmit(threading.Thread):
         self.running_jobs = {}
         self._lock = threading.Lock()
         self.force_stop = False
-        self._sge_poll = _SgePoll(job_base_name)
+        self.sge_poll = SgePoll(job_base_name)
         self.job_base_name = job_base_name
         self.count = 0
         self.max_job = max_job
@@ -93,7 +93,7 @@ class SgeSubmit(threading.Thread):
         while True:
             if self.force_stop:
                 break
-            jobs = self._sge_poll.running_jobs()
+            jobs = self.sge_poll.running_jobs()
             with self._lock:
                 for name in self.running_jobs.keys():
                     if not name in jobs:
