@@ -46,7 +46,6 @@ div#content {
 	height: 5em;
 	background-color: white;
 	/* @embed */
-	background-image: url(images/page-fade.png);
 	background-position: bottom left;
 	background-repeat: repeat-x;
 }
@@ -125,7 +124,6 @@ div.vectorTabs {
 }
 div.vectorTabs {
 	/* @embed */
-	background-image: url(images/tab-break.png);
 	background-position: bottom left;
 	background-repeat: no-repeat;
 	padding-left: 1px;
@@ -154,7 +152,6 @@ div.vectorTabs ul li {
 	padding: 0;
 	background-color: #f3f3f3;
 	/* @embed */
-	background-image: url(images/tab-normal-fade.png);
 	background-position: bottom left;
 	background-repeat: repeat-x;
 	white-space: nowrap;
@@ -165,7 +162,6 @@ div.vectorTabs ul > li {
 }
 div.vectorTabs li.selected {
 	/* @embed */
-	background-image: url(images/tab-current-fade.png);
 }
 /* OVERRIDDEN BY COMPLIANT BROWSERS */
 div.vectorTabs li a {
@@ -199,7 +195,6 @@ div.vectorTabs span > a {
 div.vectorTabs span {
 	display: inline-block;
 	/* @embed */
-	background-image: url(images/tab-break.png);
 	background-position: bottom right;
 	background-repeat: no-repeat;
 }
@@ -218,14 +213,12 @@ div.vectorMenu {
 	direction: ltr;
 	float: left;
 	/* @embed */
-	background-image: url(images/arrow-down-icon.png);
 	background-position: 100% 60%;
 	background-repeat: no-repeat;
 	cursor: pointer;
 }
 div.vectorMenuFocus {
 	/* @embed */
-	background-image: url(images/arrow-down-focus-icon.png);
 	background-position: 100% 60%;
 }
 /* @noflip */
@@ -238,7 +231,6 @@ div#mw-head div.vectorMenu h3,
 div#mw-head div.vectorMenu h5 {
 	float: left;
 	/* @embed */
-	background-image: url(images/tab-break.png);
 	background-repeat: no-repeat;
 }
 /* This will be flipped - unlike the one above it */
@@ -271,7 +263,6 @@ div.vectorMenu h5 a {
 	height: 1.9em;
 	text-decoration: none;
 	/* @embed */
-	background-image: url(images/tab-break.png);
 	background-repeat: no-repeat;
 }
 /* This will be flipped - unlike the one above it */
@@ -388,7 +379,6 @@ div#simpleSearch {
 	color: black;
 	background-color: white;
 	/* @embed */
-	background-image: url(images/search-fade.png);
 	background-position: top left;
 	background-repeat: repeat-x;
 }
@@ -494,7 +484,6 @@ div#mw-panel div.portal div.body {
 	padding-top: 0.5em;
 	margin-left: 1.25em;
 	/* @embed */
-	background-image: url(images/portal-break.png);
 	background-repeat: no-repeat;
 	background-position: top left;
 }
@@ -593,7 +582,6 @@ div#footer #footer-places li {
 	margin: 0 !important;
 	padding: 0 !important;
 	/* @embed */
-	background-image: url(images/preferences-break.png);
 	background-position: bottom left;
 	background-repeat: no-repeat;
 }
@@ -608,7 +596,6 @@ div#footer #footer-places li {
 		list-style-type: none;
 		list-style-image: none;
 		/* @embed */
-		background-image: url(images/preferences-break.png);
 		background-position: bottom right;
 		background-repeat: no-repeat;
 	}
@@ -632,7 +619,6 @@ div#footer #footer-places li {
 	}
 	#preftoc li.selected a {
 		/* @embed */
-		background-image: url(images/preferences-fade.png);
 		background-position: bottom;
 		background-repeat: repeat-x;
 		color: #333;
@@ -695,7 +681,6 @@ div#content {
 ul {
 	list-style-type: disc;
 	/* @embed */
-	list-style-image: url(images/bullet-icon.png);
 }
 
 pre, .mw-code {
@@ -715,37 +700,31 @@ pre, .mw-code {
 div#content a.external,
 div#content a.external[href ^="gopher://"] {
 	/* @embed */
-	background: url(images/external-link-ltr-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href ^="https://"],
 .link-https {
 	/* @embed */
-	background: url(images/lock-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href ^="mailto:"],
 .link-mailto {
 	/* @embed */
-	background: url(images/mail-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href ^="news:"] {
 	/* @embed */
-	background: url(images/news-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href ^="ftp://"],
 .link-ftp {
 	/* @embed */
-	background: url(images/file-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href ^="irc://"],
 div#content a.external[href ^="ircs://"],
 .link-irc {
 	/* @embed */
-	background: url(images/talk-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href $=".ogg"], div#content a.external[href $=".OGG"],
@@ -756,7 +735,6 @@ div#content a.external[href $=".wav"], div#content a.external[href $=".WAV"],
 div#content a.external[href $=".wma"], div#content a.external[href $=".WMA"],
 .link-audio {
 	/* @embed */
-	background: url(images/audio-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href $=".ogm"], div#content a.external[href $=".OGM"],
@@ -765,7 +743,6 @@ div#content a.external[href $=".mpeg"], div#content a.external[href $=".MPEG"],
 div#content a.external[href $=".mpg"], div#content a.external[href $=".MPG"],
 .link-video {
 	/* @embed */
-	background: url(images/video-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 div#content a.external[href $=".pdf"], div#content a.external[href $=".PDF"],
@@ -773,7 +750,6 @@ div#content a.external[href *=".pdf#"], div#content a.external[href *=".PDF#"],
 div#content a.external[href *=".pdf?"], div#content a.external[href *=".PDF?"],
 .link-document {
 	/* @embed */
-	background: url(images/document-icon.png) center right no-repeat;
 	padding-right: 13px;
 }
 
@@ -782,7 +758,6 @@ div#content a.external[href *=".pdf?"], div#content a.external[href *=".PDF?"],
 #pt-anonuserpage,
 #pt-login {
 	/* @embed */
-	background: url(images/user-icon.png) left top no-repeat;
 	padding-left: 15px !important;
 	text-transform: none;
 }
@@ -835,7 +810,6 @@ div#bodyContent {
 	height: 0;
 	overflow: hidden;
 	/* @embed */
-	background-image: url(images/watch-icons.png);
 }
 #ca-unwatch.icon a {
 	background-position: -43px 60%;
@@ -854,7 +828,6 @@ div#bodyContent {
 #ca-unwatch.icon a.loading,
 #ca-watch.icon a.loading {
 	/* @embed */
-	background-image: url(images/watch-icon-loading.gif);
 	background-position: 5px 60%;
 }
 #ca-unwatch.icon a span,
@@ -863,7 +836,6 @@ div#bodyContent {
 }
 div.vectorTabs ul {
 	/* @embed */
-	background-image: url(images/tab-break.png);
 	background-position: right bottom;
 	background-repeat: no-repeat;
 }
