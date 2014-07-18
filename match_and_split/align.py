@@ -232,6 +232,8 @@ def get_djvu(cache, mysite, djvuname, check_timestamp = False):
             pass
         if obj:
             cache.set(cache_filename, obj)
+        else:
+            return None
     else:
         if check_timestamp:
             filepage = get_filepage(mysite, djvuname)
