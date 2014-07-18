@@ -6,6 +6,7 @@ import time, sys
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_category import domain_urls as urls
 from common import decode_res, disambiguations
+sys.path.append(os.path.expanduser('~/phe/common'))
 import db
 
 # The domain name we care.
