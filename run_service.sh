@@ -2,6 +2,8 @@
 
 PYTHONPATH=$HOME/phe/ocr:$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2:/shared/pywikipedia/core/scripts
 LOG_DIR=/data/project/phetools/log/ # + service_name(.out|.err)
+# Some host don't define $LANG
+UTF8_LANG=en_US.UTF-8
 
 declare -A env_var memory cmdline
 
@@ -41,6 +43,7 @@ start() {
     if [ ${env_var[$1]+_} ]; then
 	cmd+="-v ${env_var[$1]} "
     fi
+    cmd+="-v $UTF8_LANG "
     cmd+="-l h_vmem=${memory[$1]} -N $1 ${cmdline[$1]}"
     $cmd
 
