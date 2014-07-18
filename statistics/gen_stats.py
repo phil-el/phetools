@@ -215,10 +215,10 @@ if __name__ == "__main__":
     keys.sort(lambda x,y: cmp(res[y][3]+2*res[y][4],res[x][3]+2*res[x][4]))
 
     if opt_write:
-        write_templates(res)
         f = open(os.path.expanduser("~/public_html/data/new_stats.py"),"a")
         f.write(repr( (time.time() , res ) ) +"\n")
         f.close()
+        write_templates(res)
         import graph
         graph.main()
     else:
