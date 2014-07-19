@@ -162,7 +162,7 @@ def query_params(environ):
     return rdict
 
 def handle_query(params, start_response):
-    print params
+    print >> sys.stderr, params
     # FIXME: handle ill formed request (400)
     result = get_credit(domain = params['lang'],
                         family = 'wikisource',
@@ -205,7 +205,6 @@ def myapp(environ, start_response):
 
 if __name__ == "__main__":
     sys.stderr = open(os.path.expanduser('~/log/credits.err'), 'a')
-    sys.stdout = open(os.path.expanduser('~/log/credits.out'), 'a')
 
     from flup.server.cgi import WSGIServer
     try:
