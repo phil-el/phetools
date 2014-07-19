@@ -3,6 +3,7 @@
 import sys
 import types
 import json
+import os
 
 from get_credit import get_credit
 
@@ -158,11 +159,10 @@ def query_params(environ):
     rdict['page'] = split_param(rdict['page'])
     rdict['image'] = split_param(rdict['image'])
 
-    #print >> sys.stderr, str(rdict)
-
     return rdict
 
 def handle_query(params, start_response):
+    print params
     # FIXME: handle ill formed request (400)
     result = get_credit(domain = params['lang'],
                         family = 'wikisource',
@@ -204,6 +204,9 @@ def myapp(environ, start_response):
         return handle_status(start_response)
 
 if __name__ == "__main__":
+    sys.stderr = open(os.path.expanduser('~/log/credits.err'), 'a')
+    sys.stdout = open(os.path.expanduser('~/log/credits.out'), 'a')
+
     from flup.server.cgi import WSGIServer
     try:
         WSGIServer(myapp).run()
