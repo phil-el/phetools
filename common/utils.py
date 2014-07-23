@@ -169,3 +169,35 @@ def print_traceback(*kwargs):
     except:
         print >> sys.stderr, "ERROR: An exception occured during traceback"
         raise
+
+# File can be written during reading but it's assumed write are line buffered
+# or caller must ignore the first line because it can be a partial line.
+def readline_backward(filename, buf_size=8192):
+    with open(filename) as fh:
+        offset = 0
+        partial_line = None
+        fh.seek(0, os.SEEK_END)
+        total_size = left_size = fh.tell()
+        # Ensure we do aligned read on buf_size.
+        block_size = total_size % buf_size
+        first = True
+        while left_size:
+            offset = min(total_size, offset + block_size)
+            fh.seek(total_size - offset, os.SEEK_SET)
+            buf = fh.read(min(left_size, block_size))
+            left_size = max(0, left_size - block_size)
+            lines = buf.split('\n')
+            if first:
+                # The first block can end with a \n, remove it else
+                # we will get an empty line at start of output.
+                if not lines[-1]:
+                    lines = lines[:-1]
+                # After the first block read the full buffer size.
+                block_size = buf_size
+            first = False
+            if partial_line:
+                lines[-1] += partial_line
+            partial_line = lines[0]
+            for index in range(len(lines) - 1, 0, -1):
+                yield lines[index]
+        yield partial_line
