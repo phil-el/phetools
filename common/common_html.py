@@ -7,7 +7,11 @@ html_head = u"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>%s</title>
-  </head>"""
+  %s</head>"""
 
-def get_head(title):
-    return html_head % title
+def get_head(title, css = None):
+    if not css:
+        css = ''
+    else:
+        css = '<link href="%s" rel="stylesheet" type="text/css">' % css
+    return html_head % (title, css)
