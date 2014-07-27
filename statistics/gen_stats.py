@@ -28,13 +28,8 @@ def get_stats(domains):
     for dom in domains:
         print dom
         conn = db.create_conn(domain = dom, family = 'wikisource')
-        cursor = conn.cursor ()
+        cursor = db.use_db(conn, domain = dom, family = 'wikisource')
 	ns = urls[dom][0]
-        if dom!='old':
-            q="use "+dom+"wikisource_p;"
-        else:
-            q="use sourceswiki_p"
-	cursor.execute(q)
 
 	q="select /* SLOW_OK */ count(page_id) as num from page where page_namespace=%d and page_is_redirect=0"%ns
 	cursor.execute(q)
@@ -138,6 +133,10 @@ def write_templates(res):
     import pywikibot
 
     for dom in ['fr','en', 'bn']:
+        if dom == 'bn':
+            # https://bugzilla.wikimedia.org/show_bug.cgi?id=68215 and
+            # https://bugzilla.wikimedia.org/show_bug.cgi?id=67488
+            continue
 	if dom=='fr':
 	    sep=' '
 	elif dom == 'en':

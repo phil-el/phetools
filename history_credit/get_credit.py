@@ -12,13 +12,6 @@ def default_userdict(count = 0):
     # credits are returned in a dict with user name associated with this value
     return { 'count' : count, 'flags' : [] }
 
-def database_name(domain, family):
-    if family == 'wikisource' and domain in [ 'old', 'www' ]:
-        dbname = 'sourceswiki_p'
-    else:
-        dbname = domain + family + '_p'
-    return dbname
-
 def get_source_ns(domain, family):
     return namespaces.namespaces[family][domain]
 
@@ -27,12 +20,6 @@ def get_index_ns(domain, family):
 
 def get_page_ns(domain, family):
     return namespaces.page[family][domain]
-
-def use_db(conn, domain, family):
-    q = 'use ' + database_name(domain, family)
-    cursor = conn.cursor()
-    cursor.execute(q)
-    return cursor
 
 def prefix_index(cursor, start, ns, max_count = 5000):
     count = 0
@@ -180,9 +167,10 @@ def get_images_credit(cursor, images):
     results = []
 
     conn = db.create_conn(domain = 'commons', family = 'wiki')
-    use_db(conn, 'commons', 'wiki')
-    for r in get_images_credit_db(conn.cursor(), images):
+    common_cursor = db.use_db(conn, 'commons', 'wiki')
+    for r in get_images_credit_db(common_cursor, images):
         results.append(r[0])
+    common_cursor.close()
     conn.close()
 
     for r in get_images_credit_db(cursor, images):
@@ -193,7 +181,7 @@ def get_images_credit(cursor, images):
 def get_credit(domain, family, books, pages, images):
     conn = db.create_conn(domain = domain, family = family)
     ns = get_source_ns(domain, family)
-    cursor = use_db(conn, domain, family)
+    cursor = db.use_db(conn, domain, family)
 
     books_name = []
     results = {}
@@ -208,6 +196,9 @@ def get_credit(domain, family, books, pages, images):
     for user_name in get_images_credit(cursor, images):
         results.setdefault(user_name, default_userdict())
         results[user_name]['count'] += 1
+
+    conn.close()
+    cursor.close()
 
     return results
 

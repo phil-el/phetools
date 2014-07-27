@@ -22,6 +22,19 @@ def db_prefix():
         _db_prefix = re.search(".*user='(.*)'.*", text).group(1) + '__'
     return _db_prefix
 
+def database_name(domain, family):
+    if family == 'wikisource' and domain in [ 'old', 'www' ]:
+        dbname = 'sourceswiki_p'
+    else:
+        dbname = domain + family + '_p'
+    return dbname
+
+def use_db(conn, domain, family):
+    q = 'use ' + database_name(domain, family)
+    cursor = conn.cursor()
+    cursor.execute(q)
+    return cursor
+
 def create_conn(**kwargs):
     conn_params = {
         'read_default_file' : replica_cnf,
