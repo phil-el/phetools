@@ -12,7 +12,7 @@ import resource
 djvulibre_path = ''
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<30))
+    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
     resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
     resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
 

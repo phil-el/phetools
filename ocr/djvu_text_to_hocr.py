@@ -283,9 +283,9 @@ def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<30))
+    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
     resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
-    resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
+    resource.setrlimit(resource.RLIMIT_CPU, (60*60, 60*60))
 
 def do_parse(opt, filename):
 
@@ -303,8 +303,11 @@ def do_parse(opt, filename):
 
             filename = opt.out_dir + 'page_%04d.html' % page_nr
 
-            text = page.get_hocr_html().encode('utf-8')
-            utils.compress_file_data(filename, text, 'bzip2')
+            if opt.compress:
+                text = page.get_hocr_html().encode('utf-8')
+                utils.compress_file_data(filename, text, opt.compress)
+            else:
+                utils.write_file(filename, text)
 
             elem.clear()
             page_nr += 1
@@ -317,7 +320,7 @@ def do_parse(opt, filename):
 
 def parse(opt, filename):
     try:
-        ret_code = do_parse(opt, filename.encode('utf-8'))
+        ret_code = do_parse(opt, filename)
     except Exception:
         utils.print_traceback(filename)
         ret_code = -1
@@ -327,7 +330,7 @@ def parse(opt, filename):
 def default_options():
     class Options:
         def __init__(self):
-            self.compress = None
+            self.compress = 'bzip2'
             self.out_dir = './'
             self.silent = False
 
@@ -335,7 +338,7 @@ def default_options():
 
 # Kludgy.
 def has_word_bbox(filename):
-    ls = subprocess.Popen([ djvutxt, filename, '--detail=char'], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([ djvutxt, filename, '--detail=word'], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     for line in ls.stdout:
         if re.search('\(word \d+ \d+ \d+ \d+ ".*"', line):
             ls.kill()
