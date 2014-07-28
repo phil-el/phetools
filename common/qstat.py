@@ -34,7 +34,7 @@ class Qstat:
         # as we only need to get the queued job name list.
         self.qstat_args = [ qstat, '-xml' ]
 
-    def qstat(self):
+    def running_jobs(self):
         self._poll()
         return self.qstat_poll
 
