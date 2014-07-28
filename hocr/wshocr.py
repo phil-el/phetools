@@ -66,13 +66,15 @@ def cache_path(book_name):
     if type(book_name) == type(u''):
         book_name = book_name.encode('utf-8')
 
-    base_dir  = os.path.expanduser('~/cache/hocr/') + '%s/%s/%s/%s/'
+    book_name = book_name.replace(' ', '_')
+
+    base_dir  = os.path.expanduser('~/cache/hocr/') + '%s/%s/%s/'
 
     h = hashlib.md5()
     h.update(book_name)
     h = h.hexdigest()
 
-    return base_dir % (h[0:2], h[2:4], h[4:6], h[6:])
+    return base_dir % (h[0:2], h[2:4], h[4:])
 
 def ret_val(error, text):
     if error:
