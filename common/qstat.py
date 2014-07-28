@@ -7,49 +7,38 @@
 #
 # @author Philippe Elie
 
-import job_queue
-import threading
-import time
 import subprocess
 import xml.etree.ElementTree as etree
-import os
+import utils
+import sys
 
 qstat = '/usr/bin/qstat'
-jsub = '/usr/bin/jsub'
-# base dir for the log, the real log dir is log_dir + job_base_name + '/'
-log_dir = os.path.expanduser('~/log/sge/')
 
-def quote_arg(arg):
-    return "'" + arg.replace("'", r"'\''") + "'"
-
-# Intended to be used by SgeSumbit, not thread safe and polling throttle is
-# implemented in SgeSubmit class.
-class Qstat:
-    def __init__(self, job_base_name):
-        self.qstat_poll = set()
-        self.job_base_name = job_base_name
-        # Passing "-j name*" to qstat make output much more verbose so jobs
-        # filtering is done on a simple qstat -xml. FIXME: check the output
-        # format of qstat, it'll nice to get a very short output with -xml,
-        # as we only need to get the queued job name list.
-        self.qstat_args = [ qstat, '-xml' ]
-
-    def running_jobs(self):
-        self._poll()
-        return self.qstat_poll
-
-    def _poll(self):
-        self.qstat_poll.clear()
-        ls = subprocess.Popen(self.qstat_args, stdout=subprocess.PIPE, close_fds = True)
+# Return an empty set if qstat fail.
+def running_jobs(job_base_name):
+    jobs = set()
+    try:
+        ls = subprocess.Popen([ qstat, '-xml' ], stdout=subprocess.PIPE,
+                              close_fds = True)
         for event, elem in etree.iterparse(ls.stdout):
             if event == 'end' and elem.tag == 'job_list':
                 job_id = elem.find('JB_job_number').text
                 job_name = elem.find('JB_name').text
-                if job_name.startswith(self.job_base_name):
-                    self.qstat_poll.add(int(job_id))
+                if job_name.startswith(job_base_name):
+                    jobs.add(int(job_id))
                 elem.clear()
 
         ls.wait()
+        if ls.returncode:
+            print >> sys.stderr, 'qstat failed', ls.returncode
+            print >> sys.stderr, 'RECOVER'
+            jobs = set()
+    except:
+        utils.print_traceback()
+        print >> sys.stderr, 'RECOVER'
+        jobs = set()
+
+    return jobs
 
 if __name__ == "__main__":
-    print Qstat('').qstat()
+    print running_jobs('')
