@@ -19,7 +19,7 @@ gsdjvu = os.path.expanduser('~/root/gsdjvu/bin/gs')
 def setrlimits():
     resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
     resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
-    resource.setrlimit(resource.RLIMIT_CPU, (60*60, 60*60))
+    resource.setrlimit(resource.RLIMIT_CPU, (2*60*60, 2*60*60))
 
 def pdf_to_djvu(in_file):
 
