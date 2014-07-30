@@ -12,8 +12,9 @@ import resource
 djvulibre_path = ''
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
-    resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
+    mega = 1 << 20
+    resource.setrlimit(resource.RLIMIT_AS, (768*mega, 768*mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
     resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
 
 # FIXME: all read/write must be protected against EINTR
@@ -74,9 +75,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
     if type(filename) == type(u''):
         filename = filename.encode('utf-8')
 
-    fd = open(os.path.expanduser('~/log/tesseract.out'), 'a')
-    print >> fd, "Starting to process:", filename
-    fd.close()
+    print "Starting to process:", filename
 
     if not opt.out_dir.endswith('/'):
         opt.out_dir += '/'

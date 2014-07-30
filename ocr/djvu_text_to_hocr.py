@@ -283,9 +283,10 @@ def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
-    resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
-    resource.setrlimit(resource.RLIMIT_CPU, (60*60, 60*60))
+    mega = 1 << 20
+    resource.setrlimit(resource.RLIMIT_AS, (768*mega, 768*mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (1*60*60, 1*60*60))
 
 def do_parse(opt, filename):
 

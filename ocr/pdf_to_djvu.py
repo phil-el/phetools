@@ -17,9 +17,10 @@ djvulibre_path = ''
 gsdjvu = os.path.expanduser('~/root/gsdjvu/bin/gs')
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
-    resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
-    resource.setrlimit(resource.RLIMIT_CPU, (2*60*60, 2*60*60))
+    mega = 1 << 20
+    resource.setrlimit(resource.RLIMIT_AS, (1024*mega, 1024*mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (5*60*60, 5*60*60))
 
 def pdf_to_djvu(in_file):
 

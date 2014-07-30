@@ -27,20 +27,20 @@ tesseract_path = os.path.expanduser('~/root/bin/tesseract')
 tesseract_data_prefix = '/usr/share/tesseract-ocr'
 
 def setrlimits():
-    resource.setrlimit(resource.RLIMIT_AS, (1<<29, 1<<29))
-    resource.setrlimit(resource.RLIMIT_CORE, (1<<27, 1<<27))
-    resource.setrlimit(resource.RLIMIT_CPU, (10*60, 15*60))
+    mega = 1 << 20
+    resource.setrlimit(resource.RLIMIT_AS, (768*mega, 768*mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (60*60, 60*60))
 
 def ocr(filename, out_basename, lang, config = ''):
     if tesseract_data_prefix:
         os.environ['TESSDATA_PREFIX'] = tesseract_data_prefix
-    stderr = open(os.path.expanduser("~/log/tesseract.err"), "a")
-    ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, stderr=stderr, preexec_fn=setrlimits, close_fds = True)
+
+    ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     text = utils.safe_read(ls.stdout)
     if text:
         print text,
     ls.wait()
-    stderr.close()
 
     if config == '':
         out_filename = out_basename + ".txt"
