@@ -62,7 +62,7 @@ class Request:
         return date_s(self.start_time) + ' ' + self.user + ' ' + self.lang + ' ' + self.real_book_name + '<br/>'
 
 
-def cache_path(book_name):
+def cache_path(book_name, lang):
     if type(book_name) == type(u''):
         book_name = book_name.encode('utf-8')
 
@@ -71,7 +71,7 @@ def cache_path(book_name):
     base_dir  = os.path.expanduser('~/cache/hocr/') + '%s/%s/%s/'
 
     h = hashlib.md5()
-    h.update(book_name)
+    h.update(book_name + lang)
     h = h.hexdigest()
 
     return base_dir % (h[0:2], h[2:4], h[4:])
@@ -111,7 +111,7 @@ def check_and_upload(url, filename, sha1):
 #  1 data exist and are uptodate
 # if it return 0 the file is uploaded if it not already exists
 def is_uptodate(request):
-    path = cache_path(request.real_book_name)
+    path = cache_path(request.real_book_name, request.lang)
 
     try:
         site = pywikibot.getSite(code = request.lang, fam = 'wikisource')
@@ -134,7 +134,7 @@ def is_uptodate(request):
     return 0
 
 def do_hocr_djvu(request):
-    path = cache_path(request.real_book_name)
+    path = cache_path(request.real_book_name, request.lang)
     options = djvu_text_to_hocr.default_options()
     options.compress = 'bzip2'
     options.out_dir = path
@@ -169,7 +169,7 @@ def do_hocr_tesseract(request):
 
     request.start_time = time.time()
 
-    path = cache_path(request.real_book_name)
+    path = cache_path(request.real_book_name, request.lang)
     filename = tmp_dir + request.converted_book_name
 
     options = ocr_djvu.default_options()
@@ -246,7 +246,7 @@ def do_hocr(request):
     request.conn = None
     request.tools = None
 
-    path = cache_path(request.real_book_name)
+    path = cache_path(request.real_book_name, request.lang)
 
     if not request.real_book_name.endswith(u'.djvu'):
         jobs['number_of_hocr_convert_job'] += 1
@@ -270,7 +270,7 @@ def do_get(request):
     except:
         return ret_val(E_ERROR, u"unable to extract page number from page: " + request.page)
 
-    path = cache_path(request.real_book_name)
+    path = cache_path(request.real_book_name, request.lang)
 
     filename = path + 'page_%04d.html' % page_nr
 
