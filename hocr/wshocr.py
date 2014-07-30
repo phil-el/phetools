@@ -66,6 +66,9 @@ def cache_path(book_name, lang):
     if type(book_name) == type(u''):
         book_name = book_name.encode('utf-8')
 
+    if type(lang) == type(u''):
+        lang = lang.encode('utf-8')
+
     book_name = book_name.replace(' ', '_')
 
     base_dir  = os.path.expanduser('~/cache/hocr/') + '%s/%s/%s/'
