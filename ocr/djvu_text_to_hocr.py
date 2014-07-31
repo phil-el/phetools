@@ -284,7 +284,7 @@ def parse_page(page, elem, page_nr):
 
 def setrlimits():
     mega = 1 << 20
-    resource.setrlimit(resource.RLIMIT_AS, (768*mega, 768*mega))
+    resource.setrlimit(resource.RLIMIT_AS, (1024*mega, 1024*mega))
     resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
     resource.setrlimit(resource.RLIMIT_CPU, (1*60*60, 1*60*60))
 
