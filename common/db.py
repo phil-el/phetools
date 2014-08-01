@@ -29,9 +29,9 @@ def database_name(domain, family):
         dbname = domain + family + '_p'
     return dbname
 
-def use_db(conn, domain, family):
+def use_db(conn, domain, family, cursor_class = None):
     q = 'use ' + database_name(domain, family)
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_class)
     cursor.execute(q)
     return cursor
 
