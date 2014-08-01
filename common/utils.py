@@ -60,6 +60,7 @@ def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
     retry = 0
     max_retry = min(max(1, max_retry), 5)
     ok = False
+    url = urllib.quote(url, safe=':/%')
     while not ok and retry < max_retry:
         try:
             opener = url_opener()
