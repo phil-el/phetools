@@ -56,7 +56,7 @@ def url_opener():
     opener.addheaders = [('User-agent', 'MW_phetools')]
     return opener
 
-def copy_file_from_url(url, out_file, max_retry = 4):
+def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
     retry = 0
     max_retry = min(max(1, max_retry), 5)
     ok = False
@@ -72,7 +72,15 @@ def copy_file_from_url(url, out_file, max_retry = 4):
                     fd_out.write(data)
             fd_in.close()
             fd_out.close()
-            ok = True
+            if expect_sha1:
+                if sha1(out_file) != expect_sha1:
+                    retry += 1
+                    if retry < max_retry:
+                        time.sleep(60*(retry << 1))
+                else:
+                    ok = True
+            else:
+                ok = True
         except Exception:
             print_traceback("upload error:", url, out_file)
             if os.path.exists(out_file):
