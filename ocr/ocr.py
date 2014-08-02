@@ -48,6 +48,9 @@ def ocr(filename, out_basename, lang, config = ''):
         out_filename = out_basename + ".html"
 
     if not os.path.exists(out_filename):
+        # in case returncode == 0
+        print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
+
         fd = open(out_filename, 'w')
         fd.write('An error occurred during ocr processing: '  + filename)
         fd.close()

@@ -24,7 +24,7 @@ def get_nr_pages_djvu(filename):
     text = utils.safe_read(ls.stdout)
     ls.wait()
     if ls.returncode != 0:
-        print "Error: djvused fail to exec", ls.returncode
+        print >> sys.stderr, "Error: djvused fail to exec", ls.returncode
         return None
     return int(text)
 
