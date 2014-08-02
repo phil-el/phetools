@@ -18,7 +18,7 @@ gsdjvu = os.path.expanduser('~/root/gsdjvu/bin/gs')
 
 def setrlimits():
     mega = 1 << 20
-    resource.setrlimit(resource.RLIMIT_AS, (1024*mega, 1024*mega))
+    resource.setrlimit(resource.RLIMIT_AS, (1536*mega, 1536*mega))
     resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
     resource.setrlimit(resource.RLIMIT_CPU, (5*60*60, 5*60*60))
 
