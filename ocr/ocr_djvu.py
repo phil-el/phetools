@@ -8,6 +8,7 @@ import utils
 import errno
 import subprocess
 import resource
+import re
 
 djvulibre_path = ''
 
@@ -17,7 +18,6 @@ def setrlimits():
     resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
     resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
 
-# FIXME: all read/write must be protected against EINTR
 def get_nr_pages_djvu(filename):
     djvused = djvulibre_path + 'djvused'
     ls = subprocess.Popen([ djvused, "-e", "n", filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
@@ -28,10 +28,37 @@ def get_nr_pages_djvu(filename):
         return None
     return int(text)
 
+def image_size(page_nr, filename):
+    djvused = djvulibre_path + 'djvused'
+    ls = subprocess.Popen([ djvused, "-e", "select %d; size" % page_nr, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    text = utils.safe_read(ls.stdout)
+    ls.wait()
+    if ls.returncode != 0:
+        print >> sys.stderr, "Error: djvused fail to exec", ls.returncode
+        return None
+
+    match = re.search('width=(\d+) height=(\d+)', text)
+    return int(match.group(1)), int(match.group(1))
+
 def extract_image(opt, page_nr, filename):
+    try:
+        width, height = image_size(page_nr, filename)
+
+        subsample = 1
+        while (width*height) / subsample > (1 << 20) * 50:
+            subsample += 1
+
+        subsample = min(subsample, 12)
+    except Exception:
+        utils.print_traceback("Unable to get image size, subsample=1", filename)
+        subsample = 1
+
+    if subsample != 1:
+        print "subsample", subsample
+
     tiff_name = opt.out_dir + 'page_%04d.tif' % page_nr
     ddjvu = djvulibre_path + 'ddjvu'
-    ls = subprocess.Popen([ ddjvu, "-format=tiff", "-page=%d" % page_nr, filename, tiff_name], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([ ddjvu, "-format=tiff", "-page=%d" % page_nr, "-subsample=%d" % subsample, filename, tiff_name], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     text = utils.safe_read(ls.stdout)
     if text:
         print text
