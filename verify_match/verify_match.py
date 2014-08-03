@@ -89,6 +89,8 @@ def remove_template_pass(text):
     text = re.sub(u'{{[aA]linéa\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[dD]\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[dD]roite\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
+    text = re.sub(u'{{[gG]\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
+    text = re.sub(u'{{[gG]auche\|([^{}|]*)(\|[^{}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[tT]iret2\|[^{}]*?\|([^{}]*?)}}', u'\\1', text)
     text = re.sub(u'{{[Ll]ang\|[^{}]*?\|([^{}]*?)}}', u'\\1', text)
     text = re.sub(u'{{[tT]aille\|([^{}]*?)\|[^{}]*?}}', u'\\1', text)
