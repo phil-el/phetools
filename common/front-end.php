@@ -21,10 +21,15 @@ function send_request($params, $server) {
 	$port = $data[1];
 
 	$conn = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+
+	$timeout = array("sec"=>600, "usec"=>0);
+	socket_set_option($conn, SOL_SOCKET, SO_RCVTIMEO, $timeout);
+	socket_set_option($conn, SOL_SOCKET, SO_SNDTIMEO, $timeout);
+
 	if (socket_connect($conn, $server_name, $port)) {
 		$res = '';
 		$line = json_encode($params);
-		socket_write($conn, $line, strlen($line)); 
+		socket_write($conn, $line, strlen($line));
 		while ($out = socket_read($conn, 1024)) {
 			$res .= $out;
 		}
