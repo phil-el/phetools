@@ -5,6 +5,7 @@ import json
 import os
 sys.path.append(os.path.expanduser('~/phe/common'))
 import serialize
+import random
 
 from get_credit import get_credit
 
@@ -51,7 +52,10 @@ def query_params(environ):
     return rdict
 
 def handle_query(params, start_response):
-    print >> sys.stderr, params
+    # Avoid to flood log.
+    if not random.randint(0, 1000) % 1000:
+        print >> sys.stderr, params
+
     # FIXME: handle ill formed request (400)
     result = get_credit(domain = params['lang'],
                         family = 'wikisource',
