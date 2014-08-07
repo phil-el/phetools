@@ -9,18 +9,19 @@ import utils
 import sys
 
 tesseract_languages = {
-        'bn':'ben',
-        'fr':"fra",
-        'he': 'heb',
-        'en':"eng",
-        'de':"deu",
-        'de-f':"deu-frak",
-        'la':"ita",
-        'is':'isl', # needs tess 3.02
-        'it':"ita",
-        'es':"spa",
-        'pt':"por",
-        'ru':"rus",
+        'bn' : 'ben',
+        'fr' : 'fra',
+        'he' : 'heb',
+        'en' : 'eng',
+        'de' : 'deu',
+        'de-f':'deu-frak',
+        'la' : 'ita',
+        'is' : 'isl', # needs tess 3.02
+        'it' : 'ita',
+        'es' : 'spa',
+        'pt' : 'por',
+        'ru' : 'rus',
+        'be' : 'bel',
         }
 
 tesseract_path = os.path.expanduser('~/root/bin/tesseract')
