@@ -53,7 +53,7 @@ def query_params(environ):
 
 def handle_query(params, start_response):
     # Avoid to flood log.
-    if not random.randint(0, 1000) % 1000:
+    if not random.randint(0, 100) % 100:
         print >> sys.stderr, params
 
     # FIXME: handle ill formed request (400)
