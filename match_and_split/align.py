@@ -9,6 +9,7 @@ import difflib
 import pywikibot
 import urllib
 import utils
+import subprocess
 
 def match_page(target, source):
     s = difflib.SequenceMatcher()
@@ -32,33 +33,28 @@ def unquote_text_from_djvu(text):
     text = text.rstrip(u'\n')
     return text
 
-def quote_filename(filename):
-    result = u''
-    for ch in filename:
-        if ch in u";&|><*?`$(){}[]!#'\"":
-            result += u"\\"
-        result += ch
-    return result
-
 def extract_djvu_text(url, filename, sha1):
     print "extracting text layer"
-    utils.copy_file_from_url(url, filename)
-    if sha1 != utils.sha1(filename):
-        print "upload failure, sha1 mismatch:", filename.encode('utf-8')
-        return None
+
+    if type(filename) == type(u''):
+        filename = filename.encode('utf-8')
+
+    utils.copy_file_from_url(url, filename, sha1)
+
     data = []
+    # GTK app are very touchy
+    os.environ['LANG'] = 'en_US.UTF8'
     # FIXME: check return code
-    cmdline = "djvutxt -detail=page %s" % quote_filename(filename).encode('utf-8')
-    print cmdline
-    fd = os.popen(cmdline)
-    text = fd.read()
+    ls = subprocess.Popen([ 'djvutxt', filename, '--detail=page'], stdout=subprocess.PIPE, close_fds = True)
+    text = ls.stdout.read()
+    ls.wait()
     for t in re.finditer(u'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
         t = unicode(t.group(1), 'utf-8', 'replace')
         t = re.sub(u'^page \d+ \d+ \d+ \d+[ \n]+"', u'', t)
         t = re.sub(u'"[ ]*$', u'', t)
         t = unquote_text_from_djvu(t)
         data.append(t)
-    fd.close()
+
     os.remove(filename)
 
     return sha1, data
@@ -204,9 +200,18 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix):
 
 def get_filepage(site, djvuname):
     try:
-        return pywikibot.ImagePage(site, "File:" + djvuname)
+        page = pywikibot.ImagePage(site, "File:" + djvuname)
     except pywikibot.NoPage:
-        return None
+        page = None
+
+    if page:
+        try:
+            url = page.fileUrl()
+        except:
+            site = pywikibot.getSite(code = 'commons', fam = 'commons')
+            page = pywikibot.ImagePage(site, "File:" + djvuname)
+
+    return page
 
 # It's possible to get a name collision if two different wiki have local
 # file with the same name but different contents. In this case the cache will
@@ -229,7 +234,8 @@ def get_djvu(cache, mysite, djvuname, check_timestamp = False):
             url = filepage.fileUrl()
             obj = extract_djvu_text(url, djvuname, filepage.getFileSHA1Sum())
         except:
-            pass
+            utils.print_traceback("extract_djvu_text() fail")
+            obj = None
         if obj:
             cache.set(cache_filename, obj)
         else:
