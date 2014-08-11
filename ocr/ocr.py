@@ -10,6 +10,8 @@ import sys
 
 tesseract_languages = {
         'bn' : 'ben',
+        'da' : 'dan',
+        'et' : 'est',
         'fr' : 'fra',
         'he' : 'heb',
         'en' : 'eng',
@@ -22,6 +24,14 @@ tesseract_languages = {
         'pt' : 'por',
         'ru' : 'rus',
         'be' : 'bel',
+        'ca' : 'cat',
+        'eo' : 'epo',
+        'hr' : 'hrv',
+        'hu' : 'hun',
+        'sv' : 'swe',
+        'no' : 'nor',
+        'pl' : 'pol',
+        'id' : 'ind',
         }
 
 tesseract_path = os.path.expanduser('~/root/bin/tesseract')
