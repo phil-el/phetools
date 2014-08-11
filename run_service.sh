@@ -3,7 +3,7 @@
 PYTHONPATH=$HOME/phe/ocr:$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2:/shared/pywikipedia/core/scripts
 LOG_DIR=/data/project/phetools/log/ # + service_name(.out|.err)
 # Some host don't define $LANG
-UTF8_LANG=en_US.UTF-8
+UTF8_LANG=en_US.UTF8
 
 declare -A env_var memory cmdline
 
@@ -27,12 +27,8 @@ env_var[ws_ocr_daemon]=PYTHONPATH="$HOME/phe/common"
 memory[ws_ocr_daemon]=2048M
 cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
 
-env_var[hocr_daemon]=PYTHONPATH=$PYTHONPATH
-memory[hocr_daemon]=2048M
-cmdline[hocr_daemon]="python -u phe/hocr/wshocr.py"
-
-memory[wsircdaemon]=256M
-cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"
+#memory[wsircdaemon]=256M
+#cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"
 
 memory[dummy_robot]=384M
 cmdline[dummy_robot]="python -u phe/dummy_robot/dummy_robot.py"
