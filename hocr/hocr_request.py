@@ -21,29 +21,29 @@ import MySQLdb
 # FIXME: some other lang can be supported.
 supported_lang = set(
     [
+        'be',
         'bn',
+        'ca',
+        'da',
+        'de',
+        # 'de-f'
+        'en',
+        'eo',
+        'es',
+        'et',
         'fr',
         'he',
-        'en',
-        'de',
-        'da',
-        'et',
-        #'de-f':"deu-frak",
-        'la',  # use ita as lang code atm
-        'is',
-        'it',
-        'es',
-        'pt',
-        'ru',
-        'be',
-        'ca',
-        'eo',
         'hr',
         'hu',
-        'sv',
+        'id',
+        'is',
+        'it',
+        'la',  # use ita as lang code atm
         'no',
         'pl',
-        'id',
+        'pt',
+        'ru',
+        'sv',
         ]
 )
 

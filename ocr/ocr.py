@@ -9,30 +9,30 @@ import utils
 import sys
 
 tesseract_languages = {
-        'bn' : 'ben',
-        'da' : 'dan',
-        'et' : 'est',
-        'fr' : 'fra',
-        'he' : 'heb',
-        'en' : 'eng',
-        'de' : 'deu',
-        'de-f':'deu-frak',
-        'la' : 'ita',
-        'is' : 'isl', # needs tess 3.02
-        'it' : 'ita',
-        'es' : 'spa',
-        'pt' : 'por',
-        'ru' : 'rus',
-        'be' : 'bel',
-        'ca' : 'cat',
-        'eo' : 'epo',
-        'hr' : 'hrv',
-        'hu' : 'hun',
-        'sv' : 'swe',
-        'no' : 'nor',
-        'pl' : 'pol',
-        'id' : 'ind',
-        }
+    'be' : 'bel',
+    'bn' : 'ben',
+    'ca' : 'cat',
+    'da' : 'dan',
+    'de' : 'deu',
+    'de-f':'deu-frak',
+    'en' : 'eng',
+    'eo' : 'epo',
+    'es' : 'spa',
+    'et' : 'est',
+    'fr' : 'fra',
+    'he' : 'heb',
+    'hr' : 'hrv',
+    'hu' : 'hun',
+    'id' : 'ind',
+    'is' : 'isl',
+    'it' : 'ita',
+    'la' : 'ita',
+    'no' : 'nor',
+    'pl' : 'pol',
+    'pt' : 'por',
+    'ru' : 'rus',
+    'sv' : 'swe',
+    }
 
 tesseract_path = os.path.expanduser('~/root/bin/tesseract')
 tesseract_data_prefix = '/usr/share/tesseract-ocr'
@@ -58,7 +58,7 @@ def ocr(filename, out_basename, lang, config = ''):
     else:
         out_filename = out_basename + ".html"
 
-    if not os.path.exists(out_filename):
+    if not os.path.exists(out_filename) and not ls.returncode:
         # in case returncode == 0
         print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
 
