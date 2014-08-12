@@ -15,7 +15,7 @@ import re
 replica_cnf = os.path.expanduser('~/replica.my.cnf')
 _db_prefix = None
 
-def db_prefix():
+def user_db_prefix():
     global _db_prefix
     if _db_prefix == None:
         text = utils.read_file(replica_cnf)
@@ -53,7 +53,7 @@ def create_conn(**kwargs):
     return MySQLdb.connect(host = db_server, **conn_params)
 
 if __name__ == "__main__":
-    print 'db_prefix:', db_prefix()
+    print 'db_prefix:', user_db_prefix()
 
     conn = create_conn(domain = 'commons', family = 'wiki')
     conn.close()

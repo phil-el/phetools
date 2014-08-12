@@ -38,10 +38,9 @@ def connection(db_obj):
         db_obj._close()
 
 class DbJob:
-    # Prefix is used to allow production db use or test_sge_jobs db
     def __init__(self):
-        self.db_name = db.db_prefix() + 'sge_jobs'
-        # namedtuple to parse sge accounting file.
+        self.db_name = db.user_db_prefix() + 'sge_jobs'
+
         self.Accounting = collections.namedtuple('Accounting',
             [
              'qname',           'hostname',             'group',
@@ -260,8 +259,8 @@ class DbJob:
                     print "breaking after %d line" % count
                     break
 
-            # end_time == 0 occur when sge failed to start the task, don't
-            # use it to get the elapsed time.
+            # end_time == 0 occur when sge failed to start a task, don't
+            # use it to get the elapsed time between end_time and now.
             if int(accounting.end_time) and now - int(accounting.end_time) >= last_time_day * 86400:
                 print "breaking after %d line, TIMEOUT" % count
                 break
@@ -347,4 +346,3 @@ if __name__ == "__main__":
 
     if nr_running:
         db_job.run_batch(nr_running, limit = 24+6)
-

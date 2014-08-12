@@ -178,7 +178,7 @@ def prepare_request1(db_hocr, lang):
 
 class DbHocr:
     def __init__(self):
-        self.db_name = db.db_prefix() + 'hocr'
+        self.db_name = db.user_db_prefix() + 'hocr'
 
     def _open(self):
         self.conn = db.create_conn(server = 'tools-db')
