@@ -207,18 +207,15 @@ def update_db(lang, bookname):
     import hocr_request
 
     db_hocr = hocr_request.DbHocr()
-    db_hocr._open()
-    path = cache_path(bookname, lang)
-    if os.path.exists(path + 'sha1.sum'):
-        fd = open(path + 'sha1.sum')
-        sha1 = fd.read()
-        fd.close()
-        db_hocr.add_update_row(bookname, lang, sha1)
-        db_hocr.conn.commit()
-    else:
-        print >> sys.stderr, "Can't locate sha1.sum", path
-
-    db_hocr._close()
+    with db.connection(db_hocr):
+        path = cache_path(bookname, lang)
+        if os.path.exists(path + 'sha1.sum'):
+            fd = open(path + 'sha1.sum')
+            sha1 = fd.read()
+            fd.close()
+            db_hocr.add_update_row(bookname, lang, sha1)
+        else:
+            print >> sys.stderr, "Can't locate sha1.sum", path
 
 def ret_val(error, text):
     if error:

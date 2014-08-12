@@ -19,27 +19,13 @@ import subprocess
 import qstat
 import re
 import db
-from contextlib import contextmanager
 import collections
 
 jsub = '/usr/bin/jsub'
 
-@contextmanager
-def connection(db_obj):
-    db_obj._open()
-    try:
-        yield
-    except:
-        db_obj.conn.rollback()
-        raise
-    else:
-        db_obj.conn.commit()
-    finally:
-        db_obj._close()
-
-class DbJob:
+class DbJob(db.UserDb):
     def __init__(self):
-        self.db_name = db.user_db_prefix() + 'sge_jobs'
+        super(DbJob, self).__init__('sge_jobs')
 
         self.Accounting = collections.namedtuple('Accounting',
             [
@@ -62,19 +48,6 @@ class DbJob:
         self.all_state = set(['pending', 'running', 'success', 'accounting',
                               'sge_fail', 'fail'])
 
-    def _open(self):
-        self.conn = db.create_conn(server = 'tools-db')
-        self.cursor = self.conn.cursor(MySQLdb.cursors.DictCursor)
-        self.cursor.execute('use ' + self.db_name)
-
-    def _close(self):
-        if self.cursor:
-            self.cursor.close()
-            self.cursor = None
-        if self.conn:
-            self.conn.close()
-            self.conn = None
-
     def get_job_table(self, state_filter, limit = 50, offset = 0):
         limit += 1
         data = []
@@ -91,7 +64,7 @@ class DbJob:
         if 'all' in state_filter:
             state_filter = tuple([ x for x in self.all_state ])
 
-        with connection(self):
+        with db.connection(self):
             fmt_strs = ', '.join(['%s'] * len(state_filter))
             q = 'SELECT * FROM job WHERE job_state IN (' + fmt_strs + ') ORDER BY job_id DESC LIMIT %s OFFSET %s'
             #print >> sys.stderr, q % (state_filter + (limit, ) + (offset,))
@@ -108,7 +81,7 @@ class DbJob:
             job_ids = []
         if type(job_ids) != type([]):
             jobs_ids = [ job_ids ]
-        with connection(self):
+        with db.connection(self):
             q = 'SELECT * from accounting '
             if job_ids:
                 fmt_strs = ', '.join(['%s'] * len(job_ids))
@@ -123,7 +96,7 @@ class DbJob:
 
     def pending_request(self, limit = 16, offset = 0):
         data = []
-        with connection(self):
+        with db.connection(self):
             self.cursor.execute("SELECT * FROM job WHERE job_state='pending' LIMIT %s OFFSET %s",
                                 [ limit, offset ])
             data = self.cursor.fetchall()
@@ -184,7 +157,7 @@ class DbJob:
 
     def add_request(self, jobname, run_cmd, args,  max_vmem, cpu_bound = True):
         job_id = 0
-        with connection(self):
+        with db.connection(self):
             job_id = self._add_request(jobname, run_cmd, args,
                                        max_vmem, cpu_bound)
         return job_id
@@ -207,7 +180,7 @@ class DbJob:
             new_state = 'sge_fail'
 
 
-        with connection(self):
+        with db.connection(self):
             q = 'UPDATE job SET job_state=%s, sge_jobnumber=%s WHERE job_id=%s'
             self.cursor.execute(q, [ new_state, sge_job_nr, r['job_id'] ])
 
@@ -230,7 +203,7 @@ class DbJob:
     def check_running(self):
         sge_running = qstat.running_jobs('')
         if sge_running:
-            with connection(self):
+            with db.connection(self):
                 q = 'SELECT job_id, sge_jobnumber, job_args FROM job WHERE job_state="running"'
                 self.cursor.execute(q)
                 for r in self.cursor.fetchall():
@@ -267,7 +240,7 @@ class DbJob:
 
     def update_accounting(self):
         jobs = {}  
-        with connection(self):
+        with db.connection(self):
             q = 'SELECT job_id, sge_jobnumber, sge_hostname FROM accounting WHERE sge_hostname=""'
             self.cursor.execute(q)
             for data in self.cursor.fetchall():
@@ -278,7 +251,7 @@ class DbJob:
 
         self.search_accounting(jobs)
 
-        with connection(self):
+        with db.connection(self):
             fields = [ 'hostname', 'qsub_time', 'start_time', 'end_time',
                        'failed', 'exit_status', 'ru_utime', 'ru_stime',
                        'ru_wallclock', 'used_maxvmem' ]

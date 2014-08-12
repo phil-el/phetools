@@ -176,22 +176,9 @@ def prepare_request1(db_hocr, lang):
     #    if not title in file_to_sha1:
     #        print "File no longer exists:", title
 
-class DbHocr:
+class DbHocr(db.UserDb):
     def __init__(self):
-        self.db_name = db.user_db_prefix() + 'hocr'
-
-    def _open(self):
-        self.conn = db.create_conn(server = 'tools-db')
-        self.cursor = self.conn.cursor(MySQLdb.cursors.DictCursor)
-        self.cursor.execute('use ' + self.db_name)
-
-    def _close(self):
-        if self.cursor:
-            self.cursor.close()
-            self.cursor = None
-        if self.conn:
-            self.conn.close()
-            self.conn = None
+        super(DbHocr, self).__init__('hocr')
 
     def add_update_row(self, title, lang, sha1):
         sha1 = "%040x" % int(sha1, 16)
@@ -291,7 +278,7 @@ if __name__ == "__main__":
     arg = sys.argv[1]
     count = 0
     db_hocr = DbHocr()
-    db_hocr._open()
+    db_hocr.open()
     for lang in supported_lang:
         if arg == '-rebuild_hocr_db':
             rebuild_hocr_db(db_hocr, lang)
@@ -302,5 +289,5 @@ if __name__ == "__main__":
 
         #count = move_tree(lang, count)
         #count = prepare_request(lang, count)
-    db_hocr._close()
+    db_hocr.close()
 
