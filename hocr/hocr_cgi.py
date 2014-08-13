@@ -32,20 +32,34 @@ def format_job_table_anchor(anchor):
 def format_accounting_table_anchor(anchor):
     return span_anchor(anchor, 'acct') + a_anchor(anchor, 'job')
 
-def format_timestamp(timestamp):
+def format_timestamp(timestamp, fields):
     return time.strftime("%d/%m/%Y %H:%M:%S", time.gmtime(timestamp))
 
-def format_sge_jobnumber_job(sge_jobnumber):
+def format_sge_jobnumber_job(sge_jobnumber, fields):
     if not sge_jobnumber:
         return sge_jobnumber
     return format_job_table_anchor(sge_jobnumber)
 
-def format_sge_jobnumber_accounting(sge_jobnumber):
+def format_sge_jobnumber_accounting(sge_jobnumber, fields):
     return format_accounting_table_anchor(sge_jobnumber)
 
-def format_args(args):
+def format_command(cmd, fields):
+    if cmd != 'python':
+        return cmd
+    else:
+        arg = json.loads(fields['job_args'])[0]
+        prefix = '/data/project/phetools/phe/hocr/'
+        if arg.startswith(prefix):
+            arg = arg[len(prefix):]
+
+        return arg
+
+def format_args(args, fields):
     args = json.loads(args)
-    args = [ x.encode('utf-8') for x in args]
+    if fields['job_run_cmd'] == 'python':
+        args = [ x.encode('utf-8') for x in args[1:]]
+    else:
+        args = [ x.encode('utf-8') for x in args]
     new_args = []
     prefix = '/data/project/phetools/'
     for a in args:
@@ -55,24 +69,24 @@ def format_args(args):
         new_args.append(a)
     return ' '.join(new_args)
 
-def format_max_vmem(vmem):
+def format_max_vmem(vmem, fields):
     if not vmem:
         vmem = 0
     return "%.2fM" % (vmem / (1024.0*1024))
 
-def format_hostname(hostname):
+def format_hostname(hostname, fields):
     suffix = '.eqiad.wmflabs'
     if hostname.endswith(suffix):
         hostname = hostname[:-len(suffix)]
     return hostname
 
-def format_job_id_job(job_id):
+def format_job_id_job(job_id, fields):
     return format_job_table_anchor(job_id)
 
-def format_job_id_accounting(job_id):
+def format_job_id_accounting(job_id, fields):
     return format_accounting_table_anchor(job_id)
 
-def format_time(t):
+def format_time(t, fields):
     if t:
         return "%.2f" % t
     return str(t)
@@ -84,7 +98,7 @@ job_table_field = [
     ('job_id', 'job id', format_job_id_job),
     ('job_state', 'job state'),
     ('sge_jobnumber', 'sge job id', format_sge_jobnumber_job),
-    ('job_run_cmd', 'command'),
+    ('job_run_cmd', 'cmd', format_command),
     ('job_args', 'args', format_args),
     ('job_submit_time', 'submit&nbsp;time&nbsp;(UTC)', format_timestamp),
 ]
@@ -162,7 +176,7 @@ def to_html(data, fields):
         if f[0] in data:
             text += '    <td>'
             if len(f) >= 3:
-                text += str(f[2](data[f[0]]))
+                text += str(f[2](data[f[0]], data))
             else:
                 text += str(data[f[0]])
             text += '</td>\n'
@@ -333,7 +347,7 @@ def myapp(environ, start_response):
         return handle_status(params, start_response)
 
 if __name__ == "__main__":
-    sys.stderr = open(os.path.expanduser('~/log/hocr.err'), 'a')
+    sys.stderr = open(os.path.expanduser('~/log/hocr_cgi.err'), 'a')
 
     from flup.server.cgi import WSGIServer
     try:
