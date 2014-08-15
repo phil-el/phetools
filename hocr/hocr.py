@@ -45,11 +45,16 @@ def cache_path(book_name, lang):
 
     return base_dir % (h[0:2], h[2:4], h[4:])
 
+def read_sha1(path):
+    fd = open(path + 'sha1.sum')
+    sha1 = fd.read()
+    fd.close()
+
+    return sha1
+
 def check_sha1(path, sha1):
     if os.path.exists(path + 'sha1.sum'):
-        fd = open(path + 'sha1.sum')
-        old_sha1 = fd.read()
-        fd.close()
+        old_sha1 = read_sha1(path)
         if old_sha1 == sha1:
             return True
     return False
@@ -170,6 +175,8 @@ def slow_hocr(lang, book, in_file):
     options.lang = ocr.tesseract_languages.get(lang, 'eng')
     options.out_dir = path
 
+    print "Using tesseract lang:", options.lang
+
     return ocr_djvu.ocr_djvu(options, in_file)
 
 # is_uptodate() must be called first to ensure the file is uploaded.
@@ -185,7 +192,7 @@ def hocr(options):
         djvuname = pdf_to_djvu.pdf_to_djvu(in_file)
     else:
         djvuname = in_file
-        if djvu_text_to_hocr.has_word_bbox(in_file):
+        if options.lang != 'bn' and djvu_text_to_hocr.has_word_bbox(in_file):
             done = fast_hocr(options.book, options.lang)
 
     # djvuname == None if pdf_to_djvu() fail to convert the file
@@ -210,9 +217,7 @@ def update_db(lang, bookname):
     with db.connection(db_hocr):
         path = cache_path(bookname, lang)
         if os.path.exists(path + 'sha1.sum'):
-            fd = open(path + 'sha1.sum')
-            sha1 = fd.read()
-            fd.close()
+            sha1 = read_sha1(path)
             db_hocr.add_update_row(bookname, lang, sha1)
         else:
             print >> sys.stderr, "Can't locate sha1.sum", path
