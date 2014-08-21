@@ -137,6 +137,7 @@ $footer = <<<EOT
     <li><a href="statistics.php?diff=1">Today's increase</a></li>
     <li><a href="statistics.php?diff=7">1 week increase</a></li>
     <li><a href="statistics.php?diff=30">1 month increase</a></li>
+    <li><a href="statistics.php?diff=365">1 year increase</a></li>
    </ul>
   </div>
  </div>
