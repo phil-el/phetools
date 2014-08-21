@@ -133,11 +133,11 @@ $footer = <<<EOT
   <h5>Statistics</h5>
   <div class="body">
    <ul>
-    <li><a href="statistics.php">Today's table</a></li>
-    <li><a href="statistics.php?diff=1">Today's increase</a></li>
-    <li><a href="statistics.php?diff=7">1 week increase</a></li>
-    <li><a href="statistics.php?diff=30">1 month increase</a></li>
-    <li><a href="statistics.php?diff=365">1 year increase</a></li>
+    <li><a href="?diff=0">Today's table</a></li>
+    <li><a href="?diff=1">Today's increase</a></li>
+    <li><a href="?diff=7">1 week increase</a></li>
+    <li><a href="?diff=30">1 month increase</a></li>
+    <li><a href="?diff=365">1 year increase</a></li>
    </ul>
   </div>
  </div>
