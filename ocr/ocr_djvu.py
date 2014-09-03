@@ -38,7 +38,7 @@ def image_size(page_nr, filename):
         return None
 
     match = re.search('width=(\d+) height=(\d+)', text)
-    return int(match.group(1)), int(match.group(1))
+    return int(match.group(1)), int(match.group(2))
 
 def extract_image(opt, page_nr, filename):
     try:
