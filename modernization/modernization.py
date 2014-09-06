@@ -345,6 +345,53 @@ class Modernization:
             if len(self.config[variant]['transform']):
                 self.check_useless_dict_entry(variant)
 
+    def find_words(self, words, local_dict, global_dict):
+        if local_dict.has_key(words):
+            return local_dict[words], False
+        if global_dict.has_key(words):
+            return global_dict[words], True
+        return None, None
+
+    # This mimic code at:
+    # https://wikisource.org/wiki/User:Helder.wiki/Scripts/LanguageConverter.js
+    def find_repl(self, words_list, i, local_dict, global_dict):
+        repl = None
+        glb = None
+        words = u''
+        for num in range(self.max_seq, 0, -1):
+            if i + num >= len(words_list):
+                continue
+            words = u''
+            for j in range(num):
+                words += words_list[i + j]
+
+            repl, glb = self.find_words(words, local_dict, global_dict)
+
+            if not repl:
+                sub_w = words.lower()
+                sup_w = words.upper()
+                first_sup_w = words[0].upper() + words[1:]
+                if sup_w == words:
+                    repl, glb = self.find_words(first_sup_w,
+                                                local_dict, global_dict)
+                    if repl and not glb:
+                        words = first_sup_w
+
+                    if not repl:
+                        repl, glb = self.find_words(sub_w, local_dict,
+                                                    global_dict)
+                        if repl and not glb:
+                            words = sub_w
+                elif first_sup_w == words:
+                    repl, glb = self.find_words(sub_w, local_dict,
+                                                global_dict)
+                    if repl and not glb:
+                        words = sub_w
+            if repl:
+                break
+
+        return repl, glb, words, num
+
     def suggest_dict(self, title):
         p = self.get_page(title)
         html = self.get_html(p)
@@ -361,9 +408,6 @@ class Modernization:
                 exclude.add(it)
 
         for variant in self.variants:
-            word_seen = set()
-            all_word = set()
-
             speller = spell.get_speller(self.config[variant]['aspell_lang'])
             cache = self.load_dicts(variant)
             p = self.get_global_dict(variant)
@@ -372,40 +416,76 @@ class Modernization:
             else:
                 global_dict = []
 
+            other_local_dict = {}
+            for key in cache:
+                if key != p.latestRevision():
+                    d = cache[key][1]
+                    for words in d:
+                        other_local_dict[words] = d[words]
+
+
             local_dict = self.parse_local_dict(variant, html)
 
             text = self.get_etree_text(root, exclude)
 
-            print text.encode('utf-8')
+            #print text.encode('utf-8')
 
             for d in self.config[variant]['transform']:
                 text = re.sub(d[0], d[1], text)
 
-            # FIXME: upper/lower letter for suggest? and mimic
-            # https://wikisource.org/wiki/User:Helder.wiki/Scripts/LanguageConverter.js
+            # set of entry used in the local dict, a set because we want
+            # to keep the order in local_dict so we don't store here the repl
+            # string but we will iter the ordered local_dict and check
+            # if a word is present in this set.
+            used_local_dict = set()
+            # map of entry used in all other local dict, good suggestion to
+            # give to user
+            suggest_local_dict = {}
+            # all other words, these will be check spelled to provide an
+            # additionnal set of suggestion
+            word_seen = set()
 
             regex_split = re.compile(u'([' + self.word_chars + u']+)')
-            for word in regex_split.findall(text):
-                word = word.lower()
-                all_word.add(word)
-                if not word in word_seen and not word in local_dict and not word in global_dict and not speller.check(word.encode('utf-8')):
-                    word_seen.add(word)
-                    print '"' + word.encode('utf-8') + '"'
+            words_list = regex_split.findall(text)
+            for i in range(len(words_list)):
+                repl, glb, new_words, num = self.find_repl(words_list, i,
+                                                           local_dict,
+                                                           global_dict)
+                if repl:
+                    if not glb:
+                        used_local_dict.add(new_words)
+                else:
+                    # not found in global or local dict, try in all other
+                    # local dict to get a suggestion.
+                    repl, glb, new_words, num = self.find_repl(words_list, i,
+                                                           other_local_dict,
+                                                           {})
+                    if repl:
+                        suggest_local_dict[new_words] = repl
 
+                if not repl:
+                    word_seen.add(words_list[i])
+                else:
+                    # then + 1 from the loop
+                    i += num - 1
+
+            word_seen = [x for x in word_seen if not speller.check(x.encode('utf-8'))]
+            # Here we go.
             for word in local_dict:
-                if word in all_word:
+                if word in used_local_dict:
                     self.dump_dict_entry(word, local_dict)
+            print suggest_local_dict
+            print word_seen
 
-            suggest = {}
-            for key in cache:
-                if key != p.latestRevision():
-                    d = cache[key][1]
-                    for word in d:
-                        suggest[word] = d[word]
+    def locate_dict(self, variant, word):
+        cache = self.load_dicts(variant)
+        for d in cache:
+            if cache[d][1].has_key(word):
+                print cache[d][0].encode('utf-8')
 
-            for word in word_seen:
-                if word in suggest:
-                    self.dump_dict_entry(word, suggest)
+    def locate_all_dict(self, word):
+        for variant in self.variants:
+            self.locate_dict(variant, word)
 
     def test_global_dict(self, variant):
         p = self.get_global_dict(variant)
@@ -436,6 +516,7 @@ if __name__ == '__main__':
     lang = None
     title = None
     cmd = None
+    word = None
     for arg in sys.argv[1:]:
         if arg.startswith('-lang:'):
             lang = arg[len('-lang:'):]
@@ -443,6 +524,12 @@ if __name__ == '__main__':
             cmd = arg[len('-cmd:'):]
         elif arg.startswith('-title:'):
             title = unicode(arg[len('-title:'):], 'utf-8')
+        elif arg.startswith('-word:'):
+            word = unicode(arg[len('-word:'):], 'utf-8')
+        else:
+            print >> sys.stderr, "unknown arg:", arg
+            exit(1)
+
 
     modernization = Modernization(lang)
         
@@ -464,5 +551,7 @@ if __name__ == '__main__':
         modernization.get_useless_char()
     elif cmd == 'suggest':
         modernization.suggest_dict(title)
+    elif cmd == 'find':
+        modernization.locate_all_dict(word)
     else:
         print "unknown -cmd:", cmd
