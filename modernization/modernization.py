@@ -78,11 +78,6 @@ dict_config['fr']['FR'] = {
         ],
 }
 
-# FIXME: the cache structure is wrong, we locate the global dict through
-# its rev_id, it should be located through its page_id or a 'global_dict'
-# key else any change to the global imply the code will not recognize this
-# cache entry as the global dict. 'global_dict' key is better as key as it
-# avoid to create a pwikibot.Page() to get it's rev_id or page_id.
 class Modernization:
     def __init__(self, lang):
         self.lang = lang
@@ -194,14 +189,14 @@ class Modernization:
                 new_cache[p.latestRevision()] = (p.title(), result)
 
         p = self.get_global_dict(variant)
-        if p.latestRevision() in old_cache:
-            new_cache[p.latestRevision()] = old_cache[p.latestRevision()]
+        if 'global_dict' in old_cache and old_cache['global_dict'][0] == p.latestRevision():
+            new_cache['global_dict'] = old_cache['global_dict']
         else:
             count += 1
             html = self.get_html(p)
             result = self.parse_global_dict(html)
 
-            new_cache[p.latestRevision()] = (p.title(), result)
+            new_cache['global_dict'] = (p.latestRevision(), result)
 
         self.save_dicts(variant, new_cache)
 
@@ -239,14 +234,13 @@ class Modernization:
 
     def gen_non_redundant_words(self, variant):
         cache = self.load_dicts(variant)
-        p = self.get_global_dict(variant)
-        if p.latestRevision() in cache:
-            global_dict = cache[p.latestRevision()][1]
+        if 'global_dict' in cache:
+            global_dict = cache['global_dict'][1]
         else:
             global_dict = self.default_cache()
 
         for key in cache:
-            if key != p.latestRevision():
+            if key != 'global_dict':
                 self.dump_non_redundant_words(cache[key][0], cache[key][1], global_dict)
 
     def optimize_all_local_dict(self):
@@ -255,16 +249,15 @@ class Modernization:
 
     def optimize_global_dict_variant(self, variant):
         cache = self.load_dicts(variant)
-        p = self.get_global_dict(variant)
-        if p.latestRevision() in cache:
-            global_dict = cache[p.latestRevision()][1]
+        if 'global_dict' in cache:
+            global_dict = cache['global_dict'][1]
         else:
             global_dict = self.default_cache()
 
         replace = {}
 
         for key in cache:
-            if key != p.latestRevision():
+            if key != 'global_dict':
                 for word in cache[key][1]:
                     replace.setdefault( (word, cache[key][1][word]), 0)
                     replace[(word, cache[key][1][word])] += 1
@@ -294,9 +287,8 @@ class Modernization:
         if last_rev in cache:
             print 'Found'
             local_dict = cache[last_rev][1]
-            p = self.get_global_dict(variant)
-            if p.latestRevision() in cache:
-                global_dict = cache[p.latestRevision()][1]
+            if 'global_dict' in cache:
+                global_dict = cache['global_dict'][1]
             else:
                 global_dict = collection.OrderedDict()
 
@@ -315,14 +307,13 @@ class Modernization:
 
     def check_all_title_variant(self, variant):
         cache = self.load_dicts(variant)
-        p = self.get_global_dict(variant)
-        if p.latestRevision() in cache:
-            global_dict = cache[p.latestRevision()][1]
+        if 'global_dict' in cache:
+            global_dict = cache['global_dict'][1]
         else:
             global_dict = self.default_cache()
 
         for key in cache:
-           if key != p.latestRevision():
+           if key != 'global_dict':
                 self.check_cache(cache[key][0], cache[key][1], global_dict)
 
     def check_all(self):
@@ -337,7 +328,10 @@ class Modernization:
             local_dict = cache[key][1]
             for word in local_dict:
                 if re.search(regex, word) or re.search(regex, local_dict[word]):
-                    print cache[key][0].encode('utf-8')
+                    if type(cache[key][0]) == type(3):
+                        print 'global_dict'
+                    else:
+                        print cache[key][0].encode('utf-8')
                     self.dump_dict_entry(word, local_dict)
 
     def get_useless_char(self):
@@ -407,18 +401,27 @@ class Modernization:
             for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
                 exclude.add(it)
 
+        # result = {
+        # 'variant_name_1' : {
+        #    'local_dict_used' : [(A, B), ... ],
+        #    'suggest_local_dict' : { 'C' : 'D' ... },
+        #    'speller_suggest' : [ ( 'E', [ 'G', 'H', ]), ... ]
+        #    }
+        # 'variant_name_2' : { ... }
+        # }
+        result = {}
+
         for variant in self.variants:
             speller = spell.Speller(self.config[variant]['aspell_lang'])
             cache = self.load_dicts(variant)
-            p = self.get_global_dict(variant)
-            if p.latestRevision() in cache:
-                global_dict = cache[p.latestRevision()][1]
+            if 'global_dict' in cache:
+                global_dict = cache['global_dict'][1]
             else:
                 global_dict = []
 
             other_local_dict = {}
             for key in cache:
-                if key != p.latestRevision():
+                if key != 'global_dict':
                     d = cache[key][1]
                     for words in d:
                         other_local_dict[words] = d[words]
@@ -468,22 +471,31 @@ class Modernization:
                     i += num - 1
 
             word_seen = [x for x in word_seen if not speller.check(x)]
+            speller_suggest = [(x, speller.suggest(x)[:5]) for x in word_seen]
 
-            suggest_spelling = [(x, speller.suggest(x)[:5]) for x in word_seen]
-            #local_dict_used = [ (x, local_dict[x]) for x in local_dict if x in sed_local_dict ]
-            # Here we go.
-            for word in local_dict:
-                if word in used_local_dict:
-                    self.dump_dict_entry(word, local_dict)
-            #print local_dict_used
-            print suggest_local_dict
-            print suggest_spelling
+            # local dict is an ordered dict, so we can put words in the same
+            # order as the local_dict, this allow better wiki diff when a local
+            # dict is updated.
+            local_dict_used = [ (x, local_dict[x]) for x in local_dict if x in used_local_dict ]
+
+            # FIXME: for suggest_local_dict, must we remove suggested words
+            # form other local dict but working word for the check speller?
+
+            result[variant] = {}
+            result[variant]['local_dict_used'] = local_dict_used
+            result[variant]['suggest_local_dict'] = suggest_local_dict
+            result[variant]['speller_suggest'] = speller_suggest
+
+        return result
 
     def locate_dict(self, variant, word):
         cache = self.load_dicts(variant)
-        for d in cache:
-            if cache[d][1].has_key(word):
-                print cache[d][0].encode('utf-8')
+        for key in cache:
+            if cache[key][1].has_key(word):
+                if type(cache[key][0]) == type(3):
+                    print 'global_dict'
+                else:
+                    print cache[key][0].encode('utf-8')
 
     def locate_all_dict(self, word):
         for variant in self.variants:
@@ -495,6 +507,13 @@ class Modernization:
         result = self.parse_global_dict(html)
         for key in result:
             print key.encode('utf-8'), result[key].encode('utf-8')
+
+    def test_suggest_dict(self, title):
+        result = self.suggest_dict(title)
+        for variant in result:
+            print variant
+            for key in result[variant]:
+                print key, result[variant][key]
 
     def test_global_dict_config(self):
         for variant in self.variants:
@@ -552,7 +571,7 @@ if __name__ == '__main__':
     elif cmd == 'useless_char':
         modernization.get_useless_char()
     elif cmd == 'suggest':
-        modernization.suggest_dict(title)
+        modernization.test_suggest_dict(title)
     elif cmd == 'find':
         modernization.locate_all_dict(word)
     else:
