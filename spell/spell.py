@@ -19,7 +19,7 @@ def get_speller(lang):
     speller = aspell.Speller( ( 'data-dir', data_dir ),
                               ( 'dict-dir', data_dir ),
                               ( 'size', '80' ),
-                              ( 'sug-mode', 'slow' ),
+                              ( 'sug-mode', 'fast' ),
                               ( 'encoding', 'utf-8' ),
                               ( 'lang', lang ) )
     return speller
