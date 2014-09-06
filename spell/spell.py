@@ -28,6 +28,5 @@ if __name__ == "__main__":
     import sys
 
     speller = get_speller(sys.argv[1])
-    print type(speller.check(sys.argv[2]))
     print speller.check(sys.argv[2])
     print speller.suggest(sys.argv[2])
