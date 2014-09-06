@@ -408,7 +408,7 @@ class Modernization:
                 exclude.add(it)
 
         for variant in self.variants:
-            speller = spell.get_speller(self.config[variant]['aspell_lang'])
+            speller = spell.Speller(self.config[variant]['aspell_lang'])
             cache = self.load_dicts(variant)
             p = self.get_global_dict(variant)
             if p.latestRevision() in cache:
@@ -427,8 +427,6 @@ class Modernization:
             local_dict = self.parse_local_dict(variant, html)
 
             text = self.get_etree_text(root, exclude)
-
-            #print text.encode('utf-8')
 
             for d in self.config[variant]['transform']:
                 text = re.sub(d[0], d[1], text)
@@ -456,7 +454,7 @@ class Modernization:
                         used_local_dict.add(new_words)
                 else:
                     # not found in global or local dict, try in all other
-                    # local dict to get a suggestion.
+                    # local dict to get suggestion.
                     repl, glb, new_words, num = self.find_repl(words_list, i,
                                                            other_local_dict,
                                                            {})
@@ -469,13 +467,17 @@ class Modernization:
                     # then + 1 from the loop
                     i += num - 1
 
-            word_seen = [x for x in word_seen if not speller.check(x.encode('utf-8'))]
+            word_seen = [x for x in word_seen if not speller.check(x)]
+
+            suggest_spelling = [(x, speller.suggest(x)[:5]) for x in word_seen]
+            #local_dict_used = [ (x, local_dict[x]) for x in local_dict if x in sed_local_dict ]
             # Here we go.
             for word in local_dict:
                 if word in used_local_dict:
                     self.dump_dict_entry(word, local_dict)
+            #print local_dict_used
             print suggest_local_dict
-            print word_seen
+            print suggest_spelling
 
     def locate_dict(self, variant, word):
         cache = self.load_dicts(variant)
