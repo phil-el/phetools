@@ -91,7 +91,7 @@ class Modernization:
             self.config[variant] = dict_config[lang][variant]
 
     def cache_filename(self, variant):
-        return self.cache_dir + self.lang + '_' + variant
+        return self.cache_dir + self.lang + '_' + variant + '.dat'
 
     def default_cache(self):
         return collections.OrderedDict()
