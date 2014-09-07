@@ -287,6 +287,7 @@ class Modernization:
         if last_rev in cache:
             print 'Found'
             local_dict = cache[last_rev][1]
+            print local_dict
             if 'global_dict' in cache:
                 global_dict = cache['global_dict'][1]
             else:
@@ -355,9 +356,8 @@ class Modernization:
         for num in range(self.max_seq, 0, -1):
             if i + num >= len(words_list):
                 continue
-            words = u''
-            for j in range(num):
-                words += words_list[i + j]
+
+            words = u' '.join(words_list[i:i + num])
 
             repl, glb = self.find_words(words, local_dict, global_dict)
 
@@ -401,6 +401,8 @@ class Modernization:
             for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
                 exclude.add(it)
 
+        html_text = self.get_etree_text(root, exclude)
+
         # result = {
         # 'variant_name_1' : {
         #    'local_dict_used' : [(A, B), ... ],
@@ -429,7 +431,7 @@ class Modernization:
 
             local_dict = self.parse_local_dict(variant, html)
 
-            text = self.get_etree_text(root, exclude)
+            text = html_text
 
             for d in self.config[variant]['transform']:
                 text = re.sub(d[0], d[1], text)
@@ -500,6 +502,65 @@ class Modernization:
     def locate_all_dict(self, word):
         for variant in self.variants:
             self.locate_dict(variant, word)
+
+    def locate_all_html(self, word):
+        for variant in self.variants:
+            cache  = self.load_dicts(variant)
+            for p in self.get_local_dict_list(variant):
+                # FIXME: need an auto update of the cache or to parse the
+                # local dict
+                filename = self.cache_dir + self.lang + '/' + str(p.latestRevision())
+
+                if not os.path.exists(filename):
+                    html = self.get_html(p)
+
+                    new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
+
+                    root = etree.fromstring(new_html.encode('utf-8'))
+
+                    exclude = set()
+
+                    text = self.get_etree_text(root, exclude)
+
+                    for variant in self.variants:
+                        html_id = self.config[variant]['modernize_div_id']
+
+                        for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
+                            exclude.add(it)
+
+                        # Unclear if we really need it.
+                        for d in self.config[variant]['transform']:
+                            text = re.sub(d[0], d[1], text)
+
+                    text = self.get_etree_text(root, exclude)
+
+                    utils.write_file(filename, text)
+                else:
+                    text = utils.read_file(filename)
+
+                #local_dict = self.parse_local_dict(variant, html)
+                #if word in local_dict:
+                #    break
+
+                regex_split = re.compile(u'([' + self.word_chars + u']+)')
+                words_list = regex_split.findall(text)
+
+                local_dict = { word : u'repl' }
+                for i in range(len(words_list)):
+                    repl, glb, new_words, num = self.find_repl(words_list, i,
+                                                               local_dict,
+                                                               {})
+
+                    if repl:
+                        print p.title().encode('utf-8')
+                        break
+                    else:
+                        # then + 1 from the loop
+                        i += num - 1
+
+            # No need to iterate over all variant as the html does not depend
+            # on the variant.
+            break
 
     def test_global_dict(self, variant):
         p = self.get_global_dict(variant)
@@ -572,7 +633,9 @@ if __name__ == '__main__':
         modernization.get_useless_char()
     elif cmd == 'suggest':
         modernization.test_suggest_dict(title)
-    elif cmd == 'find':
+    elif cmd == 'find_in_dict':
         modernization.locate_all_dict(word)
+    elif cmd == 'find_in_html':
+        modernization.locate_all_html(word)
     else:
         print "unknown -cmd:", cmd
