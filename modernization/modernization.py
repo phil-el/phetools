@@ -481,7 +481,7 @@ class Modernization:
             local_dict_used = [ (x, local_dict[x]) for x in local_dict if x in used_local_dict ]
 
             # FIXME: for suggest_local_dict, must we remove suggested words
-            # form other local dict but working word for the check speller?
+            # from other local dict but working word for the check speller?
 
             result[variant] = {}
             result[variant]['local_dict_used'] = local_dict_used
@@ -503,47 +503,40 @@ class Modernization:
         for variant in self.variants:
             self.locate_dict(variant, word)
 
+    def load_text(self, p, variant):
+        filename = self.cache_dir + self.lang + '/' + str(p.latestRevision())
+
+        if not os.path.exists(filename):
+            html = self.get_html(p)
+            new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
+            root = etree.fromstring(new_html.encode('utf-8'))
+            exclude = set()
+            html_id = self.config[variant]['modernize_div_id']
+
+            for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
+                exclude.add(it)
+
+            text = self.get_etree_text(root, exclude)
+            for d in self.config[variant]['transform']:
+                text = re.sub(d[0], d[1], text)
+
+            utils.write_file(filename, text)
+        else:
+            text = utils.read_file(filename)
+
+        return text
+
     def locate_all_html(self, word):
         for variant in self.variants:
             cache  = self.load_dicts(variant)
             for p in self.get_local_dict_list(variant):
-                # FIXME: need an auto update of the cache or to parse the
-                # local dict
-                filename = self.cache_dir + self.lang + '/' + str(p.latestRevision())
-
-                if not os.path.exists(filename):
-                    html = self.get_html(p)
-
-                    new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
-
-                    root = etree.fromstring(new_html.encode('utf-8'))
-
-                    exclude = set()
-
-                    text = self.get_etree_text(root, exclude)
-
-                    for variant in self.variants:
-                        html_id = self.config[variant]['modernize_div_id']
-
-                        for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
-                            exclude.add(it)
-
-                        # Unclear if we really need it.
-                        for d in self.config[variant]['transform']:
-                            text = re.sub(d[0], d[1], text)
-
-                    text = self.get_etree_text(root, exclude)
-
-                    utils.write_file(filename, text)
-                else:
-                    text = utils.read_file(filename)
-
-                #local_dict = self.parse_local_dict(variant, html)
-                #if word in local_dict:
-                #    break
+                text = self.load_text(p, variant)
 
                 regex_split = re.compile(u'([' + self.word_chars + u']+)')
                 words_list = regex_split.findall(text)
+
+                if p.latestRevision() in cache and word in cache[p.latestRevision()][1]:
+                    continue
 
                 local_dict = { word : u'repl' }
                 for i in range(len(words_list)):
@@ -561,6 +554,41 @@ class Modernization:
             # No need to iterate over all variant as the html does not depend
             # on the variant.
             break
+
+    def useless_dict_entry_variant(self, variant):
+        cache = self.load_dicts(variant)
+        for p in self.get_local_dict_list(variant):
+            if p.latestRevision() in cache:
+                text = self.load_text(p, variant)
+                regex_split = re.compile(u'([' + self.word_chars + u']+)')
+                words_list = regex_split.findall(text)
+                local_dict = cache[p.latestRevision()][1]
+                used_word = set()
+
+                #print text.encode('utf-8')
+
+                for i in range(len(words_list)):
+                    repl, glb, new_words, num = self.find_repl(words_list, i,
+                                                               local_dict,
+                                                               {})
+
+                    if repl:
+                        used_word.add(new_words)
+                    else:
+                        # then + 1 from the loop
+                        i += num - 1
+
+                first = True
+                for key in local_dict:
+                    if not key in used_word:
+                        if first:
+                            print cache[p.latestRevision()][0].encode('utf-8')
+                            first = False
+                        print '* ' + key.encode('utf-8')
+
+    def useless_dict_entry(self):
+        for variant in self.variants:
+            self.useless_dict_entry_variant(variant)
 
     def test_global_dict(self, variant):
         p = self.get_global_dict(variant)
@@ -612,7 +640,6 @@ if __name__ == '__main__':
             print >> sys.stderr, "unknown arg:", arg
             exit(1)
 
-
     modernization = Modernization(lang)
         
     if cmd == 'test':
@@ -637,5 +664,7 @@ if __name__ == '__main__':
         modernization.locate_all_dict(word)
     elif cmd == 'find_in_html':
         modernization.locate_all_html(word)
+    elif cmd == 'useless_dict_entry':
+        modernization.useless_dict_entry()
     else:
         print "unknown -cmd:", cmd
