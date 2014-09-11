@@ -14,6 +14,7 @@ $serverlist = array(
 	//'dummy_robot.php',
 	'ocr.php',
 	'hocr_cgi.py',
+	'modernization_cgi.py',
 	'match_and_split.php',
 	'extract_text_layer.php',
 	'verify_match.php',
