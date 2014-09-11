@@ -8,10 +8,13 @@
 # @author Philippe Elie
 
 import re
+import sys
+sys.path.append('/shared/pywikipedia/core')
+sys.path.append('/shared/pywikipedia/core/externals/httplib2')
+sys.path.append('/shared/pywikipedia/core/scripts')
 import pywikibot
 import pywikibot.pagegenerators as pagegen
 from pywikibot.data import api
-import sys
 import utils
 import os
 import collections
@@ -450,10 +453,15 @@ class Modernization:
 
             regex_split = re.compile(u'([' + self.word_chars + u']+)')
             words_list = regex_split.findall(text)
-            for i in range(len(words_list)):
+            i = 0
+            while True:
+                if i >= len(words_list):
+                    break
+
                 repl, glb, new_words, num = self.find_repl(words_list, i,
                                                            local_dict,
                                                            global_dict)
+
                 if repl:
                     if not glb:
                         used_local_dict.add(new_words)
@@ -468,9 +476,9 @@ class Modernization:
 
                 if not repl:
                     word_seen.add(words_list[i])
+                    i += 1
                 else:
-                    # then + 1 from the loop
-                    i += num - 1
+                    i += num
 
             word_seen = [x for x in word_seen if not speller.check(x)]
             speller_suggest = [(x, speller.suggest(x)[:5]) for x in word_seen]
@@ -539,7 +547,10 @@ class Modernization:
                     continue
 
                 local_dict = { word : u'repl' }
-                for i in range(len(words_list)):
+                i = 0
+                while True:
+                    if i >= len(words_list):
+                        break
                     repl, glb, new_words, num = self.find_repl(words_list, i,
                                                                local_dict,
                                                                {})
@@ -548,8 +559,7 @@ class Modernization:
                         print p.title().encode('utf-8')
                         break
                     else:
-                        # then + 1 from the loop
-                        i += num - 1
+                        i += 1
 
             # No need to iterate over all variant as the html does not depend
             # on the variant.
@@ -567,16 +577,20 @@ class Modernization:
 
                 #print text.encode('utf-8')
 
-                for i in range(len(words_list)):
+                i = 0
+                while True:
+                    if i >= len(words_list):
+                        break
+
                     repl, glb, new_words, num = self.find_repl(words_list, i,
                                                                local_dict,
                                                                {})
 
                     if repl:
                         used_word.add(new_words)
+                        i += num
                     else:
-                        # then + 1 from the loop
-                        i += num - 1
+                        i += 1
 
                 first = True
                 for key in local_dict:
