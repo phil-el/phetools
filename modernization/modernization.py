@@ -493,7 +493,7 @@ class Modernization:
 
             result[variant] = {}
             result[variant]['local_dict_used'] = local_dict_used
-            result[variant]['suggest_local_dict'] = suggest_local_dict
+            result[variant]['suggest_local_dict'] = suggest_local_dict.items()
             result[variant]['speller_suggest'] = speller_suggest
 
         return result
