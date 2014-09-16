@@ -82,27 +82,6 @@ def add_hocr_request(lang, book):
 
     db_obj.add_request(**job_req)
 
-# FIXME: two bottleneck to remove. First get the sha1 in mass, second avoid
-# to touch nfs for each request (reading the sha1.sum). This mean we need
-# to build a db ( title, lang, sha1 ). This allow also to handle File:
-# renaming in a fast way by copying from the old md5sum to the new title
-# md5sum. See prepare_request1() for a faster alternative.
-def prepare_request(lang):
-    ns_nr = index_ns_nr(lang)
-
-    conn, cursor = open_db(lang, 'wikisource')
-    q = 'SELECT page_title FROM page WHERE page_namespace=%s and page_is_redirect=0'
-    cursor.execute(q, ns_nr)
-    for p in cursor.fetchall():
-        title = p[0]
-        if title.endswith('.djvu') or title.endswith('.pdf'):
-            ret = hocr.is_uptodate(lang, title)
-            if ret > 0:
-                print ret, lang, title
-                add_hocr_request(lang, title)
-
-    close_db(conn, cursor)
-
 def fetch_file_sha1_db(lang, family, titles):
     conn, cursor = open_db(lang, family, MySQLdb.cursors.DictCursor)
 
@@ -137,7 +116,7 @@ def fetch_file_sha1(lang, titles):
 
     return result
 
-def prepare_request1(db_hocr, lang):
+def prepare_request(db_hocr, lang):
     ns_nr = index_ns_nr(lang)
 
     conn, cursor = open_db(lang, 'wikisource')
@@ -156,25 +135,13 @@ def prepare_request1(db_hocr, lang):
     for f in temp:
         hocr_sha1.add(f['sha1'])
 
+    # attempt to rename or tidy can't work as we lost the old title.
+    # and sha1 is not unique in the db. Tidying unused hocr must be done
+    # separately.
     for title in file_to_sha1:
         if file_to_sha1[title] not in hocr_sha1:
-            print lang, title
+            print lang, title, file_to_sha1[title]
             add_hocr_request(lang, title)
-        # renaming doesn't works as multiple file can have the same sha1
-        #elif hocr_sha1[file_to_sha1[title]] != title:
-        #    # sha1 found, but title can change with a rename.
-        #    old_path = hocr.cache_path(lang, hocr_sha1[file_to_sha1[title]])
-        #    new_path = hocr.cache_path(lang, title)
-        #    #os.rename(old_path, new_path)
-        #    q = 'UPDATE hocr SET title=%s WHERE sha1=%s'
-        #    #db_hocr.cursor.execute(q, (title, sha1))
-        #    #db_hocr.conn.commit()
-        #    print "File renamed from", hocr_sha1[file_to_sha1[title]], "to", title
-
-    # Attempt to tidy, doesn't work because of redirect ;(
-    #for title in hocr_files:
-    #    if not title in file_to_sha1:
-    #        print "File no longer exists:", title
 
 class DbHocr(db.UserDb):
     def __init__(self):
@@ -283,7 +250,7 @@ if __name__ == "__main__":
         if arg == '-rebuild_hocr_db':
             rebuild_hocr_db(db_hocr, lang)
         elif  arg == '-prepare_request':
-            prepare_request1(db_hocr, lang)
+            prepare_request(db_hocr, lang)
         else:
             print >> sys.stderr, "Unknown option:", arg
 
