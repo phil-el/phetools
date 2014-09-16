@@ -127,11 +127,11 @@ class Modernization:
         result = u''
         if node not in exclude:
             if node.text:
-                result += node.text
+                result += node.text + u' '
             for child in node:
                 result += self.get_etree_text(child, exclude)
             if node.tail:
-                result += node.tail
+                result += node.tail + u' '
         return result
 
     def parse_global_dict(self, html):
@@ -153,6 +153,8 @@ class Modernization:
     def parse_local_dict(self, variant, html):
         result = self.default_cache()
         html_id = self.config[variant]['modernize_div_id']
+
+        html = html.replace(u'&nbsp;', u' ')
 
         html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
         root = etree.fromstring(html.encode('utf-8'))
@@ -517,6 +519,9 @@ class Modernization:
         if not os.path.exists(filename):
             html = self.get_html(p)
             new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
+
+            new_html = new_html.replace(u'&nbsp;', u' ')
+
             root = etree.fromstring(new_html.encode('utf-8'))
             exclude = set()
             html_id = self.config[variant]['modernize_div_id']
