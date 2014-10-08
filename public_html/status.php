@@ -4,6 +4,8 @@ header('Cache-control: no-cache');
 header('Access-Control-Allow-Origin: *');
 header('Content-type: text/plain');
 
+ini_set('user_agent', '-');
+
 function ping_server($server) {
 	$url = 'http://tools-webproxy/phetools/' . $server . '?cmd=ping';
 	$response = file_get_contents($url);
