@@ -518,7 +518,7 @@ def default_options():
 
     options = Options()
     options.lang = u'fr'
-    options.site = pywikibot.getSite(code = options.lang, fam = 'wikisource')
+    options.site = pywikibot.Site(code = options.lang, fam = 'wikisource')
     # By default this script write on a wiki page.
     options.save = True
     # FIXME: If you change these options, you must stop the server, delete

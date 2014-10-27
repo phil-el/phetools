@@ -200,7 +200,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix):
 
 def get_filepage(site, djvuname):
     try:
-        page = pywikibot.ImagePage(site, "File:" + djvuname)
+        page = pywikibot.page.FilePage(site, "File:" + djvuname)
     except pywikibot.NoPage:
         page = None
 
@@ -208,8 +208,8 @@ def get_filepage(site, djvuname):
         try:
             url = page.fileUrl()
         except:
-            site = pywikibot.getSite(code = 'commons', fam = 'commons')
-            page = pywikibot.ImagePage(site, "File:" + djvuname)
+            site = pywikibot.Site(code = 'commons', fam = 'commons')
+            page = pywikibot.page.FilePage(site, "File:" + djvuname)
 
     return page
 

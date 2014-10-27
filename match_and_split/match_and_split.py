@@ -40,7 +40,7 @@ def get_pl(year, vol):
     if pl != None:
         return pl
 
-    site = pywikibot.getSite('fr', 'wikisource')
+    site = pywikibot.Site('fr', 'wikisource')
     indexpage = pywikibot.Page(site, "Livre:" + rddm_name(year, vol))
     text = indexpage.get()
     m = re.search("(?ms)<pagelist\s+(.*?)/>",text)
@@ -350,7 +350,7 @@ def html_for_queue(queue):
         mtitle = i[0]
         codelang = i[1]
         try:
-            msite = pywikibot.getSite(codelang, 'wikisource')
+            msite = pywikibot.Site(codelang, 'wikisource')
             page = pywikibot.Page(msite, mtitle)
             path = msite.nice_get_address(page.title(asUrl = True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
@@ -391,7 +391,7 @@ def on_exit(sig_nr, frame):
     jobs['match_queue'] = stop_queue(jobs['match_queue'])
     jobs['split_queue'] = stop_queue(jobs['split_queue'])
 
-    utils.save_obj('wsdaemon.jobs', jobs)
+    #utils.save_obj('wsdaemon.jobs', jobs)
 
 def bot_listening():
 
@@ -453,7 +453,7 @@ def job_thread(queue, func):
         time1 = time.time()
         out = ''
         try:
-            mysite = pywikibot.getSite(codelang, 'wikisource')
+            mysite = pywikibot.Site(codelang, 'wikisource')
         except:
             out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False
@@ -481,7 +481,7 @@ def default_jobs():
 if __name__ == "__main__":
     try:
         # qdel send a SIGUSR2 if -notify is used when starting the job.
-        signal.signal(signal.SIGUSR2, on_exit)
+        #signal.signal(signal.SIGUSR2, on_exit)
         try:
             jobs = utils.load_obj("wsdaemon.jobs")
         except:
