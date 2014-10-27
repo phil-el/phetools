@@ -7,7 +7,6 @@
 #
 # @author Philippe Elie
 
-import utils
 import subprocess
 import resource
 import os
@@ -36,7 +35,7 @@ def pdf_to_djvu(in_file):
     # --words option is useless as many pdf contains text layer only for
     # the first page
     ls = subprocess.Popen([ djvudigital, "--dpi=300", in_file, out_file], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
-    text = utils.safe_read(ls.stdout)
+    text = ls.stdout.read()
     if text:
         print text
     ls.wait()
@@ -51,6 +50,7 @@ def pdf_to_djvu(in_file):
 
 
 if __name__ == "__main__":
+    import utils
     in_file = 'https://upload.wikimedia.org/wikipedia/commons/8/81/Accord_compl%C3%A9mentaire_relatif_%C3%A0_la_Malaisie_le_11_Septembre_1963.pdf'
     out_file = os.path.expanduser('~/tmp/')  + 'Accord complémentaire relatif à la Malaisie le 11 Septembre 1963.pdf'
     utils.copy_file_from_url(in_file, out_file)
