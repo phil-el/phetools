@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PYTHONPATH=$HOME/phe/ocr:$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2:/shared/pywikipedia/core/scripts
+PYTHONPATH=$HOME/phe/ocr:$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/data/project/phetools/pywikibot-core:/data/project/phetools/pywikibot-core/externals/httplib2:/data/project/phetools/pywikibot-core/scripts
 LOG_DIR=/data/project/phetools/log/ # + service_name(.out|.err)
 # Some host don't define $LANG
 UTF8_LANG=en_US.UTF8
@@ -17,7 +17,7 @@ cmdline[match_and_split]="python -u phe/match_and_split/match_and_split.py"
 # FIXME: this can't work with -continuous because the wrapper script generated
 # when using -continuous doesn't trap SIGUSR2 and is killed with a SIGTERM
 # so the child die before receiving SIGUSR2.
-qalter[match_and_split]="-notify"
+#qalter[match_and_split]="-notify"
 
 env_var[extract_text_layer]=PYTHONPATH=$PYTHONPATH
 memory[extract_text_layer]=640M
