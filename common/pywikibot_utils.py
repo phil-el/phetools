@@ -5,6 +5,8 @@ from pywikibot.data import api
 import time
 import re
 import types
+import utils
+import sys
 
 def site_matrix():
     req = api.Request(site=pywikibot.Site('meta', 'meta'), action='sitematrix')
@@ -34,24 +36,31 @@ def safe_put(page, text, comment):
     if re.match("^[\s\n]*$", text):
         return
 
-    while 1:
+    retry_count = 0
+    while retry_count < 2:
         try:
             page.put(text, comment = comment)
             break
         except pywikibot.LockedPage:
-            print "put error : Page %s is locked?!" % page.title(asUrl=True).encode("utf8")
+            print >> sys.stderr, "put error : Page %s is locked?!" % page.title(asUrl=True).encode("utf8")
+            utils.print_traceback()
             break
         except pywikibot.NoPage:
-            print "put error : Page does not exist %s" % page.title(asUrl=True).encode("utf8")
+            print >> sys.stderr, "put error : Page does not exist %s" % page.title(asUrl=True).encode("utf8")
+            utils.print_traceback()
             break
         except pywikibot.NoUsername:
-            print "put error : No user name on wiki %s" % page.title(asUrl=True).encode("utf8")
+            print >> sys.stderr, "put error : No user name on wiki %s" % page.title(asUrl=True).encode("utf8")
+            utils.print_traceback()
             break
         except pywikibot.PageNotSaved:
-            print "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8") 
-            print "text len: ", len(text)
-            break
+            print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8") 
+            print >> sys.stderr, "text len: ", len(text)
+            utils.print_traceback()
+            retry_count += 1
+            continue
         except:
-            print "put error: unknown exception"
+            print >> sys.stderr, "put error: unknown exception"
+            utils.print_traceback()
             time.sleep(5)
             break
