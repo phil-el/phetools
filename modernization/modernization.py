@@ -108,6 +108,24 @@ class Modernization:
 
         return cache
 
+    def blacklist_filename(self):
+        return self.cache_dir + self.lang + '_blacklist.dat'
+
+    def load_blacklist(self):
+        filename = self.blacklist_filename()
+        if not os.path.exists(filename):
+            blacklist = set()
+        else:
+            blacklist = utils.load_obj(filename)
+        return blacklist
+
+    def save_blacklist(self, blacklist):
+        result = self.load_blacklist()
+        for s in blacklist:
+            result.add(s.split(u':')[0].strip())
+        filename = self.blacklist_filename()
+        utils.save_obj(filename, result)
+
     def save_dicts(self, variant, cache):
         filename = self.cache_filename(variant)
         utils.save_obj(filename, cache)
@@ -418,6 +436,8 @@ class Modernization:
         # }
         result = {}
 
+        blacklist = self.load_blacklist()
+
         for variant in self.variants:
             speller = spell.Speller(self.config[variant]['aspell_lang'])
             cache = self.load_dicts(variant)
@@ -459,6 +479,10 @@ class Modernization:
             while True:
                 if i >= len(words_list):
                     break
+
+                if words_list[i] in blacklist:
+                    i += 1
+                    continue
 
                 repl, glb, new_words, num = self.find_repl(words_list, i,
                                                            local_dict,
@@ -660,7 +684,7 @@ if __name__ == '__main__':
             exit(1)
 
     modernization = Modernization(lang)
-        
+
     if cmd == 'test':
         modernization.test_global_dict_config()
         modernization.test_local_dict_config()

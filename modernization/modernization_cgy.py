@@ -94,8 +94,9 @@ def handle_suggest_query(params, start_response):
 def handle_blacklist_query(params, start_response):
     if params['lang'] and params['blacklist']:
         try:
-            #modernize = modernization.Modernization(params['lang'])
-            #result = modernize.suggest_dict(params['title'])
+            modernize = modernization.Modernization(params['lang'])
+            blacklist = json.loads(params['blacklist'])
+            modernize.save_blacklist(blacklist)
             ret_code = '200 OK'
             result = { 'error' : 0, 'text' :'OK' }
         except:
