@@ -20,7 +20,8 @@ $serverlist = array(
 	'match_and_split.php',
 	'extract_text_layer.php',
 	'verify_match.php',
-	'credits.py'
+	'credits.py',
+	'pages_without_scan.py',
 );
 
 foreach ($serverlist as $servername) {
