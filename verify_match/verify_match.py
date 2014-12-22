@@ -102,7 +102,7 @@ def remove_template_pass(text):
     text = re.sub(u'{{[Cc]aché\|[^{}]*?}}', u'', text)
     text = re.sub(u'(?ms){{([Cc]|[Cc]entré)\|([^{}]*?)(\|[^{}]*)*}}', u'\\2', text)
     text = re.sub(u'{{[PpSs]c\|([^{}]*?)}}', u'\\1', text)
-    text = re.sub(u'{{[tT][234]\|([^{}]*?)(\|(fs|sp|lh|align)[ ]*=[ ]*[^}]*)*}}', u'\\1', text)  
+    text = re.sub(u'{{[tT][234]\|([^{}|]*?)(\|(fs|sp|lh|align)[ ]*=[ ]*[^}]*)*}}', u'\\1', text)
     text = re.sub(u'{{[tT][234]\|([^{}]*?)\|([^{}]*?)(\|(fs|sp|lh|align)[ ]*=[ ]*[^}]*)*}}', u'\\2 \\1', text)
     text = re.sub(u'{{[tT][234]\|([^{}|]*?)}}', u'\\1', text)
     text = re.sub(u'{{[tT][234]\|([^{}]*?)\|([^{}]*?)}}', u'\\2 \\1', text)
@@ -203,6 +203,7 @@ def transform_text(text, opt):
 
     header, text, footer = ws_utils.split_page_text(text)
     text = re.sub(u'(?msi)<noinclude[^>]*?>(.*?)</noinclude>', u'\\1', text)
+    text = re.sub(u'\n[:]+', u'\n', text)
 
     text = remove_tag(text)
     text = re.sub(u"'''([^']*)'''", u'\\1', text)
