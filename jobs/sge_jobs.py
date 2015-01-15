@@ -102,7 +102,7 @@ class DbJob(db.UserDb):
             data = self.cursor.fetchall()
 
         return data
-    
+
     def _add_request(self, jobname, run_cmd, args, max_vmem, cpu_bound):
 
         job_id = 0
@@ -122,7 +122,7 @@ class DbJob(db.UserDb):
             q = 'SELECT COUNT(*) FROM accounting WHERE job_id=%s'
             self.cursor.execute(q, [ job_id ])
             count = self.cursor.fetchone()['COUNT(*)']
-            if count < 3:
+            if count < 5:
                 q = 'UPDATE job SET job_state="pending" WHERE job_id=%s'
                 self.cursor.execute(q, [ job_id ] )
             else:
@@ -305,6 +305,13 @@ def sge_cmdline_arg(request):
         '-v', 'LANG=en_US.UTF-8'
         ]
 
+    if request.has_key('working_dir'): # always Fase atm, for future use.
+        sge_cmd_arg.append('-wd')
+        sge_cmd_arg.append(request['working_dir'])
+    else:
+        sge_cmd_arg.append('-wd')
+        sge_cmd_arg.append(os.path.expanduser('~/botpywi'))
+
     return sge_cmd_arg
 
 if __name__ == "__main__":
@@ -318,4 +325,4 @@ if __name__ == "__main__":
     print "running task:", nr_running
 
     if nr_running:
-        db_job.run_batch(nr_running, limit = 24+6)
+        db_job.run_batch(nr_running, limit = 24+5)
