@@ -48,9 +48,10 @@ def format_command(cmd, fields):
         return cmd
     else:
         arg = json.loads(fields['job_args'])[0]
-        prefix = '/data/project/phetools/phe/hocr/'
-        if arg.startswith(prefix):
-            arg = arg[len(prefix):]
+        prefixes = [ '/data/project/phetools/phe/hocr/', '/data/project/phetools/phe/ocr/', '/data/project/phetools/phe/', '/data/project/phetools/botpywi/' ]
+        for prefix in prefixes:
+            if arg.startswith(prefix):
+                arg = arg[len(prefix):]
 
         return arg
 
