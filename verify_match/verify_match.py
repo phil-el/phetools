@@ -193,6 +193,7 @@ def handle_table(text):
     return text
 
 def common_transform(text):
+    text = text.replace(u'…', u'...')
     text = re.sub(u"'''([^']*)'''", u'\\1', text)
     text = re.sub(u"''([^']*)''", u'\\1', text)
     text = text.replace(u"'", u"’")
