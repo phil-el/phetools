@@ -14,6 +14,7 @@ disambiguations = {
     'no':'Peker',
     'pl':'Disambig',
     'pt':'Desambig',
+    'ro':'Dezambig',
     'ru':'Disambig',    
     'sl':'Razločitev',
     'sv':'Förgreningssida',

@@ -14,7 +14,7 @@ all_domain = set([
     'old', 'bn',  'br',  'ca',  'da',  'de',  'en',  'el',
     'es',  'et',  'fr',  'gu',  'he',  'hr',  'hu',  'hy',
     'id',  'it',  'la',  'ml',  'nl',  'no',  'pl',  'pt',
-    'ru',  'sa',  'sl',  'sv',  'te',  'vec', 'vi',  'zh',
+    'ro',  'ru',  'sa',  'sl',  'sv',  'te',  'vec', 'vi',  'zh',
 ])
 
 def catreq(cat, ns):
@@ -132,7 +132,7 @@ def spaced_int(i,sep):
 def write_templates(res):
     import pywikibot
 
-    for dom in ['fr','en', 'bn']:
+    for dom in [ 'fr','en', 'bn', 'pl' ]:
         if dom == 'bn':
             # https://bugzilla.wikimedia.org/show_bug.cgi?id=68215 and
             # https://bugzilla.wikimedia.org/show_bug.cgi?id=67488
