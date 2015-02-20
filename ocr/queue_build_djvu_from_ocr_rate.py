@@ -16,6 +16,7 @@ def add_request(lang, filenames):
     job_req = {
         'jobname' : 'build_djvu',
         'run_cmd' : 'python',
+        'force' : True,
         'args' : [
             os.path.expanduser('build_djvu_from_ocr_rate.py'),
             '-lang:' + lang,

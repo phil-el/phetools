@@ -16,6 +16,7 @@ def add_hocr_request(lang, filename):
     job_req = {
         'jobname' : 'ocr',
         'run_cmd' : 'python',
+        'force' : True,
         'args' : [
             os.path.expanduser('~/phe/ocr/ocr_djvu.py'),
             '-lang:' + lang,

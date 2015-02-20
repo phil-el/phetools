@@ -103,7 +103,7 @@ class DbJob(db.UserDb):
 
         return data
 
-    def _add_request(self, jobname, run_cmd, args, max_vmem, cpu_bound):
+    def _add_request(self, jobname, run_cmd, args, max_vmem, cpu_bound, force):
 
         job_id = 0
 
@@ -122,7 +122,7 @@ class DbJob(db.UserDb):
             q = 'SELECT COUNT(*) FROM accounting WHERE job_id=%s'
             self.cursor.execute(q, [ job_id ])
             count = self.cursor.fetchone()['COUNT(*)']
-            if count < 5:
+            if count < 3 or force:
                 q = 'UPDATE job SET job_state="pending" WHERE job_id=%s'
                 self.cursor.execute(q, [ job_id ] )
             else:
@@ -155,11 +155,12 @@ class DbJob(db.UserDb):
 
         return job_id
 
-    def add_request(self, jobname, run_cmd, args,  max_vmem, cpu_bound = True):
+    def add_request(self, jobname, run_cmd, args,  max_vmem,
+                    cpu_bound = True, force = False):
         job_id = 0
         with db.connection(self):
             job_id = self._add_request(jobname, run_cmd, args,
-                                       max_vmem, cpu_bound)
+                                       max_vmem, cpu_bound, force)
         return job_id
 
     def exec_request(self, r):
