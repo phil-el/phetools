@@ -12,19 +12,22 @@ import os
 sys.path.append(os.path.expanduser('~/phe/jobs'))
 import sge_jobs
 
-def add_hocr_request(lang, filename):
+def add_hocr_request(lang, sublang, filename):
     job_req = {
         'jobname' : 'correct_ocr',
         'run_cmd' : 'python',
+        'force' : True,
         'args' : [
             os.path.expanduser('~/botpywi/correct_ocr.py'),
             '-lang:' + lang,
-            '-sublang:' + 'fr_18',
             '-auto',
             '' + filename
             ],
         'max_vmem' : 2048,
         }
+
+    if sublang:
+        job_req['args'].append('-sublang:' + sublang),
 
     db_obj = sge_jobs.DbJob()
 
@@ -32,19 +35,22 @@ def add_hocr_request(lang, filename):
 
     db_obj.add_request(**job_req)
 
-def prepare_ocr_request(lang, filename):
+def prepare_ocr_request(lang, sublang, filename):
     print "preparing", lang, filename
     if not os.path.exists(filename):
         print >> sys.stderr, "file:", filename, "doesn't exist"
         exit(1)
-    add_hocr_request(lang, filename)
+    add_hocr_request(lang, sublang, filename)
 
 if __name__ == "__main__":
     filenames = []
+    sublang = None
     lang = None
     for arg in sys.argv[1:]:
         if arg.startswith('-lang:'):
             lang = arg[len('-lang:'):]
+        elif arg.startswith('-sublang:'):
+            sublang = arg[len('-sublang:'):]
         else:
             filenames.append(arg)
 
@@ -53,4 +59,4 @@ if __name__ == "__main__":
         exit(1)
 
     for f in filenames:
-        prepare_ocr_request(lang, f)
+        prepare_ocr_request(lang, sublang, f)
