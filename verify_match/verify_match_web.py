@@ -116,8 +116,10 @@ def date_s(at):
 
 
 def job_thread(queue):
-    cached_diff = lifo_cache.LifoCache('verify_match_diff')
-    cached_text = lifo_cache.LifoCache('verify_match_text_layer')
+    cache_dir1 = 'verify_match_diff'
+    cached_diff = lifo_cache.LifoCache(cache_dir1)
+    cache_dir2 = 'verify_match_text_layer'
+    cached_text = lifo_cache.LifoCache(cache_dir2)
     while True:
         title, codelang, user, t, tools, conn = queue.get()
 
@@ -143,6 +145,12 @@ def job_thread(queue):
 
 
 if __name__ == "__main__":
+    cache_dir1 = 'verify_match_diff'
+    if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir1)):
+        os.mkdir(os.path.expanduser('~/cache/' + cache_dir1))
+    cache_dir2 = 'verify_match_text_layer'
+    if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir2)):
+        os.mkdir(os.path.expanduser('~/cache/' + cache_dir2))
     try:
         queue = job_queue.JobQueue()
         thread.start_new_thread(job_thread, (queue, ))

@@ -178,10 +178,12 @@ def job_thread(queue, cache):
 
 if __name__ == "__main__":
     try:
-        cache = lifo_cache.LifoCache('tesseract_page')
+        cache_dir = 'tesseract_page'
+        if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir)):
+            os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
+        cache = lifo_cache.LifoCache(cache_dir)
         queue = job_queue.JobQueue()
         thread.start_new_thread(job_thread, (queue, cache))
         bot_listening(queue, cache)
     except KeyboardInterrupt:
         os._exit(1)
-

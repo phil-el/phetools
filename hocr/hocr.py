@@ -318,6 +318,9 @@ def main():
     return ret
 
 if __name__ == '__main__':
+    cache_dir = 'hocr'
+    if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir)):
+        os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
     try:
         ret = main()
     except:

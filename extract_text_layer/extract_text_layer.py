@@ -156,7 +156,10 @@ def job_thread(queue, cache):
 
 if __name__ == "__main__":
     try:
-        cache = lifo_cache.LifoCache('extract_text_layer')
+        cache_dir = 'extract_text_layer'
+        if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir)):
+            os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
+        cache = lifo_cache.LifoCache(cache_dir)
         queue = job_queue.JobQueue()
         thread.start_new_thread(job_thread, (queue, cache))
         bot_listening(queue)

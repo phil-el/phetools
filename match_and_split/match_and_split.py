@@ -480,6 +480,9 @@ def default_jobs():
 
 if __name__ == "__main__":
     try:
+        cache_dir = 'match_and_split_text_layer'
+        if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir)):
+            os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
         # qdel send a SIGUSR2 if -notify is used when starting the job.
         #signal.signal(signal.SIGUSR2, on_exit)
         try:
