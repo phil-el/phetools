@@ -10,6 +10,7 @@
 import sys
 import db
 import os
+sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_namespaces import index as index, namespaces as namespaces
 import hocr
 sys.path.append(os.path.expanduser('~/phe/jobs'))
@@ -66,7 +67,7 @@ def index_ns_nr(lang):
 
     return ns_nr
 
-def add_hocr_request(lang, book):
+def add_hocr_request(lang, book, force = False):
     job_req = {
         'jobname' : 'hocr',
         'run_cmd' : 'python',
@@ -77,6 +78,9 @@ def add_hocr_request(lang, book):
             ],
         'max_vmem' : 2048,
         }
+
+    if force:
+        job_req['force'] = True
 
     db_obj = sge_jobs.DbJob()
 
