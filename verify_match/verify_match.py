@@ -419,13 +419,13 @@ def verify_match(page_name, ocr_text, text, opt):
         text, ocr_text = do_transform(text, ocr_text, opt)
 
     diff = do_diff(ocr_text, text, opt)
-    if not has_nr:
+    if False and not has_nr:
         ocr_text = ocr_text.split(u'\n')
         ocr_text = u'\n'.join(ocr_text[1:])
         diff2 = do_diff(ocr_text, text, opt)
         if len(diff2) < len(diff):
             diff = diff2
-    else:
+    elif False:
         ocr_text = ocr_text.split(u'\n')
         ocr_text = u'\n'.join(ocr_text[1:])
         text = text.split(u'\n')
