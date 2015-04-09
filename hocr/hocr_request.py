@@ -24,6 +24,7 @@ supported_lang = set(
         'be',
         'bn',
         'ca',
+        'cs',
         'da',
         'de',
         # 'de-f'
