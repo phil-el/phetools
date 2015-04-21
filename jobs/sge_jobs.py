@@ -166,6 +166,23 @@ class DbJob(db.UserDb):
     def exec_request(self, r):
         sge_job_nr = 0
 
+        # This is a bit convoluted but we need it to avoid a race condition:
+        # we set the job as running before starting it so on if this script
+        # run twice in parallel we don't try to start the same job twice. Then
+        # when the job really started or fail to start we update its state
+        # again. As we don't know yet the sge job number, we setup it as zero.
+        # Note this could be done in pending_request() but I prefer to protect
+        # it locally.
+        really_pending = False
+        with db.connection(self):
+            q = 'UPDATE job SET job_state=%s, sge_jobnumber=%s WHERE job_id=%s AND job_state="pending"'
+            if self.cursor.execute(q, [ 'running', 0, r['job_id'] ]):
+                really_pending = True
+
+        if not really_pending:
+            print >> sys.stderr, "run request for job_id %s cancelled, as it's no longer pending" % r['job_id']
+            return
+
         cmdline_arg = job_cmdline_arg(r, 'job_run_cmd')
         sge_cmdline = sge_cmdline_arg(r)
         ls = subprocess.Popen(sge_cmdline + cmdline_arg,
@@ -181,6 +198,7 @@ class DbJob(db.UserDb):
             new_state = 'sge_fail'
 
 
+        # Now we can really update the job state, see comment above.
         with db.connection(self):
             q = 'UPDATE job SET job_state=%s, sge_jobnumber=%s WHERE job_id=%s'
             self.cursor.execute(q, [ new_state, sge_job_nr, r['job_id'] ])
