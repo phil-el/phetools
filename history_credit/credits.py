@@ -49,6 +49,9 @@ def query_params(environ):
     rdict['page'] = split_param(rdict['page'])
     rdict['image'] = split_param(rdict['image'])
 
+    if rdict['lang'] in [ 'www', '' ]:
+        rdict['lang'] = 'old'
+
     return rdict
 
 def handle_query(params, start_response):
