@@ -75,7 +75,7 @@ def do_one_page(opt, page_nr, filename):
 
     out_filename = opt.out_dir + "page_%04d" % page_nr
     if opt.config == 'hocr':
-        out_filename += '.html'
+        out_filename += '.hocr'
     else:
         out_filename += '.txt'
 

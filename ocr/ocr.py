@@ -34,8 +34,8 @@ tesseract_languages = {
     'sv' : 'swe',
     }
 
-tesseract_path = os.path.expanduser('~/root/bin/tesseract')
-tesseract_data_prefix = '/usr/share/tesseract-ocr'
+tesseract_path = 'tesseract'
+tesseract_data_prefix = ''
 
 def setrlimits():
     mega = 1 << 20
@@ -56,9 +56,9 @@ def ocr(filename, out_basename, lang, config = ''):
     if config == '':
         out_filename = out_basename + ".txt"
     else:
-        out_filename = out_basename + ".html"
+        out_filename = out_basename + ".hocr"
 
-    if not os.path.exists(out_filename) and not ls.returncode:
+    if not os.path.exists(out_filename) or ls.returncode:
         # in case returncode == 0
         print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
 

@@ -319,6 +319,7 @@ def sge_cmdline_arg(request):
         jsub,
         '-b', 'y',
         '-l', 'h_vmem=%dM' % request['job_max_vmem'],
+        '-l', 'release=trusty',
         '-N',  job_name,
         '-o', log_name + '.out', '-e', log_name + '.err' ,
         '-v', 'LANG=en_US.UTF-8'
