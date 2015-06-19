@@ -150,6 +150,7 @@ def write_sha1(out_dir, in_file):
 def fast_hocr(book, lang):
     print "fast_hocr"
     path = cache_path(book, lang)
+    print "out_dir:", path
     options = djvu_text_to_hocr.default_options()
     options.compress = 'bzip2'
     options.out_dir = path
@@ -165,6 +166,7 @@ def fast_hocr(book, lang):
 def slow_hocr(lang, book, in_file):
     print "slow_hocr"
     path = cache_path(book, lang)
+    print "out_dir:", path
 
     options = ocr_djvu.default_options()
 
