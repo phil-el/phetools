@@ -12,6 +12,7 @@ tesseract_languages = {
     'be' : 'bel',
     'bn' : 'ben',
     'ca' : 'cat',
+    'cs' : 'ces',
     'da' : 'dan',
     'de' : 'deu',
     'de-f':'deu-frak',
