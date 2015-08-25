@@ -268,7 +268,7 @@ def get_hocr(lang, title):
     if text == None:
         # not available, add a request to do this hocr so we build data
         # lazilly but we filter here unsupported file type
-        if book_name.endswith(u'.djvu') or book_name.endswith('.pdf'):
+        if book_name.endswith('.djvu') or book_name.endswith('.pdf'):
             import hocr_request
             hocr_request.add_hocr_request(lang, book_name, True)
         return ret_val(1, "unable to locate file %s for page %s lang %s" % (filename, book_name, lang))
