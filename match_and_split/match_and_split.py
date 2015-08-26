@@ -160,8 +160,9 @@ def do_match(mysite, maintitle, user, codelang):
 
         safe_put(page,new_text,user+": match")
         jobs['number_of_split_job'] += 1
-        # FIXME: can we pass the request here and use a callbackin the js?
-        jobs['split_queue'].put(maintitle, codelang, user, time.time(), None, None)
+        # FIXME: can we pass the request here and use a callback in the js?
+        # FIXME: server is None?
+        jobs['split_queue'].put(maintitle, codelang, user, time.time(), None, None, None)
         # FIXME: that's an abuse of E_ERROR
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
@@ -343,7 +344,7 @@ def do_split(mysite, rootname, user, codelang):
 
 jobs = None
 
-# title, codelang, user, t, tools, conn
+# title, codelang, user, t, tools, server, conn
 def html_for_queue(queue):
     html = ''
     for i in queue:
@@ -378,8 +379,8 @@ def do_status():
 def stop_queue(queue):
     new_queue = job_queue.JobQueue()
     items = queue.copy_items()
-    for title, lang, user, server, t, tools, conn in items:
-        new_queue.put(title, lang, user, server, t, None, None)
+    for title, lang, user, t, tools, server, conn in items:
+        new_queue.put(title, lang, user, t, None, server, None)
         if conn:
             conn.close()
     return new_queue
@@ -410,6 +411,7 @@ def bot_listening():
                 title = request.get('title', '')
                 lang = request.get('lang', '')
                 user = request.get('user', '')
+                server = request.get('server', '')
             except:
                 ret = ret_val(E_ERROR, "invalid request")
                 tools.send_reply(conn, ret)
@@ -419,7 +421,7 @@ def bot_listening():
             t = time.time()
             user = user.replace(' ', '_')
 
-            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
+            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title + ' ' + server).encode('utf-8')
 
             if cmd == "status":
                 html = do_status()
@@ -427,10 +429,10 @@ def bot_listening():
                 conn.close()
             elif cmd == "match":
                 jobs['number_of_match_job'] += 1
-                jobs['match_queue'].put(title, lang, user, t, tools, conn)
+                jobs['match_queue'].put(title, lang, user, t, tools, server, conn)
             elif cmd == "split":
                 jobs['number_of_split_job'] += 1
-                jobs['split_queue'].put(title, lang, user, t, tools, conn)
+                jobs['split_queue'].put(title, lang, user, t, tools, server, conn)
             elif cmd == 'ping':
                 tools.send_reply(conn, ret_val(E_OK, 'pong'))
                 conn.close()
@@ -448,7 +450,9 @@ def date_s(at):
 
 def job_thread(queue, func):
     while True:
-        title, codelang, user, t, tools, conn = queue.get()
+        title, codelang, user, t, tools, server, conn = queue.get()
+        if not server:
+            server = 'unknown server'
 
         time1 = time.time()
         out = ''
@@ -466,7 +470,7 @@ def job_thread(queue, func):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + ' ' + title + ' ' + user + ' ' +  codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
+        print (date_s(time2) + ' ' + title + ' ' + user + ' ' +  codelang + " " + server + " (%.2f)" % (time2-time1)).encode('utf-8')
 
         queue.remove()
 
