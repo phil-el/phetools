@@ -191,17 +191,23 @@ def hocr(options):
     in_file = get_tmp_dir(options.lang) + options.book
     done = False
     if in_file.endswith('.pdf'):
-        djvuname = pdf_to_djvu.pdf_to_djvu(in_file)
+        # Don't do slow hocr for ws.ru as .pdf ==> slow_hocr, don't try to
+        # convert pdf to djvu for ru.ws
+        if options.lang != 'ru':
+            djvuname = pdf_to_djvu.pdf_to_djvu(in_file)
+        else:
+            djvuname = None
     else:
         djvuname = in_file
         if options.lang != 'bn' and djvu_text_to_hocr.has_word_bbox(in_file):
             done = fast_hocr(options.book, options.lang)
 
     # djvuname == None if pdf_to_djvu() fail to convert the file
-    if not done and djvuname:
+    if not done and djvuname and options.lang != 'ru':
         done = slow_hocr(options.lang, options.book, djvuname)
 
-    if done:
+    # never fail for ws.ru, see above.
+    if done or options.lang == 'ru':
         write_sha1(path, in_file)
 
     if djvuname:
