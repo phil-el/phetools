@@ -302,7 +302,7 @@ def do_parse(opt, filename):
             parse_page(page, elem, page_nr)
             page.end_page(elem)
 
-            filename = opt.out_dir + 'page_%04d.html' % page_nr
+            filename = opt.out_dir + 'page_%04d.hocr' % page_nr
 
             if opt.compress:
                 text = page.get_hocr_html().encode('utf-8')
