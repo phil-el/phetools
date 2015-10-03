@@ -255,6 +255,7 @@ class DbJob(db.UserDb):
             # use it to get the elapsed time between end_time and now.
             if int(accounting.end_time) and now - int(accounting.end_time) >= last_time_day * 86400:
                 print "breaking after %d line, TIMEOUT" % count
+                print jobs
                 break
 
     def update_accounting(self):
@@ -345,4 +346,4 @@ if __name__ == "__main__":
     print "running task:", nr_running
 
     if nr_running:
-        db_job.run_batch(nr_running, limit = 24+5)
+        db_job.run_batch(nr_running, limit = 32+7)
