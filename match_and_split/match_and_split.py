@@ -90,6 +90,7 @@ def do_match(mysite, maintitle, user, codelang):
     try:
         text = page.get()
     except:
+        utils.print_traceback("failed to get page")
         return ret_val(E_ERROR, "failed to get page")
 
     if text.find("{{R2Mondes")!=-1:
