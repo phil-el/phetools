@@ -133,10 +133,6 @@ def write_templates(res):
     import pywikibot
 
     for dom in [ 'fr','en', 'bn', 'pl' ]:
-        if dom == 'bn':
-            # https://bugzilla.wikimedia.org/show_bug.cgi?id=68215 and
-            # https://bugzilla.wikimedia.org/show_bug.cgi?id=67488
-            continue
 	if dom=='fr':
 	    sep=' '
 	elif dom == 'en':
