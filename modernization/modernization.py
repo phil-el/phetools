@@ -444,7 +444,7 @@ class Modernization:
             if 'global_dict' in cache:
                 global_dict = cache['global_dict'][1]
             else:
-                global_dict = []
+                global_dict = self.default_cache()
 
             other_local_dict = {}
             for key in cache:
