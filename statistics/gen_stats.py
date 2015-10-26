@@ -11,10 +11,13 @@ import db
 
 # The domain name we care.
 all_domain = set([
-    'old', 'bn',  'br',  'ca',  'da',  'de',  'en',  'el',
-    'es',  'et',  'fr',  'gu',  'he',  'hr',  'hu',  'hy',
-    'id',  'it',  'la',  'ml',  'nl',  'no',  'pl',  'pt',
-    'ro',  'ru',  'sa',  'sl',  'sv',  'te',  'vec', 'vi',  'zh',
+    'ar',  'as',  'az',  'be',  'bg',  'bn',  'ca',  'cs',
+    'da',  'de',  'el',  'en',  'eo',  'es',  'et',  'fa',  
+    'fi',  'fr',  'gl',  'gu',  'he',  'hr',  'hy',  'id',  
+    'it',  'ja',  'kn',  'ko',  'la',  'lt',  'ml',  'mr',  
+    'nl',  'or',  'pl',  'pt',  'ro',  'ru',  'sa',  'sl',  
+    'old',  'sr',  'sv',  'ta',  'te',  'th',  'tr',  'uk',  
+    'vi',  'zh',  'zh-min-nan'
 ])
 
 def catreq(cat, ns):
