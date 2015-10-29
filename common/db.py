@@ -24,8 +24,13 @@ def user_db_prefix():
     return _db_prefix
 
 def database_name(domain, family):
-    if family == 'wikisource' and domain in [ 'old', 'www' ]:
-        dbname = 'sourceswiki_p'
+    if family == 'wikisource':
+        if domain in [ 'old', 'www' ]:
+            dbname = 'sourceswiki_p'
+        elif domain == 'zh-min-nan':
+            dbname = 'zh_min_nanwikisource_p'
+        else:
+            dbname = domain + family + '_p'
     else:
         dbname = domain + family + '_p'
     return dbname
@@ -47,6 +52,8 @@ def create_conn(**kwargs):
         if domain in ["old", "-"]:
             domain = 'sourceswiki'
             family = ''
+        elif domain == 'zh-min-nan':
+            domain = 'zh_min_nan'
         db_server = domain + family + '.labsdb'
     else:
         db_server = kwargs['server']
