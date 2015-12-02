@@ -336,6 +336,9 @@ def sge_cmdline_arg(request):
     return sge_cmd_arg
 
 if __name__ == "__main__":
+    import time
+
+    print "sge_jobs.py starting at:", time.ctime()
 
     db_job = DbJob()
 
@@ -347,3 +350,5 @@ if __name__ == "__main__":
 
     if nr_running:
         db_job.run_batch(nr_running, limit = 32+7)
+
+    print "sge_jobs.py ending at:", time.ctime()
