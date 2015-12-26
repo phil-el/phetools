@@ -85,7 +85,7 @@ def disamb_page(cursor):
     return set([ x[0] for x in cursor.fetchall() ])
 
 def all_pages(cursor):
-    q = 'select page_title, page_len, page_id from page where page_namespace=0 and page_is_redirect=0'
+    q = 'select page_title, page_len, page_id from page where page_namespace=0 and page_is_redirect=0 ORDER BY page_len'
     cursor.execute(q)
     return cursor.fetchall()
 
