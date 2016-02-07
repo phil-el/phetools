@@ -127,7 +127,7 @@ $footer = <<<EOT
 
 <div id="mw-panel" class="noprint">
  <div id="p-logo">
-   <a style="background-image: url(http://upload.wikimedia.org/wikipedia/sources/b/bc/Wiki.png);" href="index.html" ></a>
+   <a style="background-image: url(//upload.wikimedia.org/wikipedia/sources/b/bc/Wiki.png);" href="index.html" ></a>
  </div>
  <div class="portal" id='p-Channels'>
   <h5>Statistics</h5>
