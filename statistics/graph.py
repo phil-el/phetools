@@ -296,12 +296,12 @@ def main():
 
     print "totals"
 
-    draw( ["total"], 2, sg, 1000, 100,"proofread_pages_per_day_(all_wikisources)")
+    draw( ["total"], 2, sg, 1200, 100,"proofread_pages_per_day_(all_wikisources)")
     draw( ["total"], 1, sg, 500, 100,"validated_pages_per_day_(all_wikisources)")
 
     print "per day"
 
-    draw( names, 2, sg, 500, 30,"proofread_pages_per_day")
+    draw( names, 2, sg, 520, 30,"proofread_pages_per_day")
     draw( names, 1, sg, 170,20,"validated_pages_per_day")
     draw( names, 0, None, 1700000,100000,"all_pages")
     draw( names, 2, None, 900000, 50000, "proofread_pages")
