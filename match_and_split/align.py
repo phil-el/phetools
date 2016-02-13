@@ -69,24 +69,24 @@ E_ERROR = 1
 E_OK = 0
 
 # returns result, status
-def do_match(target, cached_text, djvuname, number, verbose, prefix):
+def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
     s = difflib.SequenceMatcher()
     offset = 0
     output = ""
     is_poem = False
 
     try:
-        last_page = cached_text[number-1]
+        last_page = cached_text[number - ((step+1)/2)]
     except:
         return ret_val(E_ERROR, "Unable to retrieve text layer for page: " + str(number))
 
-    for pagenum in range(number, min(number + 1000, len(cached_text))):
+    for pagenum in range(number, min(number + 1000, len(cached_text)), step):
 
         if pagenum - number == 10 and offset == 0:
             return ret_val(E_ERROR, "error : could not find a text layer.")
 
         page1 = last_page
-        last_page = page2 = cached_text[pagenum]
+        last_page = page2 = cached_text[pagenum + (step/2)]
 
         text1 = page1+page2
         text2 = target[offset:offset+ int(1.5*len(text1))]

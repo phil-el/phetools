@@ -168,7 +168,7 @@ def do_match(mysite, maintitle, user, codelang):
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
     prefix = prefix.decode('utf-8')
-    p = re.compile("==__MATCH__:\[\[" + prefix + ":(.*?)/(\d+)\]\]==")
+    p = re.compile("==__MATCH__:\[\[" + prefix + ":(.*?)/(\d+)(\|step=(\d+))?\]\]==")
     m = re.search(p,text)
     if m:
         djvuname = m.group(1)
@@ -176,10 +176,17 @@ def do_match(mysite, maintitle, user, codelang):
         pos = text.find(m.group(0))
         head = text[:pos]
         text = text[pos+len(m.group(0)):]
+        if m.group(4):
+            try:
+                step = int(m.group(4))
+            except:
+                return ret_val(E_ERROR, "match tag invalid")
+        else:
+            step = 1
     else:
         return ret_val(E_ERROR, "match tag not found")
 
-    pywikibot.output(djvuname + " " + number)
+    pywikibot.output(djvuname + " " + number + " " + str(step))
     try:
         number = int(number)
     except:
@@ -190,7 +197,7 @@ def do_match(mysite, maintitle, user, codelang):
     if not cached_text:
         return ret_val(E_ERROR, "unable to read djvu, if the File: exists, please retry")
 
-    data = align.do_match(text, cached_text, djvuname, number, verbose = False, prefix = prefix)
+    data = align.do_match(text, cached_text, djvuname, number, verbose = False, prefix = prefix, step = step)
     if not data['error']:
         safe_put(page, head + data['text'], user + ": match")
         data['text'] = ""
