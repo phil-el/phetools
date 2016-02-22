@@ -44,7 +44,7 @@ for dom in names + ["total"]:
 def draw_domain(dom):
     
     n1 = "Wikisource_-_pages_%s.png"%dom
-    fig = pylab.figure(1)
+    fig = pylab.figure(1, figsize=(12,12))
     ax = fig.add_subplot(111)
 
     pylab.clf()
@@ -63,19 +63,19 @@ def draw_domain(dom):
     b2 = pylab.bar(x, x, color='#b0b0ff')
     b3 = pylab.bar(x, x, color='#ffe867')
     b4 = pylab.bar(x, x, color='#90ff90')
-    pylab.legend([b1[0], b3[0], b4[0], b0[0], b2[0]],['not proofread','proofread','validated','without text','problematic'],loc=2)
+    pylab.legend([b1[0], b3[0], b4[0], b0[0], b2[0]],['not proofread','proofread','validated','without text','problematic'],loc=2, prop={'size':'medium'})
 
     pylab.plot_date(count[0][1],pylab.zeros(len(count[0][1])),'k-' )
     ax.xaxis.set_major_locator( pylab.YearLocator() )
     ax.xaxis.set_major_formatter( pylab.DateFormatter('%Y-%m-%d') )
     fig.autofmt_xdate()
 
-    pylab.title("%s.wikisource.org"%dom)
+    pylab.title("%s.wikisource.org"%dom, fontdict = { 'fontsize' : 'xx-large' } )
     pylab.ylim(0)
     pylab.savefig(savepath+n1)
 
     n1 = "Wikisource_-_texts_%s.png"%dom
-    pylab.figure(1)
+    pylab.figure(1, figsize=(12,12))
     pylab.clf()
     pylab.hold(True)
     pylab.grid(True)
@@ -88,16 +88,16 @@ def draw_domain(dom):
     b1 = pylab.bar(x, x, color='#b0b0ff')
     b2 = pylab.bar(x, x, color='#ffa0a0')
     if dom!='de':
-        pylab.legend([b1[0],b2[0]],['with scans','naked'],loc=3)
+        pylab.legend([b1[0],b2[0]],['with scans','naked'],loc=3, prop={'size':'medium'})
     else:
-        pylab.legend([b1[0],b2[0]],['with transclusion (PR2)','older system (PR1)'],loc=3)
+        pylab.legend([b1[0],b2[0]],['with transclusion (PR2)','older system (PR1)'],loc=3, prop={'size':'medium'})
     
     pylab.plot_date( rm29(dom,count[8][1]),pylab.zeros(len( rm29(dom,count[8][1]) )),'k-' )
     ax.xaxis.set_major_locator( pylab.YearLocator() )
     ax.xaxis.set_major_formatter( pylab.DateFormatter('%Y-%m-%d') )
     fig.autofmt_xdate()
 
-    pylab.title("%s.wikisource.org"%dom)
+    pylab.title("%s.wikisource.org"%dom, fontdict = { 'fontsize' : 'xx-large' } )
     pylab.ylim(0)
     pylab.savefig(savepath+n1)
 
@@ -110,7 +110,7 @@ def draw(domlist, index, func, max, tick, name, log=False):
     else:
         n1 = "Wikisource_-_%s.log.png"%name
     
-    fig = pylab.figure(1, figsize=(7,7))
+    fig = pylab.figure(1, figsize=(12,12))
     ax = fig.add_subplot(111)
     
     pylab.clf()
@@ -145,8 +145,8 @@ def draw(domlist, index, func, max, tick, name, log=False):
     else:
         pylab.ylim(100,ymax)
 
-    pylab.legend(loc=2, ncol=2, prop={'size':'small'})
-    pylab.title(name.replace('_',' '))
+    pylab.legend(loc=2, ncol=2, prop={'size':'medium'})
+    pylab.title(name.replace('_',' '), fontdict = { 'fontsize' : 'xx-large' } )
     pylab.savefig(savepath+n1)
     return
 
@@ -275,6 +275,16 @@ def sg(pp, dom):
                 av = 0.99*av + 0.01*d
                 # av = d
                 #if abs( d )>500: print dom, int(t[i]), d, dv, dt
+
+        # FIXME: this ignore all negative value from one day to another
+        # which can occur if a wiki delete some corrected pages (cpvio trouble
+        # prolly), if we don't ingore them a big blank rectangle appear on
+        # the bottom of graph for those negative value but the curve itself
+        # doesn't show them because of the average code. A better solution
+        # will be to set Y-Axis in such way than only positive value
+        # set are used to setup the Y-Axis scale.
+        if av < 0:
+            av = 0
         o.append( av )
     return o, t
 

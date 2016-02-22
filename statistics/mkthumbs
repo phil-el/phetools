@@ -1,6 +1,6 @@
 #!/bin/bash
 cd ~/public_html/graphs
-for i in Wikisource*.png; do convert -thumbnail 250 $i thumb/$i ; done
+for i in Wikisource*.png; do convert -thumbnail 400 $i thumb/$i ; done
 cd ~/phe/statistics
 ./gen_stats.py -y > ~/public_html/data/stats.txt
 ./gen_stats.py -y -d > ~/public_html/data/stats_diff.txt
