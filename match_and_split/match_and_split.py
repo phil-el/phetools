@@ -225,6 +225,7 @@ def do_split(mysite, rootname, user, codelang):
 
     fromsection = ""
     tosection = ""
+    fromsection_page = tosection_page = None
 
     for i in range(len(bl)/2):
 
@@ -294,10 +295,12 @@ def do_split(mysite, rootname, user, codelang):
                         first_part = old_text
                         second_part = content
                         fromsection="fromsection=s2 "
+                        fromsection_page = ref
                     else:
                         first_part = content
                         second_part = old_text
                         tosection="tosection=s1 "
+                        tosection_page = ref
 
                     content = "<noinclude>"+m.group(1)+"</noinclude><section begin=s1/>"+first_part+"<section end=s1/>\n----\n" \
                         + "<section begin=s2/>"+second_part+"<section end=s2/><noinclude>"+m.group(3)+"</noinclude>"
@@ -325,21 +328,21 @@ def do_split(mysite, rootname, user, codelang):
     if group:
         titles = titles + "<pages index=\"%s\" from=%d to=%d %s%s/>\n"%(group,pfrom,pto,fromsection,tosection)
 
-    if fromsection:
-        rtext = ref.get()
+    if fromsection and fromsection_page:
+        rtext = fromsection_page.get()
         m = re.search("<pages index=\"(.*?)\" from=(.*?) to=(.*?) (fromsection=s2 |)/>",rtext)
         if m and m.group(1)==group:
             rtext = rtext.replace(m.group(0), m.group(0)[:-2]+"tosection=s1 />" )
             print "new rtext"
-            safe_put(ref,rtext,user+": split")
+            safe_put(fromsection_page,rtext,user+": split")
 
-    if tosection:
-        rtext = ref.get()
+    if tosection and tosection_page:
+        rtext = tosection_page.get()
         m = re.search("<pages index=\"(.*?)\" from=(.*?) to=(.*?) (tosection=s1 |)/>",rtext)
         if m and m.group(1)==group:
             rtext = rtext.replace(m.group(0), m.group(0)[:-2]+"fromsection=s2 />" )
             print "new rtext"
-            safe_put(ref,rtext,user+": split")
+            safe_put(tosection_page,rtext,user+": split")
 
     if do_refs:
         titles += "----\n<references/>\n"
