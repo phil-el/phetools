@@ -221,7 +221,6 @@ def do_split(mysite, rootname, user, codelang):
     titles = '\n'
 
     group = ""
-    do_refs = False
 
     fromsection = ""
     tosection = ""
@@ -231,9 +230,6 @@ def do_split(mysite, rootname, user, codelang):
 
         title  = bl[i*2+1]
         content = bl[i*2+2]
-
-        if content.find("<ref") != -1 :
-            do_refs = True
 
         #for illegalChar in ['#', '<', '>', '[', ']', '|', '{', '}', '\n', u'\ufffd']:
         #    if illegalChar in title:
@@ -343,9 +339,6 @@ def do_split(mysite, rootname, user, codelang):
             rtext = rtext.replace(m.group(0), m.group(0)[:-2]+"fromsection=s2 />" )
             print "new rtext"
             safe_put(tosection_page,rtext,user+": split")
-
-    if do_refs:
-        titles += "----\n<references/>\n"
 
     header = bl[0]
     safe_put(page,header+titles,user+": split")
