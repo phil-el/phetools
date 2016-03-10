@@ -83,9 +83,11 @@ def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
             else:
                 ok = True
         except IOError, e:
-            new_url = e[3]['Location']
-            return copy_file_from_url(new_url, out_file, expect_sha1,
-                                      max_retry - 1)
+            if e[0] == 'http error' and e[1] == 302:
+                new_url = e[3]['Location']
+                return copy_file_from_url(new_url, out_file, expect_sha1,
+                                          max_retry - 1)
+            raise
         except Exception:
             print_traceback("upload error:", url, out_file)
             if os.path.exists(out_file):
