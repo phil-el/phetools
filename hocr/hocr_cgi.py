@@ -214,9 +214,11 @@ def prev_next_link(prev, has_next, state_filter, limit, offset, default_limit):
 
     return link
 
-def job_table(db_obj, state_filter, limit, offset, default_limit, max_limit):
+def job_table(db_obj, state_filter, limit, offset, default_limit, max_limit,
+              cmd_filter):
 
-    data, has_next = db_obj.get_job_table(state_filter, limit, offset)
+    data, has_next = db_obj.get_job_table(state_filter, limit,
+                                          offset, cmd_filter)
 
     link_prev = prev_next_link(True, has_next, state_filter, limit,
                                offset, default_limit)
@@ -271,6 +273,7 @@ def handle_status(params, start_response):
     max_limit = 1000
 
     state_filter = params.get('filter', '')
+    cmd_filter = params.get('cmd_filter', None)
     limit = get_int_param(params, 'limit', default_limit, max_limit)
     offset = get_int_param(params, 'offset', 0, None)
     #print >> sys.stderr, params
@@ -280,7 +283,7 @@ def handle_status(params, start_response):
     text = common_html.get_head('hocr', css = 'shared.css').encode('utf-8') + '\n  <body>\n'
 
     html, jobs = job_table(db_obj, state_filter, limit, offset,
-                           default_limit, max_limit)
+                           default_limit, max_limit, cmd_filter)
     text += html
 
     text += accounting_table(db_obj, jobs, state_filter, limit, offset,

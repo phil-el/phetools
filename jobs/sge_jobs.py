@@ -48,7 +48,8 @@ class DbJob(db.UserDb):
         self.all_state = set(['pending', 'running', 'success', 'accounting',
                               'sge_fail', 'fail'])
 
-    def get_job_table(self, state_filter, limit = 50, offset = 0):
+    def get_job_table(self, state_filter, limit = 50, offset = 0,
+                      cmd_filter = None):
         limit += 1
         data = []
         state_filter = state_filter.split('|')
@@ -66,9 +67,15 @@ class DbJob(db.UserDb):
 
         with db.connection(self):
             fmt_strs = ', '.join(['%s'] * len(state_filter))
-            q = 'SELECT * FROM job WHERE job_state IN (' + fmt_strs + ') ORDER BY job_id DESC LIMIT %s OFFSET %s'
+            q = 'SELECT * FROM job WHERE job_state IN (' + fmt_strs + ')'
+            if cmd_filter:
+                q += 'AND job_jobname = %s'
+                args = state_filter + (cmd_filter,) + (limit, ) + (offset,)
+            else:
+                args = state_filter + (limit, ) + (offset,)
+            q+= ' ORDER BY job_id DESC LIMIT %s OFFSET %s'
             #print >> sys.stderr, q % (state_filter + (limit, ) + (offset,))
-            self.cursor.execute(q, state_filter + (limit, ) + (offset,))
+            self.cursor.execute(q, args)
             data = self.cursor.fetchall()
 
         has_next = True if len(data) == limit else False
