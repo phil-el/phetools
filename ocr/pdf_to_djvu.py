@@ -252,4 +252,5 @@ def pdf_to_djvu_from_ia(ia_id):
 
 
 if __name__ == "__main__":
-    pdf_to_djvu_from_ia('BourgetLEcuyere1921')
+    # FIXME: later use command line switch to provide a more general service
+    pdf_to_djvu_from_ia(sys.argv[1])
