@@ -13,6 +13,9 @@ import os
 import sys
 import tempfile
 import xml.etree.ElementTree as etree
+import urllib
+import json
+import utils
 
 djvulibre_path = ''
 gsdjvu = os.path.expanduser('~/root/gsdjvu/bin/gs')
@@ -196,24 +199,45 @@ def pdf_with_xml_layer_to_djvu(xml_file, out_file):
 
     os.rmdir(temp_dir)
 
-def fix_ia_id(id):
-    fix = {
-        'BourgetLEcuyere1921' : 'BourgetL_Ecuyere1921',
+def get_ia_files(ia_id):
+    result = {
+        'pdf' : None,
+        'xml' : None
     }
-    return fix.get(id, id)
 
+    url = 'https://archive.org/metadata/' + ia_id + '/files'
+    fd = urllib.urlopen(url)
+    data = json.loads(fd.read())
+    fd.close()
+    for d in data['result']:
+        # this one exists in old and new items
+        if d['format'] == 'Djvu XML':
+            result['xml'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
+        # this one exists only in new items but in the of old items the .djvu
+        # must exist and should be used directly. For older item format is
+        # "Text PDF".
+        # FIXME: try an old item with derivation redone which delete the djvu
+        # to check if 'Additional Text PDF' is created in such case.
+        elif d['format'] == 'Additional Text PDF':
+            result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
+    return result
 
 # externally visible through an api
 def pdf_to_djvu_from_ia(ia_id):
-    base_url = 'https://archive.org/download/%s/%s' % (ia_id, fix_ia_id(ia_id))
+    base_url = 'https://archive.org/download/%s/' % ia_id
     base_dir = os.path.expanduser('~/cache/ia_pdf/%s' % ia_id)
-    pdf_name = base_dir + '_text.pdf'
-    xml_name = base_dir + '_djvu.xml'
 
-    print base_url  + '_text.pdf'
+    files = get_ia_files(ia_id)
 
-    utils.copy_file_from_url(base_url + '_text.pdf', pdf_name)
-    utils.copy_file_from_url(base_url + '_djvu.xml', xml_name)
+    pdf_name = base_dir + files['pdf']['name']
+    xml_name = base_dir + files['xml']['name']
+
+    print base_url  + files['pdf']['name']
+
+    utils.copy_file_from_url(base_url + files['pdf']['name'], pdf_name,
+                             expect_sha1 = files['pdf']['sha1'])
+    utils.copy_file_from_url(base_url + files['xml']['name'], xml_name,
+                             expect_sha1 = files['xml']['sha1'])
 
     djvu_name = pdf_to_djvu(pdf_name)
     if djvu_name:
@@ -222,17 +246,6 @@ def pdf_to_djvu_from_ia(ia_id):
     os.remove(pdf_name)
     os.remove(xml_name)
 
+
 if __name__ == "__main__":
-    import utils
-    in_file = 'https://archive.org/download/BourgetLEcuyere1921/BourgetL_Ecuyere1921_text.pdf'
-    base_file = os.path.expanduser('~/tmp/')  + 'BourgetL_Ecuyere1921_text'
-    out_file = base_file + '.pdf'
-    if False:
-        utils.copy_file_from_url(in_file, out_file)
-        djvu_name = pdf_to_djvu(out_file)
-        #os.remove(out_file)
-    elif False:
-        pdf_with_text_layer_to_djvu(base_file + '.pdf')
-    else:
-        pdf_to_djvu_from_ia('BourgetLEcuyere1921')
-    #os.remove(djvu_name)
+    pdf_to_djvu_from_ia('BourgetLEcuyere1921')
