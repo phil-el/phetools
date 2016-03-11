@@ -16,6 +16,7 @@ import xml.etree.ElementTree as etree
 import urllib
 import json
 import utils
+import shutil
 
 djvulibre_path = ''
 gsdjvu = os.path.expanduser('~/root/gsdjvu/bin/gs')
@@ -194,15 +195,6 @@ def pdf_text_to_djvu_with_xml(xml_file, out_file):
     for r in range(1, page_nr):
         os.remove('page_%04d.temp.txt' % r)
 
-def pdf_with_xml_layer_to_djvu(xml_file, out_file):
-    temp_dir = tempfile.mkdtemp()
-    print "temp_dir", temp_dir
-    os.chdir(temp_dir)
-
-    page_nr = pdf_text_to_djvu_with_xml(xml_file, out_file)
-
-    os.rmdir(temp_dir)
-
 def get_ia_files(ia_id):
     result = {
         'pdf' : None,
@@ -229,30 +221,34 @@ def get_ia_files(ia_id):
             result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
     return result
 
-def copy_ia_file(ia_id, metadata, out_name):
+def copy_ia_file(ia_id, metadata):
     base_url = 'https://archive.org/download/%s/' % ia_id
 
-    utils.copy_file_from_url(base_url + metadata['name'], out_name,
+    utils.copy_file_from_url(base_url + metadata['name'], metadata['name'],
                              expect_sha1 = metadata['sha1'])
 
 # externally visible through an api
 def pdf_to_djvu_from_ia(ia_id):
-    base_dir = os.path.expanduser('~/cache/ia_pdf/')
+    temp_dir = tempfile.mkdtemp()
+    print "temp_dir", temp_dir
+    os.chdir(temp_dir)
 
     files = get_ia_files(ia_id)
 
-    pdf_name = base_dir + files['pdf']['name']
-    xml_name = base_dir + files['xml']['name']
+    copy_ia_file(ia_id, files['pdf'])
+    copy_ia_file(ia_id, files['xml'])
 
-    copy_ia_file(ia_id, files['pdf'], pdf_name)
-    copy_ia_file(ia_id, files['xml'], xml_name)
-
-    djvu_name = pdf_to_djvu(pdf_name)
+    djvu_name = pdf_to_djvu(files['pdf']['name'])
     if djvu_name:
-        pdf_with_xml_layer_to_djvu(xml_name, djvu_name)
+        pdf_text_to_djvu_with_xml(files['xml']['name'], djvu_name)
+        shutil.move(djvu_name, os.path.expanduser('~/cache/ia_pdf/'))
 
-    os.remove(pdf_name)
-    os.remove(xml_name)
+    os.remove(files['pdf']['name'])
+    os.remove(files['xml']['name'])
+
+    os.rmdir(temp_dir)
+
+    return True if djvu_name else False
 
 
 if __name__ == "__main__":
