@@ -9,8 +9,12 @@
 
 import json
 import pdf_to_djvu
+import sys
+import os
+sys.path.append(os.path.expanduser('~/phe/common'))
 sys.path.append(os.path.expanduser('~/phe/jobs'))
 import sge_jobs
+import utils
 
 def queue_pdf_to_djvu(ia_id):
     job_req = {
@@ -58,7 +62,7 @@ def handle_query(params, start_response):
         })
     else:
         # Check it now to provide directly feedback to user
-        ia_files = pfd_to_djvu.get_ia_file(params['ia_id'])
+        ia_files = pdf_to_djvu.get_ia_files(params['ia_id'])
         if not ia_files.get('pdf', None) or not ia_files.get('xml', None):
             answer = '400 BAD REQUEST'
             text = json.dumps(
@@ -70,7 +74,7 @@ def handle_query(params, start_response):
         queue_pdf_to_djvu(params['ia_id'])
         text = json.dumps({
             'error' : 0,
-            'item conversion will start soon',
+            'text' : 'item conversion will start soon',
         })
 
     start_response(answer, [('Content-Type', 'text/plain; charset=UTF-8'),
@@ -91,7 +95,7 @@ def handle_get(environ, params, start_response):
                         ('Access-Control-Allow-Origin', '*')])
         return [ text ]
 
-    ia_files = pfd_to_djvu.get_ia_file(params['ia_id'])
+    ia_files = pdf_to_djvu.get_ia_files(params['ia_id'])
     if not ia_files.get('pdf', None) or not ia_files.get('xml', None):
         text = json.dumps(
             { 'error' : 2,
@@ -159,7 +163,7 @@ def myapp(environ, start_response):
     elif params['cmd'] == 'get':
         return handle_get(environ, params, start_response)
     else:
-        return handle_status(params, start_response)
+        return handle_status(start_response)
 
 if __name__ == "__main__":
     sys.stderr = open(os.path.expanduser('~/log/pdf_to_djvu_cgi.err'), 'a')

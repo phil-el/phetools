@@ -11,6 +11,7 @@ import subprocess
 import resource
 import os
 import sys
+sys.path.append(os.path.expanduser('~/phe/common'))
 import tempfile
 import xml.etree.ElementTree as etree
 import urllib
