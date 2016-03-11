@@ -26,6 +26,17 @@ def setrlimits():
     resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
     resource.setrlimit(resource.RLIMIT_CPU, (5*60*60, 5*60*60))
 
+def exec_process(args):
+    ls = subprocess.Popen(args, stdout=subprocess.PIPE, preexec_fn=setrlimits,
+                          close_fds = True)
+    text = ls.stdout.read()
+    ls.wait()
+    if ls.returncode != 0:
+        print >> sys.stderr, "process fail: ", ls.returncode, args
+        # FIXME: raise something and fix caller
+        return None
+    return text
+
 def pdf_to_djvu(in_file):
 
     if type(in_file) == type(u''):
@@ -36,16 +47,15 @@ def pdf_to_djvu(in_file):
 
     out_file = in_file[:-3] + 'djvu'
 
-    djvudigital = djvulibre_path + 'djvudigital'
-    # --words option is useless as many pdf contains text layer only for
-    # the first page
-    ls = subprocess.Popen([ djvudigital, "--dpi=300", in_file, out_file], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
-    text = ls.stdout.read()
+    # --words option is useless as djvudigital fails to extract text layer
+    # from many pdf. I've not yet see a pdf where djvudigital is able
+    # to extract text layer and anyway it is likely to do the same inaccurate
+    # text extraction as pdftotext.
+    args = [ djvulibre_path + 'djvudigital',  "--dpi=300", in_file, out_file ]
+    text = exec_process(args)
     if text:
         print text
-    ls.wait()
-    if ls.returncode != 0:
-        print >> sys.stderr, "djvudigital fail: ", ls.returncode, in_file
+    else:
         out_file = None
 
     if gsdjvu:
@@ -92,28 +102,22 @@ def add_text_layer(nr_pages, out_file):
 
     args += [ cmdline ]
 
-    ls = subprocess.Popen(args, stdout=subprocess.PIPE,
-                          preexec_fn=setrlimits, close_fds = True)
-    print ls.stdout.read()
-    ls.wait()
-
-    print "JOB DONE"
-
-    return ls.returncode
+    text = exec_process(args)
+    if text:
+        print text
+        print "JOB DONE"
+        return True
+    else:
+        return False
 
 def read_pdf_text(in_file):
     args = [ 'pdftotext', '%s' % in_file, '-' ]
-    ls = subprocess.Popen(args, stdout=subprocess.PIPE,
-                          preexec_fn=setrlimits, close_fds = True)
-    text = ls.stdout.read()
+    text = exec_process(args)
+    if text == None:
+        return None
     text = text.split('')
     # pdftotext end the last page with a  marker, remove it
     text = text[:-1]
-    ls.wait()
-    # FIXME: raise something ?
-    if ls.returncode:
-        print >> sys.stderr, "pdftotext fail:", ls.returncode
-        return None
 
     for r in range(1, len(text) + 1):
         fd = open('page_%04d.txt' % r, 'w')
@@ -140,13 +144,13 @@ def pdf_text_to_djvu(in_file, out_file):
         fd.close()
         write_page(page, text)
 
-    ret_code = add_text_layer(nr_pages, out_file)
+    ret = add_text_layer(nr_pages, out_file)
 
     for r in range(1, nr_pages + 1):
         os.remove('page_%04d.txt' % r)
         os.remove('page_%04d.temp.txt' % r)
 
-    return ret_code
+    return ret
 
 def pdf_with_text_layer_to_djvu(in_file):
     temp_dir = tempfile.mkdtemp()
@@ -160,14 +164,14 @@ def pdf_with_text_layer_to_djvu(in_file):
     os.rmdir(temp_dir)
     print out_file
 
-def get_deep_text( element ):
+def get_deep_text(element):
     text = element.text or ''
     for subelement in element:
-        text += get_deep_text( subelement )
+        text += get_deep_text(subelement)
     text += element.tail or ''
     return text[:-1] + ' '
 
-# This is much more accurate
+# This is much more accurate than using pdftotext
 def pdf_text_to_djvu_with_xml(xml_file, out_file):
     fd = open(xml_file)
     last_text = ''
@@ -213,31 +217,35 @@ def get_ia_files(ia_id):
         # this one exists in old and new items
         if d['format'] == 'Djvu XML':
             result['xml'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
-        # this one exists only in new items but in the of old items the .djvu
-        # must exist and should be used directly. For older item format is
-        # "Text PDF".
+        # 'Additional Text PDF' format exists only in new items but in old
+        # items the .djvu must exist and should be used directly. For older
+        # item format is "Text PDF".
+        #
         # FIXME: try an old item with derivation redone which delete the djvu
-        # to check if 'Additional Text PDF' is created in such case.
+        # to check if 'Additional Text PDF' is created in such case else we
+        # will need to falback to format = 'Text PDF' if 'Additional Text PDF'
+        # doesn't exist.
         elif d['format'] == 'Additional Text PDF':
             result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
     return result
 
+def copy_ia_file(ia_id, metadata, out_name):
+    base_url = 'https://archive.org/download/%s/' % ia_id
+
+    utils.copy_file_from_url(base_url + metadata['name'], out_name,
+                             expect_sha1 = metadata['sha1'])
+
 # externally visible through an api
 def pdf_to_djvu_from_ia(ia_id):
-    base_url = 'https://archive.org/download/%s/' % ia_id
-    base_dir = os.path.expanduser('~/cache/ia_pdf/%s' % ia_id)
+    base_dir = os.path.expanduser('~/cache/ia_pdf/')
 
     files = get_ia_files(ia_id)
 
     pdf_name = base_dir + files['pdf']['name']
     xml_name = base_dir + files['xml']['name']
 
-    print base_url  + files['pdf']['name']
-
-    utils.copy_file_from_url(base_url + files['pdf']['name'], pdf_name,
-                             expect_sha1 = files['pdf']['sha1'])
-    utils.copy_file_from_url(base_url + files['xml']['name'], xml_name,
-                             expect_sha1 = files['xml']['sha1'])
+    copy_ia_file(ia_id, files['pdf'], pdf_name)
+    copy_ia_file(ia_id, files['xml'], xml_name)
 
     djvu_name = pdf_to_djvu(pdf_name)
     if djvu_name:
