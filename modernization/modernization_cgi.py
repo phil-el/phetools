@@ -56,7 +56,7 @@ def return_response(start_response, obj, to_json, ret_code, mime_type):
 
 
 def handle_ping(start_response):
-    
+
     data = { 'error' : 0,
              'text' : 'pong',
              'server' : 'modernization',
