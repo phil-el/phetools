@@ -242,7 +242,8 @@ def pdf_to_djvu_from_ia(ia_id):
     djvu_name = pdf_to_djvu(files['pdf']['name'])
     if djvu_name:
         pdf_text_to_djvu_with_xml(files['xml']['name'], djvu_name)
-        shutil.move(djvu_name, os.path.expanduser('~/cache/ia_pdf/'))
+        shutil.copy(djvu_name, os.path.expanduser('~/cache/ia_pdf/'))
+        os.remove(djvu_name)
 
     os.remove(files['pdf']['name'])
     os.remove(files['xml']['name'])
