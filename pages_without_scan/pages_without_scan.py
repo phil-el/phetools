@@ -77,7 +77,7 @@ def handle_status(params, start_response):
 # pages without scan are :
 # all pages in ns 0 - (disamb pages + pages transcluding page(s) from ns Page:)
 def pages_without_scan(ns, cursor):
-    q = "select page_title, page_len from page where page_namespace=0 and page_is_redirect=0 and page_id not in (select pp_page from page_props where pp_propname='disambiguation') and page_id not in (select distinct page_id from templatelinks left join page on page_id=tl_from where tl_namespace=%s and page_namespace=0) ORDER BY page_len"
+    q = "SELECT page_title, page_len FROM page WHERE page_namespace=0 AND page_is_redirect=0 AND page_id NOT IN (SELECT pp_page FROM page_props WHERE pp_propname='disambiguation' UNION SELECT page_id FROM templatelinks LEFT JOIN page ON page_id=tl_from WHERE tl_namespace=%s AND page_namespace=0) ORDER BY page_len"
     cursor.execute(q, [ ns ])
     return cursor.fetchall()
 
