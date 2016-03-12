@@ -74,21 +74,12 @@ def handle_status(params, start_response):
 
     return return_response(start_response, text, False, '200 OK', 'text/html')
 
-def page_with_scan(ns, cursor):
-    q = '(select distinct page_id from templatelinks left join page on page_id=tl_from where tl_namespace=%s and page_namespace=0)'
+# pages without scan are :
+# all pages in ns 0 - (disamb pages + pages transcluding page(s) from ns Page:)
+def pages_without_scan(ns, cursor):
+    q = "select page_title, page_len from page where page_namespace=0 and page_is_redirect=0 and page_id not in (select pp_page from page_props where pp_propname='disambiguation') and page_id not in (select distinct page_id from templatelinks left join page on page_id=tl_from where tl_namespace=%s and page_namespace=0) ORDER BY page_len"
     cursor.execute(q, [ ns ])
-    return set([ x[0] for x in cursor.fetchall() ])
-
-def disamb_page(cursor):
-    q = "select pp_page from page_props where pp_propname = 'disambiguation'"
-    cursor.execute(q)
-    return set([ x[0] for x in cursor.fetchall() ])
-
-def all_pages(cursor):
-    q = 'select page_title, page_len, page_id from page where page_namespace=0 and page_is_redirect=0 ORDER BY page_len'
-    cursor.execute(q)
     return cursor.fetchall()
-
 
 def prev_next_link(prev, size, lang, limit, offset):
 
@@ -126,15 +117,15 @@ def handle_scan_query(params, start_response):
             conn = db.create_conn(domain = lang, family = 'wikisource')
             cursor = db.use_db(conn, domain = lang, family = 'wikisource')
             ns = ws_category.domain_urls[lang][0]
-            page_ids = disamb_page(cursor) | page_with_scan(ns, cursor)
-            all_p = all_pages(cursor)
-            result = [( unicode(x[0], 'utf-8'), x[1]) for x in all_p if x[2] not in  page_ids]
-            text += 'Total: ' + str(len(result)) + '<br />'
-            next_link = prev_next_link(False, len(result), lang, limit, offset)
-            prev_link = prev_next_link(True, len(result), lang, limit, offset)
+            result = pages_without_scan(ns, cursor)
+            result_len = len(result)
+            result = result[offset:offset+limit]
+            result = [( unicode(x[0], 'utf-8'), x[1]) for x in result]
+            text += 'Total: ' + str(result_len) + '<br />'
+            next_link = prev_next_link(False, result_len, lang, limit, offset)
+            prev_link = prev_next_link(True, result_len, lang, limit, offset)
             text += prev_link + '&#160;' + next_link + '<br /><br />'
 
-            result = result[offset:offset+limit]
             for x in result:
                 text += u'<a href="//%s.wikisource.org/wiki/%s">' % (lang, x[0]) +  x[0].replace('_', ' ') + u'</a>, ' + str(x[1]) + u'<br />'
 
