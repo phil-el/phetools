@@ -20,7 +20,7 @@ import json
 
 def query_params(environ):
     import cgi
-    field = cgi.FieldStorage(environ['wsgi.input'])
+    field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
     rdict = {
         'format' : 'html',
         'cmd' : 'status',
@@ -50,7 +50,7 @@ def return_response(start_response, obj, to_json, ret_code, mime_type):
 
     start_response(ret_code, [('Content-Type',
                                mime_type + '; charset=UTF-8'),
-                              ('Content-Length', len(text)),
+                              ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 

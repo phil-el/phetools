@@ -121,7 +121,8 @@ accounting_table_field = [
 
 def query_params(environ):
     import cgi
-    field = cgi.FieldStorage(environ['wsgi.input'])
+    field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
+
     rdict = {
         'format' : 'html',
         'cmd' : 'status',
@@ -147,7 +148,7 @@ def handle_ping(start_response):
 
     start_response('200 OK', [('Content-Type',
                                'text/plain; charset=UTF-8'),
-                              ('Content-Length', len(text)),
+                              ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 
@@ -293,7 +294,7 @@ def handle_status(params, start_response):
 
     start_response('200 OK', [('Content-Type',
                                'text/html; charset=UTF-8'),
-                              ('Content-Length', len(text)),
+                              ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 
@@ -336,7 +337,7 @@ def handle_query(params, start_response):
 
     start_response(ret_code, [('Content-Type',
                                'application/json' + '; charset=UTF-8'),
-                              ('Content-Length', len(text)),
+                              ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 

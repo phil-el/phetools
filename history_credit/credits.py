@@ -6,7 +6,6 @@ import os
 sys.path.append(os.path.expanduser('~/phe/common'))
 import serialize
 import random
-
 from get_credit import get_credit
 
 class SerializerHtml(serialize.SerializerBase):
@@ -36,7 +35,7 @@ def split_param(params):
 
 def query_params(environ):
     import cgi
-    field = cgi.FieldStorage(environ['wsgi.input'])
+    field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
     rdict = { 'format' : 'text',
               'cmd' : 'history',
               'book' : '',
@@ -70,7 +69,7 @@ def handle_query(params, start_response):
     text = serializer.serialize(result)
     start_response('200 OK', [('Content-Type',
                                serializer.content_type() + '; charset=UTF-8'),
-                              ('Content-Length', len(text)),
+                              ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 
@@ -84,7 +83,7 @@ def handle_status(start_response):
 
     start_response('200 OK', [('Content-Type',
                                'text/plain; charset=UTF-8'),
-                              ('Content-Length', len(text)),
+                              ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 
