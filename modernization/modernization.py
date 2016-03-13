@@ -506,7 +506,9 @@ class Modernization:
                                                            other_local_dict,
                                                            {})
                     if repl:
-                        suggest_local_dict[new_words] = repl
+                        # don't do any suggest for one letter
+                        if num > 1 or len(words_list[i]) > 1:
+                            suggest_local_dict[new_words] = repl
 
                 if not repl:
                     word_seen.add(words_list[i])
