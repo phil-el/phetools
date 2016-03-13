@@ -10,7 +10,7 @@
 import os
 import hocr_request
 import hocr
-import db
+from common import db
 
 def delete(bookname, lang):
     if type(bookname) == type(u''):

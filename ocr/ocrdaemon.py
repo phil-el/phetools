@@ -11,12 +11,12 @@ import thread
 import time
 import hashlib
 import re
-import common_html
+from common import common_html
 import ocr
-import utils
-import lifo_cache
-import job_queue
-import tool_connect
+from common import utils
+from common import lifo_cache
+from common import job_queue
+from common import tool_connect
 import urllib
 
 E_OK = 0

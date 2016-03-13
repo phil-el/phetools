@@ -2,13 +2,15 @@
 # GPL V2, author phe
 
 import sys
+import os
+sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 
 import re
 import tempfile
 import os
-import ws_utils
-import utils
+from common import ws_utils
+from common import utils
 import pywikibot
 from pywikibot import pagegenerators as pagegen
 
@@ -454,7 +456,7 @@ def verify_match(page_name, ocr_text, text, opt):
     return result
 
 def read_djvu(book_name, cached_text, datas, opt):
-    import align
+    from match_and_split import align
     data = align.get_djvu(cached_text, opt.site, book_name, True)
     for pos, text in enumerate(data):
         text = re.sub(u'(?ms)<noinclude>(.*?)</noinclude>', u'', text)

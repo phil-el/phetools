@@ -9,16 +9,19 @@
 
 import sys
 import os
-sys.path.append(os.path.expanduser('~/phe/common'))
-import utils
+# required because jlocal called from a cron job do an exec $@ which disallow
+# to pass PYTHONPATH, I could use a shell wrapper but for now it's simpler
+# this way.
+sys.path.append(os.path.expanduser('~/phe'))
+from common import utils
 import json
 import hashlib
 import time
 import MySQLdb
 import subprocess
-import qstat
+from common import qstat
 import re
-import db
+from common import db
 import collections
 
 jsub = '/usr/bin/jsub'

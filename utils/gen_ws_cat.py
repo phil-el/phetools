@@ -2,7 +2,7 @@
 
 import os
 import sys
-import pywikibot_utils
+from common import pywikibot_utils
 
 def gen_ws_category(langs):
     text  = u'# -*- coding: utf-8 -*-\n'

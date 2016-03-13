@@ -3,7 +3,7 @@
 import os
 import sys 
 import pywikibot
-import pywikibot_utils
+from common import pywikibot_utils
 
 def gen_lang(dict_name, result):
     for family in dict_name:

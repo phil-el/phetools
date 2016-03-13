@@ -9,8 +9,7 @@
 
 import sys
 import os
-sys.path.append(os.path.expanduser('~/phe/jobs'))
-import sge_jobs
+from jobs import sge_jobs
 
 def add_hocr_request(lang, sublang, filename):
     job_req = {

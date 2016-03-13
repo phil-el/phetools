@@ -15,7 +15,7 @@ disambiguations = {
     'pl':'Disambig',
     'pt':'Desambig',
     'ro':'Dezambig',
-    'ru':'Disambig',    
+    'ru':'Disambig',
     'sl':'Razločitev',
     'sv':'Förgreningssida',
     'te':'అయోమయ నివృత్తి',

@@ -8,13 +8,12 @@
 # @author Philippe Elie
 
 import sys
-import db
+from common import db
 import os
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_namespaces import index as index, namespaces as namespaces
 import hocr
-sys.path.append(os.path.expanduser('~/phe/jobs'))
-import sge_jobs
+from jobs import sge_jobs
 import hashlib
 import shutil
 import MySQLdb

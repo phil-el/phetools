@@ -6,21 +6,22 @@ __module_description__ = "extract text layer daemon"
 
 
 import sys
-from ws_namespaces import page as page_prefixes, index as index_prefixes
-import tool_connect
-import lifo_cache
-import job_queue
 import os
+sys.path.append(os.path.expanduser('~/wikisource'))
+from ws_namespaces import page as page_prefixes, index as index_prefixes
+from common import tool_connect
+from common import lifo_cache
+from common import job_queue
 
 import re
 import thread
 import time
 
-import align
+from match_and_split import align
 import pywikibot
-import common_html
+from common import common_html
 
-from pywikibot_utils import safe_put
+from common.pywikibot_utils import safe_put
 
 E_ERROR = 1
 E_OK = 0

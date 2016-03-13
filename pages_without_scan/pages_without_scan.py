@@ -9,12 +9,11 @@
 
 import os
 import sys
-sys.path.append(os.path.expanduser('~/phe/common'))
-import common_html
-import db
+from common import common_html
+from common import db
 sys.path.append(os.path.expanduser('~/wikisource'))
 import ws_category
-import utils
+from common import utils
 import types
 import json
 

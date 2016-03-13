@@ -1,11 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# FIXME: this script has the same name as it's container directory
+# this is prone error as both "from ocr import ocr" and "import ocr"
+# doen't trigger any assertion but have a different semantics.
+
 import sys
 import os
 import subprocess
 import resource
-import utils
+from common import utils
 import sys
 
 tesseract_languages = {

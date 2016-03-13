@@ -5,8 +5,7 @@ import os
 import sys
 sys.path.append(os.path.expanduser('~/wikisource'))
 import ws_namespaces as namespaces
-sys.path.append(os.path.expanduser('~/phe/common'))
-import db
+from common import db
 
 def default_userdict(count = 0):
     # credits are returned in a dict with user name associated with this value

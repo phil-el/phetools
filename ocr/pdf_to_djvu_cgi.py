@@ -11,10 +11,8 @@ import json
 import pdf_to_djvu
 import sys
 import os
-sys.path.append(os.path.expanduser('~/phe/common'))
-sys.path.append(os.path.expanduser('~/phe/jobs'))
-import sge_jobs
-import utils
+from jobs import sge_jobs
+from common import utils
 
 def queue_pdf_to_djvu(ia_id):
     job_req = {

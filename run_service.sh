@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PYTHONPATH=$HOME/phe/ocr:$HOME/phe/common:$HOME/phe/match_and_split:$HOME/wikisource:/data/project/phetools/pywikibot-core:/data/project/phetools/pywikibot-core/externals/httplib2:/data/project/phetools/pywikibot-core/scripts
+PYTHONPATH=$HOME/phe:$HOME/wikisource:/data/project/phetools/pywikibot-core:/data/project/phetools/pywikibot-core/externals/httplib2:/data/project/phetools/pywikibot-core/scripts
 LOG_DIR=/data/project/phetools/log/ # + service_name(.out|.err)
 # Some host don't define $LANG
 UTF8_LANG=en_US.UTF8
@@ -23,7 +23,7 @@ env_var[extract_text_layer]=PYTHONPATH=$PYTHONPATH
 memory[extract_text_layer]=640M
 cmdline[extract_text_layer]="python -u phe/extract_text_layer/extract_text_layer.py"
 
-env_var[ws_ocr_daemon]=PYTHONPATH="$HOME/phe/common"
+env_var[ws_ocr_daemon]=PYTHONPATH="$HOME/phe"
 memory[ws_ocr_daemon]=2048M
 cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
 

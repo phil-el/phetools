@@ -15,13 +15,12 @@ sys.path.append('/shared/pywikipedia/core/scripts')
 import pywikibot
 import pywikibot.pagegenerators as pagegen
 from pywikibot.data import api
-import utils
+from common import utils
 import os
 import collections
-import common_html
+from common import common_html
 import xml.etree.ElementTree as etree
-sys.path.append(os.path.expanduser('~/phe/spell'))
-import spell
+from spell import spell
 
 dict_config = {}
 

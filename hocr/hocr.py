@@ -9,14 +9,13 @@
 
 import sys
 import os
-import utils
+from common import utils
 import hashlib
-sys.path.append(os.path.expanduser('~/phe/ocr'))
-import pdf_to_djvu
-import ocr_djvu
-import djvu_text_to_hocr
+from ocr import pdf_to_djvu
+from ocr import ocr_djvu
+from ocr import djvu_text_to_hocr
 import ocr
-import db
+from common import db
 import re
 
 def lang_to_site(lang):

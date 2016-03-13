@@ -5,7 +5,7 @@ import xml.etree.ElementTree as etree
 import subprocess
 import os
 import resource
-import utils
+from common import utils
 
 djvulibre_path = ''
 djvutoxml = djvulibre_path + 'djvutoxml'

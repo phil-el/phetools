@@ -16,7 +16,7 @@ import tempfile
 import xml.etree.ElementTree as etree
 import urllib
 import json
-import utils
+from common import utils
 import shutil
 
 djvulibre_path = ''

@@ -3,8 +3,7 @@
 import sys
 import json
 import os
-sys.path.append(os.path.expanduser('~/phe/common'))
-import serialize
+from common import serialize
 import random
 from get_credit import get_credit
 

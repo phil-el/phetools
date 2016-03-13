@@ -5,7 +5,7 @@ import time,datetime
 import sys
 import pylab
 
-from common import decode_res
+from common_stat import decode_res
 
 colors = { 'total':'#000000',
            'en':'r',

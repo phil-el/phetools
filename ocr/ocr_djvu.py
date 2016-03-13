@@ -4,7 +4,7 @@ import sys
 import os
 import ocr
 import multiprocessing
-import utils
+from common import utils
 import errno
 import subprocess
 import resource
@@ -176,7 +176,6 @@ def default_options():
     return options
 
 if __name__ == "__main__":
-
     options = default_options()
 
     for arg in sys.argv[1:]:

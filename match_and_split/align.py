@@ -8,7 +8,7 @@ import os, re
 import difflib
 import pywikibot
 import urllib
-import utils
+from common import utils
 import subprocess
 
 def match_page(target, source):

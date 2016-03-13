@@ -10,14 +10,12 @@
 import os
 import sys
 import json
-sys.path.append(os.path.expanduser('~/phe/common'))
-import  serialize
-sys.path.append(os.path.expanduser('~/phe/jobs'))
-import sge_jobs
-import common_html
+from common import  serialize
+from jobs import sge_jobs
+from common import common_html
 import time
 import types
-import utils
+from common import utils
 import hocr
 
 def span_anchor(anchor, table):

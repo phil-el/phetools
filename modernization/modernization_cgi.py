@@ -9,11 +9,9 @@
 
 import os
 import sys
-sys.path.append(os.path.expanduser('~/phe/common'))
-sys.path.append(os.path.expanduser('~/phe/modernization'))
 import modernization
-import common_html
-import utils
+from common import common_html
+from common import utils
 import types
 import json
 

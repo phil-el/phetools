@@ -6,13 +6,13 @@ __module_version__ = "1.0"
 __module_description__ = "dummy robot"
 
 import sys
-import tool_connect
-import common_html
+from common import tool_connect
+from common import common_html
 
 import os
 import thread
 import time
-import job_queue
+from common import job_queue
 
 E_ERROR = 1
 E_OK = 0

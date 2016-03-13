@@ -7,22 +7,23 @@ __module_version__ = "1.0"
 __module_description__ = "match and split daemon"
 
 import sys
-import tool_connect
-import lifo_cache
-from ws_namespaces import page as page_prefixes
+from common import tool_connect
+from common import lifo_cache
 import os
+sys.path.append(os.path.expanduser('~/wikisource'))
+from ws_namespaces import page as page_prefixes
 import re
 import thread
 import time
 import align
-import common_html
-import utils
+from common import common_html
+from common import utils
 import signal
-import job_queue
+from common import job_queue
 
 import pywikibot
 
-from pywikibot_utils import safe_put
+from common.pywikibot_utils import safe_put
 
 E_ERROR = 1
 E_OK = 0

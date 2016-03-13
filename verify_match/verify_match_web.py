@@ -6,16 +6,17 @@ __module_version__ = "1.0"
 __module_description__ = "verify match daemon"
 
 import sys
-import tool_connect
-import job_queue
-import lifo_cache
+from common import tool_connect
+from common import job_queue
+from common import lifo_cache
+from common import utils
 
 import os
 import thread
 import time
 
 import pywikibot
-import common_html
+from common import common_html
 import verify_match
 
 E_ERROR = 1
