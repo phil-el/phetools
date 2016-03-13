@@ -93,7 +93,7 @@ if __name__ == "__main__":
         a, b = jobs.get()
         expect(jobs.copy_items, [(5, 6), (3, 4)])
         expect(jobs.copy_items, [(5, 6), (3, 4), (1, 2)], True)
-        items = jobs.copy_items(True)
+        jobs.copy_items(True)
         jobs.remove()
         expect(jobs.copy_items, [(5, 6), (3, 4)])
         expect(jobs.copy_items, [(5, 6), (3, 4)], True)
