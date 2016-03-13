@@ -89,7 +89,7 @@ class DbJob(db.UserDb):
         if not job_ids:
             job_ids = []
         if type(job_ids) != type([]):
-            jobs_ids = [ job_ids ]
+            job_ids = [ job_ids ]
         with db.connection(self):
             q = 'SELECT * from accounting '
             if job_ids:
