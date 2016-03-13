@@ -138,12 +138,10 @@ def pdf_text_to_djvu(in_file, out_file):
     print "NR PAGES", nr_pages
 
     for page in range(1, nr_pages + 1):
-        write_page_text(page, text)
-        text_filename = 'page_%04d.txt' % page
-        fd = open(text_filename)
+        fd = open('page_%04d.txt' % page)
         text = fd.read()
         fd.close()
-        write_page(page, text)
+        write_page_text(page, text)
 
     ret = add_text_layer(nr_pages, out_file)
 
@@ -195,6 +193,8 @@ def pdf_text_to_djvu_with_xml(xml_file, out_file):
     for r in range(1, page_nr):
         os.remove('page_%04d.temp.txt' % r)
 
+    return ret_code
+
 def get_ia_files(ia_id):
     result = {
         'pdf' : None,
@@ -239,8 +239,9 @@ def pdf_to_djvu_from_ia(ia_id):
     copy_ia_file(ia_id, files['xml'])
 
     djvu_name = pdf_to_djvu(files['pdf']['name'])
+    ret = False
     if djvu_name:
-        pdf_text_to_djvu_with_xml(files['xml']['name'], djvu_name)
+        ret = pdf_text_to_djvu_with_xml(files['xml']['name'], djvu_name)
         shutil.copy(djvu_name, os.path.expanduser('~/cache/ia_pdf/'))
         os.remove(djvu_name)
 
@@ -249,9 +250,10 @@ def pdf_to_djvu_from_ia(ia_id):
 
     os.rmdir(temp_dir)
 
-    return True if djvu_name else False
+    return ret
 
 
 if __name__ == "__main__":
     # FIXME: later use command line switch to provide a more general service
-    pdf_to_djvu_from_ia(sys.argv[1])
+    if not pdf_to_djvu_from_ia(sys.argv[1]):
+        sys.exit(1)

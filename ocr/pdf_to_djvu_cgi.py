@@ -119,11 +119,13 @@ def handle_get(environ, params, start_response):
         return [ text ]
 
     if 'wsgi.file_wrapper' in environ:
-        return environ['wsgi.file_wrapper'](the_file , 1024)
+        return environ['wsgi.file_wrapper'](djvu_name, 1024)
     else:
         fd = open(djvu_name)
+        save_name = ia_files['pdf']['name'][:-3].encode('utf-8') + 'djvu'
         start_response("200 OK",
                        [('Content-Type', 'application/octet-stream'),
+                        ('Content-Disposition', 'filename=%s' % save_name),
                         ('Access-Control-Allow-Origin', '*')])
 
         def file_wrapper(fileobj, block_size=1024):
@@ -154,13 +156,11 @@ def handle_status(start_response):
 def myapp(environ, start_response):
     params = query_params(environ)
 
-    if params['cmd'] == 'ping':
-        return handle_ping(start_response)
-    elif params['cmd'] == 'convert':
+    if params['cmd'] == 'convert':
         return handle_query(params, start_response)
     elif params['cmd'] == 'get':
         return handle_get(environ, params, start_response)
-    else:
+    else: # this include cmd=ping
         return handle_status(start_response)
 
 if __name__ == "__main__":
