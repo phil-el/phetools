@@ -105,7 +105,8 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             print "LEN(MB) < 2, breaking"
             break
         ccc = mb[-2]
-        dummy = mb[-1]
+        # no idea what was the purpose of this
+        #dummy = mb[-1]
         ratio = s.ratio()
         #print i, ccc, ratio
 
@@ -205,7 +206,7 @@ def get_filepage(site, djvuname):
 
     if page:
         try:
-            url = page.fileUrl()
+            page.fileUrl()
         except:
             site = pywikibot.Site(code = 'commons', fam = 'commons')
             page = pywikibot.page.FilePage(site, "File:" + djvuname)
