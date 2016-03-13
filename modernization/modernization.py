@@ -286,8 +286,9 @@ class Modernization:
         for key in cache:
             if key != 'global_dict':
                 for word in cache[key][1]:
-                    replace.setdefault( (word, cache[key][1][word]), 0)
-                    replace[(word, cache[key][1][word])] += 1
+                    if not word in global_dict:
+                        replace.setdefault( (word, cache[key][1][word]), 0)
+                        replace[(word, cache[key][1][word])] += 1
 
         replace = [ (replace[key], key[0], key[1]) for key in replace ]
 
