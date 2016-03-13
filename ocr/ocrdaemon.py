@@ -153,9 +153,6 @@ def ocr_image(cache, url, codelang):
 
     return ret_val(0, text)
 
-def next_pagename(match):
-    return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
-
 def job_thread(queue, cache):
     while True:
         url, codelang, user, t, tools, conn = queue.get()
