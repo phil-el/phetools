@@ -313,7 +313,7 @@ class Modernization:
             if 'global_dict' in cache:
                 global_dict = cache['global_dict'][1]
             else:
-                global_dict = collection.OrderedDict()
+                global_dict = collections.OrderedDict()
 
             redundant_words = self.get_dict_redundancy(global_dict, local_dict)
             self.dump_redundant_words(title, redundant_words)
