@@ -30,8 +30,11 @@ def delete(bookname, lang):
 if __name__ == "__main__":
     db_hocr = hocr_request.DbHocr()
     db_hocr.open()
-    #q = 'select title, lang from hocr where lang="bn"'
+    q = 'select title, lang from hocr where lang="bn"'
     db_hocr.cursor.execute(q)
     for p in db_hocr.cursor.fetchall():
-        delete(p['title'], p['lang'])
+        print p['lang'], p['title']
+        # commented for safety
+        #delete(p['title'], p['lang'])
+
     db_hocr.close()
