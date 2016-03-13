@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import MySQLdb
 import os
 import sys
 sys.path.append(os.path.expanduser('~/wikisource'))

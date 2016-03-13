@@ -17,7 +17,6 @@ from common import utils
 import json
 import hashlib
 import time
-import MySQLdb
 import subprocess
 from common import qstat
 import re
@@ -346,7 +345,6 @@ def sge_cmdline_arg(request):
     return sge_cmd_arg
 
 if __name__ == "__main__":
-    import time
 
     print "sge_jobs.py starting at:", time.ctime()
 

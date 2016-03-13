@@ -24,7 +24,6 @@ __copyright__ = "Creative Commons Attribution Non-Commercial Share Alike (BY-NC-
 __license__ = "GPL2"
 
 # Imports
-from time import strftime
 import irclib
 import time
 

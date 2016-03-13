@@ -10,7 +10,6 @@ import os
 import subprocess
 import resource
 from common import utils
-import sys
 
 tesseract_languages = {
     'be' : 'bel',
@@ -85,7 +84,6 @@ def ocr(filename, out_basename, lang, config = ''):
     return txt
 
 if __name__ == "__main__":
-    import os
     image_filename = 'temp.jpg'
     url= 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Petitot_-_Collection_compl%C3%A8te_des_m%C3%A9moires_relatifs_%C3%A0_l%E2%80%99histoire_de_France%2C_2e_s%C3%A9rie%2C_tome_45.djvu/page280-1024px-Petitot_-_Collection_compl%C3%A8te_des_m%C3%A9moires_relatifs_%C3%A0_l%E2%80%99histoire_de_France%2C_2e_s%C3%A9rie%2C_tome_45.djvu.jpg'
     lang = 'fr'

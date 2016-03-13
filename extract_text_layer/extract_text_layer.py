@@ -13,7 +13,6 @@ from common import tool_connect
 from common import lifo_cache
 from common import job_queue
 
-import re
 import thread
 import time
 

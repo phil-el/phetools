@@ -10,7 +10,6 @@
 import os
 import sys
 import json
-from common import  serialize
 from jobs import sge_jobs
 from common import common_html
 import time

@@ -5,7 +5,6 @@ __module_name__ = "wikisourceocr"
 __module_version__ = "1.0"
 __module_description__ = "wikisource ocr bot"
 
-import sys
 import os
 import thread
 import time
@@ -17,7 +16,6 @@ from common import utils
 from common import lifo_cache
 from common import job_queue
 from common import tool_connect
-import urllib
 
 E_OK = 0
 E_ERROR = 1

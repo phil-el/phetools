@@ -7,10 +7,8 @@
 #
 # @author Philippe Elie
 
-import sys
 import types
 import json
-import os
 
 # php serializer, support only base type, list, tuple and dict, no support
 # for set nor object

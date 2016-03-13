@@ -7,7 +7,6 @@
 import os, re
 import difflib
 import pywikibot
-import urllib
 from common import utils
 import subprocess
 

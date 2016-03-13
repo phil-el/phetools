@@ -12,10 +12,8 @@ from common import db
 import os
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_namespaces import index as index, namespaces as namespaces
-import hocr
 from jobs import sge_jobs
 import hashlib
-import shutil
 import MySQLdb
 
 # FIXME: some other lang can be supported.

@@ -18,7 +18,6 @@ import time
 import align
 from common import common_html
 from common import utils
-import signal
 from common import job_queue
 
 import pywikibot
@@ -493,6 +492,7 @@ if __name__ == "__main__":
         if not os.path.exists(os.path.expanduser('~/cache/' + cache_dir)):
             os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
         # qdel send a SIGUSR2 if -notify is used when starting the job.
+        # import signal
         #signal.signal(signal.SIGUSR2, on_exit)
         try:
             jobs = utils.load_obj("wsdaemon.jobs")

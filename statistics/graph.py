@@ -1,8 +1,7 @@
 
 #!/usr/bin/python
-import os,re
-import time,datetime
-import sys
+import os
+import datetime
 import pylab
 
 from common_stat import decode_res
