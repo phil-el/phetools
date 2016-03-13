@@ -199,7 +199,7 @@ def old_cache_path(book_name):
 
     return base_dir % (h[0:2], h[2:4], h[4:])
 
-def new_cache_pathh(book_name, lang):
+def new_cache_path(book_name, lang):
     base_dir  = os.path.expanduser('~/cache/hocr/') + '%s/%s/%s/'
 
     h = bookname_md5(book_name + lang)
@@ -250,7 +250,9 @@ if __name__ == "__main__":
     db_hocr.open()
     for lang in supported_lang:
         if arg == '-rebuild_hocr_db':
-            rebuild_hocr_db(db_hocr, lang)
+            pass
+            # commented for safety
+            #rebuild_hocr_db(db_hocr, lang)
         elif  arg == '-prepare_request':
             prepare_request(db_hocr, lang)
         else:
