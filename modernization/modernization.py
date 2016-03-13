@@ -167,14 +167,17 @@ class Modernization:
 
         return result
 
-    def parse_local_dict(self, variant, html):
-        result = self.default_cache()
-        html_id = self.config[variant]['modernize_div_id']
-
+    def fixup_html(self, html):
         html = html.replace(u'&nbsp;', u' ')
         # mediawiki insert that in comment which prevent conversion to xml
         html = html.replace(u'Modèle:---', u'Modèle:(mangled triple -)')
         html = html.replace(u'Modèle:--', u'Modèle:(mangled double -)')
+
+        return html
+
+    def parse_local_dict(self, variant, html):
+        result = self.default_cache()
+        html_id = self.config[variant]['modernize_div_id']
 
         html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
         root = etree.fromstring(html.encode('utf-8'))
@@ -193,7 +196,7 @@ class Modernization:
         req = api.Request(site=page.site, page=page.title(),
                           action='parse', prop = 'text')
         data = req.submit()
-        return data['parse']['text']['*']
+        return self.fixup_html(data['parse']['text']['*'])
 
     def get_global_dict(self, variant):
         title = self.config[variant]['global_dict']
@@ -376,7 +379,7 @@ class Modernization:
         return None, None
 
     # This mimic code at:
-    # https://wikisource.org/wiki/User:Helder.wiki/Scripts/LanguageConverter.js
+    # https://wikisource.org/wiki/User:He7d3r/Tools/LanguageConverter.js
     def find_repl(self, words_list, i, local_dict, global_dict):
         repl = None
         glb = None
@@ -548,8 +551,6 @@ class Modernization:
         if not os.path.exists(filename):
             html = self.get_html(p)
             new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
-
-            new_html = new_html.replace(u'&nbsp;', u' ')
 
             root = etree.fromstring(new_html.encode('utf-8'))
             exclude = set()
