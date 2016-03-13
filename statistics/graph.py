@@ -137,8 +137,7 @@ def draw(domlist, index, func, max, tick, name, log=False):
     if not log:
         if max:
             ymax = max
-            xmax = int(pylab.xlim()[1]/7)
-            pylab.yticks(pylab.arange(0,max+1,tick))
+            pylab.yticks(pylab.arange(0,ymax+1,tick))
 
         pylab.ylim(ymin,ymax)
     else:
