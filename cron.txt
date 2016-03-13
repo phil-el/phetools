@@ -27,7 +27,7 @@
 #   the two.
 #
 # m h  dom mon dow   command
- 47 4 * * * jsub -N wikisource_stats -l h_vmem=1024M -o ~/log/wikisource_stats.out -e ~/log/wikisource_stats.err -v PYTHONPATH=$HOME/phe:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2:/shared/pywikipedia/core/scripts python phe/statistics/gen_stats.py -w
+ 47 4 * * * jsub -N wikisource_stats -l h_vmem=1024M -o ~/log/wikisource_stats.out -e ~/log/wikisource_stats.err -v PYTHONPATH=$HOME/phe:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2 python phe/statistics/gen_stats.py -w
  28 4 * * * jsub -N phe_logrotate -o ~/log/logrotate.out -e ~/log/logrotate.err /usr/sbin/logrotate ~/phe/logrotate.conf -s ~/log/logrotate.status
  47 * * * * jsub -N hocr_request -o ~/log/hocr_request.out -e ~/log/hocr_request.err -v PYTHONPATH=$HOME/phe python ~/phe/hocr/hocr_request.py -prepare_request
  */10 * * * * /usr/local/bin/jlocal /usr/bin/python ~/phe/jobs/sge_jobs.py >> ~/log/sge_jobs.out 2>>  ~/log/sge_jobs.err
