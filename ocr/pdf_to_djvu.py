@@ -242,7 +242,16 @@ def pdf_to_djvu_from_ia(ia_id):
     ret = False
     if djvu_name:
         ret = pdf_text_to_djvu_with_xml(files['xml']['name'], djvu_name)
-        shutil.copy(djvu_name, os.path.expanduser('~/cache/ia_pdf/'))
+        dest_file = os.path.expanduser('~/cache/ia_pdf/') + djvu_name
+        if ret:
+            shutil.copy(djvu_name, dest_file)
+        else:
+            # It's possible dest file exists from a previous conversion
+            # then user asked a new conversion because the source file
+            # changed, it's better to delete the old converted to ensure
+            # user will not confused by seeing this old file through a cmd=get
+            if os.path.exists(dest_file):
+                os.remove(dest_file)
         os.remove(djvu_name)
 
     os.remove(files['pdf']['name'])
