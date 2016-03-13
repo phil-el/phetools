@@ -172,6 +172,9 @@ class Modernization:
         html_id = self.config[variant]['modernize_div_id']
 
         html = html.replace(u'&nbsp;', u' ')
+        # mediawiki insert that in comment which prevent conversion to xml
+        html = html.replace(u'Modèle:---', u'Modèle:(mangled triple -)')
+        html = html.replace(u'Modèle:--', u'Modèle:(mangled double -)')
 
         html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
         root = etree.fromstring(html.encode('utf-8'))
@@ -203,12 +206,14 @@ class Modernization:
         for p in self.get_local_dict_list(variant):
             if p.latestRevision() in old_cache:
                 new_cache[p.latestRevision()] = old_cache[p.latestRevision()]
-            else:
                 count += 1
-                print >> sys.stderr, count, '\r',
+            else:
                 html = self.get_html(p)
                 result = self.parse_local_dict(variant, html)
                 new_cache[p.latestRevision()] = (p.title(), result)
+                count += 1
+
+            print >> sys.stderr, count, '\r',
 
         p = self.get_global_dict(variant)
         if 'global_dict' in old_cache and old_cache['global_dict'][0] == p.latestRevision():
@@ -222,7 +227,7 @@ class Modernization:
 
         self.save_dicts(variant, new_cache)
 
-        print '\nparsed', count
+        print '\ncache nr items', count
 
     def update_cache(self):
         for variant in self.variants:
