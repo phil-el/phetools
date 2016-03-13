@@ -6,6 +6,10 @@ import time, sys
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_category import domain_urls as urls
 from common_stat import decode_res, disambiguations
+# FIXME: needed actualy because we run with a cron job (fine) but also
+# under a php front-end, annoying to pass python env to php, it'll need
+# a better fix later
+sys.path.append(os.path.expanduser('~/phe'))
 from common import db
 
 # The domain name we care.
