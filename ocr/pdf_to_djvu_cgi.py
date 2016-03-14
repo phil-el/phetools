@@ -121,10 +121,12 @@ def handle_get(environ, params, start_response):
     if 'wsgi.file_wrapper' in environ:
         return environ['wsgi.file_wrapper'](djvu_name, 1024)
     else:
+        size = os.path.getsize(djvu_name)
         fd = open(djvu_name)
         save_name = ia_files['pdf']['name'][:-3].encode('utf-8') + 'djvu'
         start_response("200 OK",
                        [('Content-Type', 'application/octet-stream'),
+                        ('Content-Length', str(size)),
                         ('Content-Disposition', 'filename=%s' % save_name),
                         ('Access-Control-Allow-Origin', '*')])
 
