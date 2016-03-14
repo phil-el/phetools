@@ -36,7 +36,7 @@ def exec_process(args):
         print >> sys.stderr, "process fail: ", ls.returncode, args
         # FIXME: raise something and fix caller
         return None
-    return text
+    return "Success:" if not text else text
 
 def pdf_to_djvu(in_file):
 
