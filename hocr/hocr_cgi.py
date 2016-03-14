@@ -40,18 +40,6 @@ def format_sge_jobnumber_job(sge_jobnumber, fields):
 def format_sge_jobnumber_accounting(sge_jobnumber, fields):
     return format_accounting_table_anchor(sge_jobnumber)
 
-def format_command(cmd, fields):
-    if cmd != 'python':
-        return cmd
-    else:
-        arg = json.loads(fields['job_args'])[0]
-        prefixes = [ '/data/project/phetools/phe/hocr/', '/data/project/phetools/phe/ocr/', '/data/project/phetools/phe/', '/data/project/phetools/botpywi/' ]
-        for prefix in prefixes:
-            if arg.startswith(prefix):
-                arg = arg[len(prefix):]
-
-        return arg
-
 def format_args(args, fields):
     args = json.loads(args)
     if fields['job_run_cmd'] == 'python':
@@ -96,7 +84,7 @@ job_table_field = [
     ('job_id', 'job id', format_job_id_job),
     ('job_state', 'job state'),
     ('sge_jobnumber', 'sge job id', format_sge_jobnumber_job),
-    ('job_run_cmd', 'cmd', format_command),
+    ('job_jobname', 'name'),
     ('job_args', 'args', format_args),
     ('job_submit_time', 'submit&nbsp;time&nbsp;(UTC)', format_timestamp),
 ]
