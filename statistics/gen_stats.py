@@ -141,7 +141,7 @@ def get_stats(domains):
 
             if num_disambig==0 and disambiguations.get(dom) :
                 q_disamb = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'"%disambiguations.get(dom)
-                cursor.execute (q)
+                cursor.execute (q_disamb)
                 row = cursor.fetchone ()
                 num_disambig = int(row[0])
 
