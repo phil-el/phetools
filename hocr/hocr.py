@@ -14,7 +14,7 @@ import hashlib
 from ocr import pdf_to_djvu
 from ocr import ocr_djvu
 from ocr import djvu_text_to_hocr
-import ocr
+from ocr import ocr
 from common import db
 import re
 
