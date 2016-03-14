@@ -10,7 +10,6 @@ disambiguations = {
     'hr':'Razdvojba',
     'id':'Disambig',
     'la':'Discretiva',
-    'no':'Peker',
     'pl':'Disambig',
     'pt':'Desambig',
     'ro':'Dezambig',
