@@ -290,33 +290,37 @@ def setrlimits():
 
 def do_parse(opt, filename):
 
-    ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    try:
+        ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
 
-    page_nr = 1
-    for event, elem in etree.iterparse(XmlFile(ls.stdout)):
-        if elem.tag.lower() == 'object':
-            page = OcrPage()
-            if not opt.silent:
-                print >> sys.stderr, page_nr, '\r',
-            page.start_page(elem)
-            parse_page(page, elem, page_nr)
-            page.end_page(elem)
+        page_nr = 1
+        for event, elem in etree.iterparse(XmlFile(ls.stdout)):
+            if elem.tag.lower() == 'object':
+                page = OcrPage()
+                if not opt.silent:
+                    print >> sys.stderr, page_nr, '\r',
+                page.start_page(elem)
+                parse_page(page, elem, page_nr)
+                page.end_page(elem)
 
-            filename = opt.out_dir + 'page_%04d.hocr' % page_nr
+                filename = opt.out_dir + 'page_%04d.hocr' % page_nr
 
-            if opt.compress:
-                text = page.get_hocr_html().encode('utf-8')
-                utils.compress_file_data(filename, text, opt.compress)
-            else:
-                utils.write_file(filename, text)
+                if opt.compress:
+                    text = page.get_hocr_html().encode('utf-8')
+                    utils.compress_file_data(filename, text, opt.compress)
+                else:
+                    utils.write_file(filename, text)
 
-            elem.clear()
-            page_nr += 1
+                elem.clear()
+                page_nr += 1
 
-    if not opt.silent:
-        print >> sys.stderr
+    finally:
+        if not opt.silent:
+            print >> sys.stderr
 
-    ls.wait()
+        ls.stdout.read()
+        ls.wait()
+
     return ls.returncode
 
 def parse(opt, filename):
