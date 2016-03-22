@@ -8,6 +8,7 @@ import os, re
 import difflib
 import pywikibot
 from common import utils
+from common import copy_File
 import subprocess
 
 def match_page(target, source):
@@ -198,21 +199,6 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
     else:
         return ret_val(E_OK, output)
 
-def get_filepage(site, djvuname):
-    try:
-        page = pywikibot.page.FilePage(site, "File:" + djvuname)
-    except pywikibot.NoPage:
-        page = None
-
-    if page:
-        try:
-            page.fileUrl()
-        except:
-            site = pywikibot.Site(code = 'commons', fam = 'commons')
-            page = pywikibot.page.FilePage(site, "File:" + djvuname)
-
-    return page
-
 # It's possible to get a name collision if two different wiki have local
 # file with the same name but different contents. In this case the cache will
 # be ineffective but no wrong data can be used as we check its sha1.
@@ -226,7 +212,7 @@ def get_djvu(cache, mysite, djvuname, check_timestamp = False):
     obj = cache.get(cache_filename)
     if not obj:
         print "CACHE MISS"
-        filepage = get_filepage(mysite, djvuname)
+        filepage = copy_File.get_filepage(mysite, djvuname)
         if not filepage:
             # can occur if File: has been deleted
             return None
@@ -242,7 +228,7 @@ def get_djvu(cache, mysite, djvuname, check_timestamp = False):
             return None
     else:
         if check_timestamp:
-            filepage = get_filepage(mysite, djvuname)
+            filepage = copy_File.get_filepage(mysite, djvuname)
             if not filepage:
                 # can occur if File: has been deleted
                 return None
