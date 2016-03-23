@@ -9,7 +9,6 @@
 
 import utils
 import pywikibot
-import os
 
 def get_filepage(site, djvuname):
     try:
