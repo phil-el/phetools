@@ -21,6 +21,7 @@ $serverlist = array(
 	'extract_text_layer.php',
 	'verify_match.php',
 	'credits.py',
+	'pdf_to_djvu_cgi.py',
 	'pages_without_scan.py',
 );
 
