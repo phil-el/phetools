@@ -205,6 +205,8 @@ def get_ia_files(ia_id):
     fd = urllib.urlopen(url)
     data = json.loads(fd.read())
     fd.close()
+    if not 'result' in data:
+        return result
     for d in data['result']:
         # this one exists in old and new items
         if d['format'] == 'Djvu XML':

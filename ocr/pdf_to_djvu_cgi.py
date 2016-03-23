@@ -80,6 +80,21 @@ def handle_query(params, start_response):
                             ('Access-Control-Allow-Origin', '*')])
     return [ text ]
 
+def handle_help(start_response):
+    text = """
+?cmd=convert&ia_id=IA_ID
+return header "200 OK" if ia_id is valid and a json ala { "error" : 0 }
+?cmd=get&ia_id=IA_ID
+return header "200 OK" and "Content-Type" : "application/octet-steam"
+when cmd=get return something other than "200 OK", returned data are
+{ "error" : #non_zero_integer, "text" : "an error message" }
+json object are always returned as "text/plain; charset=UTF-8"
+"""
+    start_response('200 OK', [('Content-Type', 'text/plain; charset=UTF-8'),
+                            ('Content-Length', str(len(text))),
+                            ('Access-Control-Allow-Origin', '*')])
+    return [ text ]
+
 # FIXME: this piece of code is too clumsy
 def handle_get(environ, params, start_response):
     if not params['ia_id']:
@@ -97,7 +112,7 @@ def handle_get(environ, params, start_response):
     if not ia_files.get('pdf', None) or not ia_files.get('xml', None):
         text = json.dumps(
             { 'error' : 2,
-              'text' : "invalid ia identifier, I can't locate needed files",
+              'text' : "invalid ia identifier, can't locate the needed files",
           })
         start_response("400 BAD REQUEST",
                        [('Content-Type', 'text/plain; charset=UTF-8'),
@@ -162,6 +177,8 @@ def myapp(environ, start_response):
         return handle_query(params, start_response)
     elif params['cmd'] == 'get':
         return handle_get(environ, params, start_response)
+    elif params['cmd'] == 'help':
+        return handle_help(start_response)
     else: # this include cmd=ping
         return handle_status(start_response)
 
