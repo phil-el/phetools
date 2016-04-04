@@ -11,7 +11,7 @@ import sys
 import os
 from jobs import sge_jobs
 
-def add_hocr_request(lang, filename):
+def add_ocr_request(lang, filename):
     job_req = {
         'jobname' : 'ocr',
         'run_cmd' : 'python',
@@ -35,7 +35,7 @@ def prepare_ocr_request(lang, filename):
     if not os.path.exists(filename):
         print >> sys.stderr, "file:", filename, "doesn't exist"
         exit(1)
-    add_hocr_request(lang, filename)
+    add_ocr_request(lang, filename)
 
 if __name__ == "__main__":
     filenames = []
