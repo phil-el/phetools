@@ -50,7 +50,7 @@ EOT;
 $diff = isset($_GET["diff"]) ? $_GET["diff"] : 0;
 $daysago = isset($_GET["daysago"]) ? $_GET["daysago"] : 0;
 
-if($daysago || $diff>1 ) {
+if ($daysago || ($diff != 0 && $diff != 1 && $diff != 7 && $diff != 30 && $diff != 365) ) {
 	$n = $daysago+1;
 
 	if($diff) $dd =" -d$diff "; else $dd="";
@@ -62,8 +62,8 @@ if($daysago || $diff>1 ) {
 	$txt = ob_get_contents();
 	ob_end_clean();
 
-} else if($diff==1) {
-      $txt = file_get_contents('data/stats_diff.txt');
+} else if ($diff == 1 || $diff == 7 || $diff == 30 || $diff == 365) {
+      $txt = file_get_contents("data/stats_diff_$diff.txt");
 } else {
       $txt = file_get_contents('data/stats.txt');
 }
