@@ -20,6 +20,7 @@ def add_tidy_ocr_request(lang, filename):
         'args' : [
             os.path.expanduser('~/botpywi/tidy_ocr.py'),
             '-lang:' + lang,
+            '-monochrome',
             '' + filename
             ],
         'max_vmem' : 2048,
