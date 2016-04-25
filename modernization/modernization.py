@@ -21,6 +21,7 @@ import collections
 from common import common_html
 import xml.etree.ElementTree as etree
 from spell import spell
+import hashlib
 
 dict_config = {}
 
@@ -79,6 +80,8 @@ dict_config['fr']['FR'] = {
         [ u'ﬆ', 'st' ],
         ],
 }
+
+dict_config['fr']['FR']['global_dict'] = u'|'.join( [ 'Wikisource:Dictionnaire/' + x for x in u'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ])
 
 class Modernization:
     def __init__(self, lang):
@@ -199,8 +202,11 @@ class Modernization:
         return self.fixup_html(data['parse']['text']['*'])
 
     def get_global_dict(self, variant):
-        title = self.config[variant]['global_dict']
-        return self.get_page(title)
+        titles = self.config[variant]['global_dict']
+        result = []
+        for title in titles.split(u'|'):
+            result.append(self.get_page(title))
+        return result
 
     def update_cache_variant(self, variant):
         old_cache = self.load_dicts(variant)
@@ -218,15 +224,22 @@ class Modernization:
 
             print >> sys.stderr, count, '\r',
 
-        p = self.get_global_dict(variant)
-        if 'global_dict' in old_cache and old_cache['global_dict'][0] == p.latestRevision():
+        pages = self.get_global_dict(variant)
+        md5 = hashlib.md5()
+        for p in pages:
+            md5.update(str(p.latestRevision()))
+        key = md5.digest()
+
+        if 'global_dict' in old_cache and old_cache['global_dict'][0] == key:
             new_cache['global_dict'] = old_cache['global_dict']
         else:
-            count += 1
-            html = self.get_html(p)
-            result = self.parse_global_dict(html)
+            result = {}
+            for p in pages:
+                count += 1
+                html = self.get_html(p)
+                result.update(self.parse_global_dict(html))
 
-            new_cache['global_dict'] = (p.latestRevision(), result)
+            new_cache['global_dict'] = (key, result)
 
         self.save_dicts(variant, new_cache)
 
@@ -642,9 +655,12 @@ class Modernization:
             self.useless_dict_entry_variant(variant)
 
     def test_global_dict(self, variant):
-        p = self.get_global_dict(variant)
-        html = self.get_html(p)
-        result = self.parse_global_dict(html)
+        pages = self.get_global_dict(variant)
+        result = {}
+        for p in pages:
+            print p.title().encode('utf-8')
+            html = self.get_html(p)
+            result.update(self.parse_global_dict(html))
         for key in result:
             print key.encode('utf-8'), result[key].encode('utf-8')
 
