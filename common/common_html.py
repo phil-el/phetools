@@ -9,9 +9,19 @@ html_head = u"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
     <title>%s</title>
   %s</head>"""
 
-def get_head(title, css = None):
+html5_head = u"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>%s</title>
+%s
+</head>
+"""
+
+def get_head(title, css = None, html5 = False):
     if not css:
         css = ''
     else:
         css = '<link href="%s" rel="stylesheet" type="text/css">' % css
-    return html_head % (title, css)
+    html = html5_head if html5 else html_head
+    return html % (title, css)

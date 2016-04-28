@@ -151,6 +151,15 @@ $footer = <<<EOT
   </div>
  </div>
 
+ <div class="portal" id='index_tool'>
+  <h5>Index tool</h5>
+  <div class="body">
+   <ul>
+    <li><a href="not_transcluded">Index tool</a></li>
+   </ul>
+  </div>
+ </div>
+
 </div>
 </body></html>
 EOT;
