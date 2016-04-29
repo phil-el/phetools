@@ -47,7 +47,6 @@ def filter_result(books):
 def format_html_line(domain, bookname, count):
     if domain == 'old':
         domain = 'mul'
-    #bookname = unicode(bookname, 'utf-8')
     fmt = '<li><a href="//%s.wikisource.org/wiki/Index:%s">%s</a> %d</li>'
     result = fmt % (domain, urllib.quote(bookname), bookname, count)
     return result
@@ -86,21 +85,22 @@ SELECT page_title, page_id FROM categorylinks LEFT JOIN page ON page_id=cl_from
     if os.path.exists(out_file):
         os.remove(out_file)
 
-    if not len(result):
-        return 0
-
     out_fd = open(out_file, 'w')
 
     title = '%s.wikisource.org not transcluded page' % domain
     head = common_html.get_head(title, html5 = True).encode('utf-8')
     print >> out_fd, head
     print >> out_fd, '<body>'
-    print >> out_fd, '<ol>'
+    if len(result):
+        print >> out_fd, '<ol>'
 
-    for d in result:
-        print >> out_fd, format_html_line(domain, d[1], d[0])
+        for d in result:
+            print >> out_fd, format_html_line(domain, d[1], d[0])
 
-    print >> out_fd, '</ol>'
+        print >> out_fd, '</ol>'
+    else:
+        "Empty result, no Index meet the criteria to be listed in this file."
+
     print >> out_fd, '\n</body>\n</html>'
     out_fd.close()
 
