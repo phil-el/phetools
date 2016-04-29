@@ -11,6 +11,7 @@ import sys
 import os
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_category import domain_urls as urls
+from ws_namespaces import index as index_name
 from common import db
 from gen_stats import all_domain
 from common import common_html
@@ -45,10 +46,23 @@ def filter_result(books):
     return result
 
 def format_html_line(domain, bookname, count):
+    title = index_name['wikisource'][domain] + ':' + bookname
+
     if domain == 'old':
         domain = 'mul'
-    fmt = '<li><a href="//%s.wikisource.org/wiki/Index:%s">%s</a> %d</li>'
-    result = fmt % (domain, urllib.quote(bookname), bookname, count)
+
+    result = '<li>'
+
+    fmt = '<a href="//%s.wikisource.org/wiki/%s">%s</a> %d'
+    result += fmt % (domain, urllib.quote(title), bookname, count)
+
+    # checker redirect with a 301 from checker? to checker/? so use
+    # directly that url even if it's a bit weird
+    fmt = ' — <a href="/checker/?db=%s&title=%s">Check pages</a>'
+    result += fmt % (db.database_name(domain, 'wikisource'), title)
+
+    result += '</li>'
+
     return result
 
 def not_transcluded(domain, cursor):
