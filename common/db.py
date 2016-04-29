@@ -25,7 +25,7 @@ def user_db_prefix():
 
 def database_name(domain, family):
     if family == 'wikisource':
-        if domain in [ 'old', 'www' ]:
+        if domain in [ 'old', 'www', 'mul' ]:
             dbname = 'sourceswiki_p'
         elif domain == 'zh-min-nan':
             dbname = 'zh_min_nanwikisource_p'
