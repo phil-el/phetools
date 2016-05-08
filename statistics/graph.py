@@ -25,6 +25,7 @@ colors = { 'total':'#000000',
            'sa': '#d0d000',
            'ml': '#00d0d0',
            'te': '#0f0f0f',
+           'bn': '#080808',
            }
 
 names = colors.keys()
