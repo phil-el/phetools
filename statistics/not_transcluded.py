@@ -41,6 +41,13 @@ def filter_result(books):
             else:
                 print "filtered:", key
 
+            # debug: for replicas missing record
+            if False and key == 'Dictionnaire_portatif_de_cuisine,_d’office,_et_de_distillation,_1772.djvu':
+                q = 'select page_title from page where page_id in (%s)' % fmt_strs
+                cursor.execute(q, page_ids)
+                for x in range(cursor.rowcount):
+                    print cursor.fetchone()[0]
+
     result.sort(reverse = True)
 
     return result
@@ -93,7 +100,7 @@ SELECT page_title, page_id FROM categorylinks LEFT JOIN page ON page_id=cl_from
         out_fd = open(out_file, 'w')
         for d in result:
             print >> out_fd, d[1], d[0]
-            out_fd.close()
+        out_fd.close()
 
     out_file = os.path.expanduser('~/tmp/transclusions/%s.html' % domain)
     if os.path.exists(out_file):
