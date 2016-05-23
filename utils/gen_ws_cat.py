@@ -71,7 +71,9 @@ if __name__ == "__main__":
         old_text = fd.read()
         fd.close()
     if unicode(old_text, 'utf-8') != text:
-        print "writing file, no server needs a restart"
+        print "writing file %s, server needs a restart" % target
         fd = open(target, 'w')
         fd.write(text.encode('utf-8'))
         fd.close()
+    else:
+        print "no change in %s, no server restart needed" % target
