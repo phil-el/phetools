@@ -307,7 +307,7 @@ def main():
     print "totals"
 
     draw( ["total"], 2, sg, 1300, 100,"proofread_pages_per_day_(all_wikisources)")
-    draw( ["total"], 1, sg, 600, 100,"validated_pages_per_day_(all_wikisources)")
+    draw( ["total"], 1, sg, 700, 100,"validated_pages_per_day_(all_wikisources)")
 
     print "per day"
 
