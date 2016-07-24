@@ -51,6 +51,9 @@ def ocr(filename, out_basename, lang, config = ''):
     if tesseract_data_prefix:
         os.environ['TESSDATA_PREFIX'] = tesseract_data_prefix
 
+    if lang == 'ben':
+        os.environ['TESSDATA_PREFIX'] = '/data/project/phetools'
+
     ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     text = utils.safe_read(ls.stdout)
     if text:
