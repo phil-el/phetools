@@ -319,7 +319,15 @@ def do_split(mysite, rootname, user, codelang):
             content = header + content + footer
             
 
-        safe_put(pl,content,user+": split")
+        do_put = True
+        if pl.exists():
+            if hasattr(pl, '_quality') and pl._quality in [ 3, 4 ]:
+                print "quality in [3, 4], not saved"
+                do_put = False
+            else:
+                print "can't get quality level"
+        if do_put:
+            safe_put(pl,content,user+": split")
 
     if group:
         titles = titles + "<pages index=\"%s\" from=%d to=%d %s%s/>\n"%(group,pfrom,pto,fromsection,tosection)
