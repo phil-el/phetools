@@ -321,8 +321,8 @@ def do_split(mysite, rootname, user, codelang):
 
         do_put = True
         if pl.exists():
-            if hasattr(pl, '_quality') and pl._quality in [ 3, 4 ]:
-                print "quality in [3, 4], not saved"
+            if hasattr(pl, '_quality') and pl._quality != 1:
+                print "quality != 1, not saved"
                 do_put = False
             else:
                 print "can't get quality level"

@@ -36,8 +36,10 @@ def safe_put(page, text, comment):
     if re.match("^[\s\n]*$", text):
         return
 
+    max_retry = 3
+
     retry_count = 0
-    while retry_count < 2:
+    while retry_count < max_retry:
         try:
             page.put(text, comment = comment)
             break
@@ -57,10 +59,16 @@ def safe_put(page, text, comment):
             print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8") 
             print >> sys.stderr, "text len: ", len(text)
             utils.print_traceback()
+            print >> sys.stderr, "sleeping for:", 10 * (retry_count + 1)
+            time.sleep(10 * (retry_count + 1))
             retry_count += 1
             continue
         except:
             print >> sys.stderr, "put error: unknown exception"
             utils.print_traceback()
-            time.sleep(5)
+            time.sleep(10)
             break
+
+    if retry_count == max_retry:
+        print >> sys.stderr, "unable to save page after", max_retry, "try, bailing out"
+        pass
