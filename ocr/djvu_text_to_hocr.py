@@ -111,6 +111,7 @@ class OcrPage:
         self.para_box = Bbox(self.width, self.height, 0, 0)
         self.line_box = Bbox(self.width, self.height, 0, 0)
         self.word_box = Bbox(self.width, self.height, 0, 0)
+        self.char_box = Bbox(self.width, self.height, 0, 0)
         self.column_id = 1
         self.region_id = 1
         self.para_id = 1
@@ -208,6 +209,22 @@ class OcrPage:
             self.word_buffer += hocr_word_begin % data + self.word_text + hocr_word_end
             self.word_id += 1
 
+    def start_char(self, e):
+        if self.word_text and e.text:
+            self.word_text += e.text
+        elif e.text:
+            self.word_text = e.text
+        self.char_box = Bbox(self.width, self.height, 0, 0)
+        if 'coords' in e.attrib:
+            self.char_box.init(e.attrib['coords'])
+
+    def end_char(self, e):
+        self.grow_bbox(self.word_box, self.char_box)
+        self.grow_bbox(self.line_box, self.char_box)
+        self.grow_bbox(self.para_box, self.char_box)
+        self.grow_bbox(self.region_box, self.char_box)
+        self.grow_bbox(self.column_box, self.char_box)
+
     def get_hocr_html(self):
         return hocr_begin + self.page_buffer + hocr_end
 
@@ -254,6 +271,9 @@ def begin_elem(page, e):
     elif tag == 'word':
         page.start_word(e)
     elif tag == 'char':
+        page.start_char(e)
+    else:
+        print >> sys.stderr, "unsuported tag", tag
         raise 'unsuported tag'
 
 def end_elem(page, e):
@@ -271,6 +291,9 @@ def end_elem(page, e):
     elif tag == 'word':
         page.end_word(e)
     elif tag == 'char':
+        page.end_char(e)
+    else:
+        print >> sys.stderr, "unsuported tag", tag
         raise 'unsuported tag'
 
 def parse_page_recursive(page, elem):
