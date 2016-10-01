@@ -214,13 +214,14 @@ def get_ia_files(ia_id):
         # 'Additional Text PDF' format exists only in new items but in old
         # items the .djvu must exist and should be used directly. For older
         # item format is "Text PDF".
-        #
-        # FIXME: try an old item with derivation redone which delete the djvu
-        # to check if 'Additional Text PDF' is created in such case else we
-        # will need to falback to format = 'Text PDF' if 'Additional Text PDF'
-        # doesn't exist.
         elif d['format'] == 'Additional Text PDF':
             result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
+
+    if not result['pdf']:
+        # No 'Additional Text PDF' format, try with format == 'Text PDF'
+        for d in data['result']:
+            if d['format'] == 'Text PDF':
+                result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
     return result
 
 def copy_ia_file(ia_id, metadata):
