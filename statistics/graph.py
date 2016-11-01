@@ -306,12 +306,17 @@ def main():
 
     print "totals"
 
-    draw( ["total"], 2, sg, 1400, 100, "proofread_pages_per_day_(all_wikisources)")
+    draw( ["total"], 2, sg, 1600, 100, "proofread_pages_per_day_(all_wikisources)")
     draw( ["total"], 1, sg, 700, 100, "validated_pages_per_day_(all_wikisources)")
 
     print "per day"
 
-    draw( names, 2, sg, 720, 30, "proofread_pages_per_day")
+    # FIXME: auto calc of X/Y-axis 
+    # a = int(log 10(max))
+    # step = pow(a-1, 10)
+    # max_y = pow(a, 10) + step (must divide by 3) (2, 3, 5? depend of number
+    # of step)
+    draw( names, 2, sg, 750, 30, "proofread_pages_per_day")
     draw( names, 1, sg, 240, 20, "validated_pages_per_day")
     draw( names, 0, None, 2000000,100000, "all_pages")
     draw( names, 2, None, 1200000, 40000, "proofread_pages")
