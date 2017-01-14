@@ -137,7 +137,10 @@ def ocr_image(cache, url, codelang):
 
     image_filename = basename + ".jpg"
 
-    utils.copy_file_from_url(url, image_filename)
+    try:
+        utils.copy_file_from_url(url, image_filename)
+    except:
+        return ret_val(3, "IOError: %s (invalid url?)" % url)
     if not os.path.exists(image_filename):
         return ret_val(1, "could not download url: %s" % url)
 
