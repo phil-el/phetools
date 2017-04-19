@@ -178,7 +178,16 @@ def slow_hocr(lang, book, in_file):
 
     print "Using tesseract lang:", options.lang
 
-    return ocr_djvu.ocr_djvu(options, in_file)
+    ret = ocr_djvu.ocr_djvu(options, in_file)
+
+    # FIXME: should go in ocr_djvu.cleanup() but better if cleanup() can
+    # be triggered by some sort of ocr_djvu module unload
+    try:
+        os.rmdir(options.temp_tiff_dir)
+    except:
+        print >> sys.stderr, "unable to remove directory:", options.temp_tiff_dir
+
+    return ret
 
 # is_uptodate() must be called first to ensure the file is uploaded.
 def hocr(options):

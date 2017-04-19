@@ -56,7 +56,7 @@ def extract_image(opt, page_nr, filename):
     if subsample != 1:
         print "subsample", subsample
 
-    tiff_name = opt.out_dir + 'page_%04d.tif' % page_nr
+    tiff_name = opt.temp_tiff_dir + '/page_%04d.tif' % page_nr
     ddjvu = djvulibre_path + 'ddjvu'
     ls = subprocess.Popen([ ddjvu, "-format=tiff", "-page=%d" % page_nr, "-subsample=%d" % subsample, filename, tiff_name], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     text = utils.safe_read(ls.stdout)
@@ -172,6 +172,14 @@ def default_options():
     options.compress = None
     options.silent = False
     options.out_dir = './'
+    # tiff temp file are the biggest IO, move them to /tmp/$ui_$pid/
+    # this assume /tmp is not nfs mounted so this dir name is not racy
+    # with other process running on a different exec node.
+    options.temp_tiff_dir = '/tmp/' + str(os.getuid()) + '_' + str(os.getpid())
+
+    if not os.path.exists(options.temp_tiff_dir):
+        print >> sys.stderr, "creating temp dir:", options.temp_tiff_dir
+        os.mkdir(options.temp_tiff_dir)
 
     return options
 
@@ -198,3 +206,8 @@ if __name__ == "__main__":
         path = os.path.split(filename)
         options.out_dir = path[0]
         ocr_djvu(options, filename)
+
+    try:
+        os.rmdir(options.temp_tiff_dir)
+    except:
+        print >> sys.stderr, "unable to remove directory:", options.temp_tiff_dir
