@@ -52,6 +52,7 @@ all_domain = set([
     'no',
     'old',  # old is wikisource.org
     'or',
+    'pa',
     'pl',
     'pt',
     'ro',
