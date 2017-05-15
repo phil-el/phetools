@@ -36,10 +36,11 @@ def safe_put(page, text, comment):
     if re.match("^[\s\n]*$", text):
         return
 
-    max_retry = 3
+    max_retry = 5
 
     retry_count = 0
     while retry_count < max_retry:
+        retry_count += 1
         try:
             page.put(text, comment = comment)
             break
@@ -59,9 +60,15 @@ def safe_put(page, text, comment):
             print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8") 
             print >> sys.stderr, "text len: ", len(text)
             utils.print_traceback()
-            print >> sys.stderr, "sleeping for:", 10 * (retry_count + 1)
-            time.sleep(10 * (retry_count + 1))
-            retry_count += 1
+            print >> sys.stderr, "sleeping for:", 10 * retry_count
+            time.sleep(10 * retry_count)
+            continue
+        except pywikibot.OtherPageSaveError:
+            # this can occur for read-only DB because slave lag, so retry
+            # a few time
+            print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8")
+            print >> sys.stderr, "retrying in", retry_count, "minute(s)"
+            time.sleep(retry_count * 60)
             continue
         except:
             print >> sys.stderr, "put error: unknown exception"
@@ -69,6 +76,6 @@ def safe_put(page, text, comment):
             time.sleep(10)
             break
 
-    if retry_count == max_retry:
+    if retry_count >= max_retry:
         print >> sys.stderr, "unable to save page after", max_retry, "try, bailing out"
         pass

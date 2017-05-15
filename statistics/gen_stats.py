@@ -11,6 +11,7 @@ from common_stat import decode_res, disambiguations
 # a better fix later
 sys.path.append(os.path.expanduser('~/phe'))
 from common import db
+from common.pywikibot_utils import safe_put
 
 # The domain name we care.
 all_domain = set([
@@ -202,15 +203,15 @@ def write_templates(res):
 
 	site = pywikibot.getSite(dom,fam='wikisource')
         page = pywikibot.Page(site,"Template:PAGES_NOT_PROOFREAD")
-        page.put(spaced_int(num_q1,sep))
+        safe_put(page, spaced_int(num_q1,sep), "")
         page = pywikibot.Page(site,"Template:ALL_PAGES")
-        page.put(spaced_int(num,sep))
+        safe_put(page, spaced_int(num,sep), "")
         page = pywikibot.Page(site,"Template:PR_TEXTS")
-        page.put(spaced_int(num_tr,sep))
+        safe_put(page, spaced_int(num_tr,sep), "")
         page = pywikibot.Page(site,"Template:ALL_TEXTS")
-        page.put(spaced_int(num_texts - num_disambig,sep))
+        safe_put(page, spaced_int(num_texts - num_disambig,sep), "")
         page = pywikibot.Page(site,"Template:PR_PERCENT")
-        page.put("%.2f"%percent)
+        safe_put(page, "%.2f"%percent, "")
 
 def read_stats(offset):
     f = open(os.path.expanduser("~/public_html/data/new_stats.py"),"r")
