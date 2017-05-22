@@ -11,7 +11,6 @@ from common_stat import decode_res, disambiguations
 # a better fix later
 sys.path.append(os.path.expanduser('~/phe'))
 from common import db
-from common.pywikibot_utils import safe_put
 
 # The domain name we care.
 all_domain = set([
@@ -188,6 +187,7 @@ def spaced_int(i,sep):
 
 def write_templates(res):
     import pywikibot
+    from common.pywikibot_utils import safe_put
 
     for dom in [ 'fr','en', 'bn', 'pl' ]:
 	if dom=='fr':
