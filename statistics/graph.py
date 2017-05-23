@@ -318,14 +318,14 @@ def main():
     # of step)
     draw( names, 2, sg, 750, 30, "proofread_pages_per_day")
     draw( names, 1, sg, 240, 20, "validated_pages_per_day")
-    draw( names, 0, None, 2000000,100000, "all_pages")
+    draw( names, 0, None, 2200000,100000, "all_pages")
     draw( names, 2, None, 1200000, 40000, "proofread_pages")
-    draw( names, 1, None, 320000, 20000, "validated_pages")
+    draw( names, 1, None, 360000, 20000, "validated_pages")
     draw( names, 0, None, 500000, 50000, "all_pages", True)
     draw( names, 2, None, 200000, 10000, "proofread_pages",True)
     draw( names, 1, None, 100000, 5000, "validated_pages",True)
 
-    draw( names,  5, None,  210000, 10000, "pr_texts")
+    draw( names,  5, None,  240000, 10000, "pr_texts")
     draw( names,  6, rm29bis, 100, 5, "pr_percent")
 
     draw( ['fr'], 7, rm29bis, False, 500, "nonpr_texts_fr")
