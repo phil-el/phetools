@@ -36,6 +36,7 @@ tesseract_languages = {
     'pt' : 'por',
     'ru' : 'rus',
     'sv' : 'swe',
+    'ta' : 'tam',
     }
 
 tesseract_path = 'tesseract'
@@ -48,13 +49,14 @@ def setrlimits():
     resource.setrlimit(resource.RLIMIT_CPU, (60*60, 60*60))
 
 def ocr(filename, out_basename, lang, config = ''):
+    env = {}
     if tesseract_data_prefix:
-        os.environ['TESSDATA_PREFIX'] = tesseract_data_prefix
+        env['TESSDATA_PREFIX'] = tesseract_data_prefix
 
     if lang == 'ben':
-        os.environ['TESSDATA_PREFIX'] = '/data/project/phetools'
+        env['TESSDATA_PREFIX'] = '/data/project/phetools'
 
-    ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True, env = env)
     text = utils.safe_read(ls.stdout)
     if text:
         print text,
@@ -76,9 +78,6 @@ def ocr(filename, out_basename, lang, config = ''):
     fd = open(out_filename)
     txt = fd.read()
     fd.close()
-
-    if tesseract_data_prefix:
-        del os.environ['TESSDATA_PREFIX']
 
     if ls.returncode != 0:
         print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
