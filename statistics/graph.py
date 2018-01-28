@@ -104,7 +104,7 @@ def draw_domain(dom):
 
 
 
-def draw(domlist, index, func, max, tick, name, log=False):
+def draw(domlist, index, func, max_y, tick, name, log=False):
 
     if not log:
         n1 = "Wikisource_-_%s.png"%name
@@ -137,8 +137,8 @@ def draw(domlist, index, func, max, tick, name, log=False):
     fig.autofmt_xdate()
 
     if not log:
-        if max:
-            ymax = max
+        if max_y:
+            ymax = max_y
             pylab.yticks(pylab.arange(0,ymax+1,tick))
 
         pylab.ylim(ymin,ymax)
@@ -148,10 +148,6 @@ def draw(domlist, index, func, max, tick, name, log=False):
     pylab.legend(loc=2, ncol=2, prop={'size':'medium'})
     pylab.title(name.replace('_',' '), fontdict = { 'fontsize' : 'xx-large' } )
     pylab.savefig(savepath+n1)
-    return
-
-
-
 
 
 def add_point(result, xtime, allpages, num_q0, num_q2, num_q3, num_q4, all_texts, pr_texts, disambig_texts):
@@ -184,7 +180,7 @@ def add_point(result, xtime, allpages, num_q0, num_q2, num_q3, num_q4, all_texts
         result[5][1].append(xtime)
         result[6][0].append(pr_percent)
         result[6][1].append(xtime)
-        result[7][0].append(all_texts - pr_texts)
+        result[7][0].append(all_texts - (pr_texts + disambig_texts))
         result[7][1].append(xtime)
         result[8][0].append(all_texts)
         result[8][1].append(xtime)
@@ -311,27 +307,23 @@ def main():
 
     print "per day"
 
-    # FIXME: auto calc of X/Y-axis 
-    # a = int(log 10(max))
-    # step = pow(a-1, 10)
-    # max_y = pow(a, 10) + step (must divide by 3) (2, 3, 5? depend of number
-    # of step)
     draw( names, 2, sg, 750, 30, "proofread_pages_per_day")
     draw( names, 1, sg, 240, 20, "validated_pages_per_day")
-    draw( names, 0, None, 2200000,100000, "all_pages")
-    draw( names, 2, None, 1200000, 40000, "proofread_pages")
-    draw( names, 1, None, 360000, 20000, "validated_pages")
-    draw( names, 0, None, 500000, 50000, "all_pages", True)
-    draw( names, 2, None, 200000, 10000, "proofread_pages",True)
-    draw( names, 1, None, 100000, 5000, "validated_pages",True)
+    draw( names, 0, None, False,100000, "all_pages")
+    draw( names, 2, None, False, 40000, "proofread_pages")
+    draw( names, 1, None, False, 20000, "validated_pages")
+    draw( names, 0, None, False, 50000, "all_pages", True)
+    draw( names, 2, None, False, 10000, "proofread_pages",True)
+    draw( names, 1, None, False, 5000, "validated_pages",True)
 
-    draw( names,  5, None,  240000, 10000, "pr_texts")
+    draw( names,  5, None,  False, 10000, "pr_texts")
     draw( names,  6, rm29bis, 100, 5, "pr_percent")
 
     draw( ['fr'], 7, rm29bis, False, 500, "nonpr_texts_fr")
     draw( ['it'], 7, rm29bis, False, 500, "nonpr_texts_it")
     draw( ['en'], 7, rm29bis, False, 500, "nonpr_texts_en")
     draw( ['de'], 7, rm29bis, False, 500, "nonpr_texts_de")
+    draw( ['pl'], 7, rm29bis, False, 500, "nonpr_texts_pl")
 
     print "domains"
 
