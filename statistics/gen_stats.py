@@ -30,6 +30,7 @@ all_domain = set([
     'eo',
     'es',
     'et',
+    'eu',
     'fa',
     'fi',
     'fr',

@@ -1,1 +1,12 @@
 Repository for some tools hosted at http://tools.wmflabs.org/phetools/
+
+## Adding a lang to statistic page
+
+log on server, make a backup of wikisource/ws_namespaces.py and
+wikisource/ws_category.py in case something go wrong
+
+* cd phe
+* python utils/gen_namespace.py
+* python utils/gen_ws_cat.py
+* edit statistics/gen_stats.py to add the new lang code to all_domain
+* restart all service with $ ./run_service.sh restart all
