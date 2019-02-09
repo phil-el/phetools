@@ -23,6 +23,10 @@ import re
 from common import db
 import collections
 
+# accounting file switch all the few days, it's possible to miss a status read
+# for jobs terminated between the file switch and the file read
+accounting_path = "/data/project/.system_sge/gridengine/default/common/accounting"
+
 jsub = '/usr/bin/jsub'
 
 class DbJob(db.UserDb):
@@ -249,7 +253,7 @@ class DbJob(db.UserDb):
         now = int(time.time())
         count = 0
         nr_job = len(jobs)
-        for line in utils.readline_backward('/data/project/.system/accounting'):
+        for line in utils.readline_backward(accounting_path):
             accounting = self.Accounting(*line.split(':'))
             jobnumber = int(accounting.jobnumber)
             count += 1
