@@ -27,8 +27,8 @@ env_var[ws_ocr_daemon]=PYTHONPATH="$HOME/phe"
 memory[ws_ocr_daemon]=2048M
 cmdline[ws_ocr_daemon]="python -u phe/ocr/ocrdaemon.py"
 
-memory[wsircdaemon]=256M
-cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"
+#memory[wsircdaemon]=256M
+#cmdline[wsircdaemon]="python -u phe/ircbot/pyirclogs.py"
 
 memory[dummy_robot]=384M
 cmdline[dummy_robot]="python -u phe/dummy_robot/dummy_robot.py"
