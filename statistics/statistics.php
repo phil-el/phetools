@@ -95,7 +95,7 @@ $out.='
 
 
 foreach ($lines as $line_num => $line) {
-  $a = split('[ ]+',$line);
+  $a = preg_split('/[ ]+/',$line);
   if($a[0]=='total') array_unshift( $a,'-');
 
   if( ( count($a) == 15 && $a[1]!='all') ) {
