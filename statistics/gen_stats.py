@@ -30,7 +30,7 @@ all_domain = set([
     'eo',
     'es',
     'et',
-    'eu',
+    #'eu',
     'fa',
     'fi',
     'fr',
@@ -147,7 +147,7 @@ def get_stats(domains):
                 row = cursor.fetchone ()
                 num_disambig = int(row[0])
 
-        if dom=='no':
+        if dom in []: #['no']:
             import pywikibot
             qq = "select /* SLOW_OK */ page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q_disamb.replace("count(page_title)","page_id")
             cursor.execute(qq)
