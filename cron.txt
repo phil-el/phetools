@@ -20,17 +20,17 @@
 #
 # For more information see the manual pages of crontab(5) and cron(8)
 #
-# Wikimedia Tool Labs specific note:
+# Wikimedia Toolforge specific note:
 #   Please be aware that *only* jsub and jstart are acceptable
 #   commands to schedule via cron.  Any command specified here will
 #   be modified to be invoked through jsub unless it is one of
 #   the two.
 #
-# m h  dom mon dow   command
- 47 4 * * * jsub -N wikisource_stats -l h_vmem=1024M -o ~/log/wikisource_stats.out -e ~/log/wikisource_stats.err -v PYTHONPATH=$HOME/phe:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2 python phe/statistics/gen_stats.py -w
- 28 4 * * * jsub -N phe_logrotate -o ~/log/logrotate.out -e ~/log/logrotate.err /usr/sbin/logrotate ~/phe/logrotate.conf -s ~/log/logrotate.status
- 47 * * * * jsub -N hocr_request -o ~/log/hocr_request.out -e ~/log/hocr_request.err -v PYTHONPATH=$HOME/phe python ~/phe/hocr/hocr_request.py -prepare_request
- */10 * * * * /usr/local/bin/jlocal /usr/bin/python ~/phe/jobs/sge_jobs.py >> ~/log/sge_jobs.out 2>>  ~/log/sge_jobs.err
-27 4 * * *  jsub -N cron_irc_1 -once -o ~/log/cron_irc.err -e ~/log/cron_irc.err -quiet python -u phe/ircbot/pyirclogs.py
-13 4 * * *  jsub -N restart_ws_ocr -once -o ~/log/cron_ws_ocr.out -e ~/log/cron_ws_ocr.err ~/phe/run_service.sh restart ws_ocr_daemon
-17 5 * * * jsub -N not_transcluded -o ~/log/not_transcluded.out -e ~/log/not_transcluded.err python ~/phe/statistics/not_transcluded.py
+# m	h	dom	mon	dow	command
+   47 4 * * * jsub -N wikisource_stats -l h_vmem=1024M -o ~/log/wikisource_stats.out -e ~/log/wikisource_stats.err -v PYTHONPATH=$HOME/phe:/shared/pywikipedia/core:/shared/pywikipedia/core/externals/httplib2 python phe/statistics/gen_stats.py -w
+28 4 * * * jsub -N phe_logrotate -o ~/log/logrotate.out -e ~/log/logrotate.err /usr/sbin/logrotate ~/phe/logrotate.conf -s ~/log/logrotate.status
+   47 * * * * jsub -N hocr_request -o ~/log/hocr_request.out -e ~/log/hocr_request.err -v PYTHONPATH=$HOME/phe python ~/phe/hocr/hocr_request.py -prepare_request
+  */10 * * * * /usr/local/bin/jlocal /usr/bin/python ~/phe/jobs/sge_jobs.py >> ~/log/sge_jobs.out 2>>  ~/log/sge_jobs.err
+#    27 4 * * *  jsub -N wsircdaemon -once -o ~/log/cron_irc.err -e ~/log/cron_irc.err -quiet python -u phe/ircbot/pyirclogs.py
+  13 4 * * *  jsub -N restart_ws_ocr -once -o ~/log/cron_ws_ocr.out -e ~/log/cron_ws_ocr.err ~/phe/run_service.sh restart ws_ocr_daemon
+  17 5 * * * jsub -N not_transcluded -o ~/log/not_transcluded.out -e ~/log/not_transcluded.err python ~/phe/statistics/not_transcluded.py
