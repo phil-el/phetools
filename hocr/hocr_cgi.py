@@ -17,6 +17,13 @@ import types
 from common import utils
 import hocr
 
+def log(params):
+    try:
+        print >> sys.stderr, params
+    except IOError as e:
+        sys.stderr = open(os.path.expanduser('~/log/hocr_cgi.err'), 'a')
+        print >> sys.stderr, params
+
 def span_anchor(anchor, table):
     return '<span id="' + table + '_' + str(anchor) + '"></span>'
 
@@ -262,7 +269,7 @@ def handle_status(params, start_response):
     cmd_filter = params.get('cmd_filter', None)
     limit = get_int_param(params, 'limit', default_limit, max_limit)
     offset = get_int_param(params, 'offset', 0, None)
-    #print >> sys.stderr, params
+    #log(params)
 
     db_obj = sge_jobs.DbJob()
 
@@ -299,7 +306,7 @@ def gen_hocr_request(params):
     db_obj.add_request(**job_req)
 
 def handle_query(params, start_response):
-    print >> sys.stderr, params
+    log(params)
 
     if params['lang'] and params['book']:
         try:
@@ -316,7 +323,7 @@ def handle_query(params, start_response):
     try:
         text = json.dumps(result)
     except UnicodeDecodeError:
-        print >> sys.stderr, result
+        log(result)
         ret_code = '400 Bad Request'
         text = json.dumps({ 'error' : 1, 'text' : ret_code })
 
