@@ -47,7 +47,8 @@ def get_revision(cursor, rev_ids):
             """ % ( ",".join(rev_id_str), )
         cursor.execute(q)
         for r in cursor.fetchall():
-            yield r
+            if r[0] is not None:
+                yield r
 
 def get_user_groups(cursor, user_ids):
     if len(user_ids):
@@ -201,6 +202,7 @@ def get_credit(domain, family, books, pages, images):
     return results
 
 if __name__ == "__main__":
-    domain = 'fr'
     family = 'wikisource'
-    print get_credit(domain, family, [ "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ], [ ], [ ])
+    print get_credit('fr', family, [ "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ], [ ], [ ])
+    # this one has hidden user id, check if we handle it correctly
+    print get_credit('it', family, [], ['I_promessi_sposi_(1840)/Capitolo_I'], [])
