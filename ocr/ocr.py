@@ -40,7 +40,6 @@ tesseract_languages = {
     }
 
 tesseract_path = 'tesseract'
-tesseract_data_prefix = ''
 
 def setrlimits():
     mega = 1 << 20
@@ -49,14 +48,7 @@ def setrlimits():
     resource.setrlimit(resource.RLIMIT_CPU, (60*60, 60*60))
 
 def ocr(filename, out_basename, lang, config = ''):
-    env = {}
-    if tesseract_data_prefix:
-        env['TESSDATA_PREFIX'] = tesseract_data_prefix
-
-    if lang == 'ben':
-        env['TESSDATA_PREFIX'] = '/data/project/phetools'
-
-    ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True, env = env)
+    ls = subprocess.Popen([ tesseract_path, filename, out_basename, "-l", lang, config], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
     text = utils.safe_read(ls.stdout)
     if text:
         print text,
