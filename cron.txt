@@ -31,6 +31,9 @@
 28 4 * * * jsub -N phe_logrotate -o ~/log/logrotate.out -e ~/log/logrotate.err /usr/sbin/logrotate ~/phe/logrotate.conf -s ~/log/logrotate.status
    47 * * * * jsub -N hocr_request -o ~/log/hocr_request.out -e ~/log/hocr_request.err -v PYTHONPATH=$HOME/phe python ~/phe/hocr/hocr_request.py -prepare_request
   */10 * * * * /usr/local/bin/jlocal /usr/bin/python ~/phe/jobs/sge_jobs.py >> ~/log/sge_jobs.out 2>>  ~/log/sge_jobs.err
+# broken with stretch
 #    27 4 * * *  jsub -N wsircdaemon -once -o ~/log/cron_irc.err -e ~/log/cron_irc.err -quiet python -u phe/ircbot/pyirclogs.py
-  13 4 * * *  jsub -N restart_ws_ocr -once -o ~/log/cron_ws_ocr.out -e ~/log/cron_ws_ocr.err ~/phe/run_service.sh restart ws_ocr_daemon
+# Nice try, but it can't work as run_service.sh use jsub which is not available
+# in exec node
+#  13 4 * * *  jsub -N restart_ws_ocr -once -o ~/log/cron_ws_ocr.out -e ~/log/cron_ws_ocr.err ~/phe/run_service.sh restart ws_ocr_daemon
   17 5 * * * jsub -N not_transcluded -o ~/log/not_transcluded.out -e ~/log/not_transcluded.err python ~/phe/statistics/not_transcluded.py
