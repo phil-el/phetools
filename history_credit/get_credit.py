@@ -38,10 +38,10 @@ def prefix_index(cursor, start, ns, max_count = 5000):
             last = r[0]
             yield r
 
-def get_revision(cursor, rev_ids):
+def get_rev_actor(cursor, rev_ids):
     if len(rev_ids):
         rev_id_str = [str(x) for x in rev_ids ]
-        q = """SELECT rev_user
+        q = """SELECT rev_actor
                FROM revision
                WHERE rev_page IN (%s)
             """ % ( ",".join(rev_id_str), )
@@ -50,24 +50,36 @@ def get_revision(cursor, rev_ids):
             if r[0] is not None:
                 yield r
 
-def get_user_groups(cursor, user_ids):
-    if len(user_ids):
-        user_id_str = [str(x) for x in user_ids ]
-        q = """SELECT user_id, ug_group
-               FROM user, user_groups
-               WHERE user_id IN (%s) AND ug_user = user_id
-            """ % (','.join(user_id_str))
+def get_user_id(cursor, actor_ids):
+    actor_id_str = [str(x) for x in actor_ids]
+    q = """SELECT actor_user
+           FROM actor
+           WHERE actor_id IN (%s)
+        """ % ( ",".join(actor_id_str), )
+    cursor.execute(q)
+    for r in cursor.fetchall():
+        if r[0] is not None:
+            yield r
+
+def get_user_groups(cursor, actor_ids):
+    if len(actor_ids):
+        # user_groups table can't be accessed with an actor_id
+        actor_id_str = [str(x[0]) for x in get_user_id(cursor, actor_ids)]
+        q = """SELECT actor_id, ug_group
+               FROM actor, user, user_groups
+               WHERE user_id IN (%s) AND ug_user = user_id AND actor_user = user_id
+            """ % (','.join(actor_id_str))
         cursor.execute(q)
         for r in cursor.fetchall():
             yield r
 
-def get_usernames(cursor, user_ids):
-    if len(user_ids):
-        user_id_str = [str(x) for x in user_ids ]
-        cursor.execute("""SELECT user_id, user_name
-                       FROM user
-                       WHERE user_id IN (%s)
-                       """ % (','.join(user_id_str)))
+def get_user_names(cursor, actor_ids):
+    if len(actor_ids):
+        actor_id_str = [str(x) for x in actor_ids ]
+        cursor.execute("""SELECT actor_id, actor_name
+                       FROM actor
+                       WHERE actor_id IN (%s)
+                       """ % (','.join(actor_id_str)))
         for x in cursor.fetchall():
             yield x
 
@@ -81,23 +93,23 @@ def merge_contrib(a, b):
 
 def book_pages_id(cursor, book, page_ns):
     book = book.replace(' ', '_')
-    pages_id = [ x[1] for x in prefix_index(cursor, book + '/', page_ns) ]
+    pages_id = [x[1] for x in prefix_index(cursor, book + '/', page_ns)]
     return pages_id
 
 def credit_from_pages_id(cursor, pages_id):
-    user_ids = {}
-    for x in get_revision(cursor, pages_id):
-        user_ids.setdefault(x[0], 0)
-        user_ids[x[0]] += 1
+    actor_ids = {}
+    for x in get_rev_actor(cursor, pages_id):
+        actor_ids.setdefault(x[0], 0)
+        actor_ids[x[0]] += 1
 
     user_groups = {}
-    for r in get_user_groups(cursor, user_ids):
+    for r in get_user_groups(cursor, actor_ids):
         user_groups.setdefault(r[0], [])
         user_groups[r[0]].append(r[1])
 
     results = {}
-    for r in get_usernames(cursor, user_ids):
-        results[r[1]] = { 'count' : user_ids[r[0]], 'flags' : [] }
+    for r in get_user_names(cursor, actor_ids):
+        results[r[1]] = { 'count' : actor_ids[r[0]], 'flags' : [] }
         if r[0] in user_groups:
             results[r[1]]['flags'] = user_groups[r[0]]
 
@@ -141,7 +153,7 @@ def get_pages_credit(cursor, pages, ns):
 def get_images_credit_db(cursor, images):
     if len(images):
         fmt_strs = ','.join(['%s'] * len(images))
-        cursor.execute("""SELECT img_user_text
+        cursor.execute("""SELECT img_actor
                           FROM image
                           WHERE img_name IN (%s)
                        """ % fmt_strs,
@@ -149,7 +161,7 @@ def get_images_credit_db(cursor, images):
         for r in cursor.fetchall():
             yield r
 
-        cursor.execute("""SELECT oi_user_text
+        cursor.execute("""SELECT oi_actor
                           FROM oldimage
                           WHERE oi_name IN (%s)
                        """ % fmt_strs,
@@ -162,18 +174,21 @@ def get_images_credit(cursor, images):
     if not len(images):
         return []
 
-    images = [ x.replace(' ', '_') for x in images ]
-    results = []
+    images = [x.replace(' ', '_') for x in images]
 
     conn = db.create_conn(domain = 'commons', family = 'wiki')
     common_cursor = db.use_db(conn, 'commons', 'wiki')
+    temp = []
     for r in get_images_credit_db(common_cursor, images):
-        results.append(r[0])
+        temp.append(r[0])
+    results = [x[1] for x in get_user_names(common_cursor, temp)]
     common_cursor.close()
     conn.close()
 
+    temp = []
     for r in get_images_credit_db(cursor, images):
-        results.append(r[0])
+        temp.append(r[0])
+    results += [x[1] for x in get_user_names(cursor, temp)]
 
     return results
 
@@ -205,4 +220,5 @@ if __name__ == "__main__":
     family = 'wikisource'
     print get_credit('fr', family, [ "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ], [ ], [ ])
     # this one has hidden user id, check if we handle it correctly
-    print get_credit('it', family, [], ['I_promessi_sposi_(1840)/Capitolo_I'], [])
+    print get_credit('pl', family, [], ['Strona:Oscar_Wilde_-_De_profundis.djvu/37'], [])
+    print get_credit('fr', family, [], [], ["Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ])
