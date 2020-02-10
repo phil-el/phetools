@@ -315,7 +315,7 @@ def do_split(mysite, rootname, user, codelang):
 
         else:
             header = u'<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
-            footer = u'<noinclude>\n<references/></div></noinclude>'
+            footer = u'<noinclude>\n<references/></noinclude>'
             content = header + content + footer
             
 
