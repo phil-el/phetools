@@ -1098,3 +1098,16 @@ table.floatleft {
 	-ms-user-select: none;
 	user-select: none;
 }
+
+tbody tr:nth-child(even) {
+	background-color: #F6F6F6;
+}
+.filtered tbody tr:nth-child(even) {
+    background-color: inherit;
+}
+.filtered tbody tr.grey {
+	background-color: #F6F6F6;
+}
+#langFilter {
+	width: 90px;
+}

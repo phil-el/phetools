@@ -44,8 +44,11 @@ def use_db(conn, domain, family, cursor_class = None):
 def create_conn(**kwargs):
     conn_params = {
         'read_default_file' : replica_cnf,
+        'use_unicode' : True,
+        'charset' : "utf8"
         }
-    if kwargs.has_key('domain'):
+    #if kwargs.has_key('domain'):
+    if 'domain' in kwargs:
         domain = kwargs['domain']
         family = kwargs['family']
 
@@ -54,7 +57,7 @@ def create_conn(**kwargs):
             family = ''
         elif domain == 'zh-min-nan':
             domain = 'zh_min_nan'
-        db_server = domain + family + '.labsdb'
+        db_server = domain + family + '.analytics.db.svc.eqiad.wmflabs'
     else:
         db_server = kwargs['server']
 
@@ -97,7 +100,7 @@ def connection(db_obj):
         db_obj.close()
 
 if __name__ == "__main__":
-    print 'db_prefix:', user_db_prefix()
+    print('db_prefix:', user_db_prefix())
 
     conn = create_conn(domain = 'commons', family = 'wiki')
     conn.close()

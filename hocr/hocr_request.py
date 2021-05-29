@@ -123,7 +123,7 @@ def prepare_request(db_hocr, lang):
 
     conn, cursor = open_db(lang, 'wikisource')
     q = 'SELECT page_title FROM page WHERE page_namespace=%s and page_is_redirect=0'
-    cursor.execute(q, ns_nr)
+    cursor.execute(q, (ns_nr,))
 
     titles = [ x[0] for x in cursor.fetchall() if x[0].endswith('.djvu') or x[0].endswith('.pdf') ]
     close_db(conn, cursor)

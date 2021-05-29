@@ -9,9 +9,18 @@
 
 import re
 import sys
-sys.path.append('/shared/pywikipedia/core')
-sys.path.append('/shared/pywikipedia/core/externals/httplib2')
-sys.path.append('/shared/pywikipedia/core/scripts')
+#
+# Modified by Xover 6 November 2020:
+#
+# Pywikibot main is Python 3.x now, so change these imports
+# to point at the version pegged at Python 2.x.
+#sys.path.append('/shared/pywikipedia/core')
+#sys.path.append('/shared/pywikipedia/core/externals/httplib2')
+#sys.path.append('/shared/pywikipedia/core/scripts')
+sys.path.append('/shared/pywikibot/core_python2')
+sys.path.append('/shared/pywikibot/core_python2/externals/httplib2')
+sys.path.append('/shared/pywikibot/core_python2/scripts')
+# END: Xover's meddling
 import pywikibot
 import pywikibot.pagegenerators as pagegen
 from pywikibot.data import api

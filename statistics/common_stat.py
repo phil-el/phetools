@@ -31,7 +31,7 @@ def decode_res(t):
         a,b,c,d,e,f,g = t
         return (a,b,c,d,e,f,g,0)
     else:
-        print repr(t)
+        print(repr(t))
         raise
 
 if __name__ == "__main__":

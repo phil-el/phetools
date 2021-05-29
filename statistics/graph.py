@@ -1,5 +1,7 @@
-
-#!/usr/bin/python
+#!/usr/bin/python3
+# workaround if there is no $DISPLAY exported by the env
+import matplotlib
+matplotlib.use('Agg')
 import os
 import datetime
 import pylab
@@ -29,7 +31,7 @@ colors = { 'total':'#000000',
            }
 
 names = colors.keys()
-names.sort()
+names = sorted(names)
 names.remove("total")
 
 savepath = os.path.expanduser('~/public_html/graphs/')
@@ -45,11 +47,13 @@ for dom in names + ["total"]:
 def draw_domain(dom):
     
     n1 = "Wikisource_-_pages_%s.png"%dom
+    n2 = "Wikisource_-_pages_%s.svg"%dom
     fig = pylab.figure(1, figsize=(12,12))
     ax = fig.add_subplot(111)
 
     pylab.clf()
-    pylab.hold(True)
+    # deprecated
+    #pylab.hold(True)
     pylab.grid(True)
     count = count_array[dom]
     pylab.fill_between(count[0][1], 0, count[0][0], facecolor="#ffa0a0")#red
@@ -67,6 +71,7 @@ def draw_domain(dom):
     pylab.legend([b1[0], b3[0], b4[0], b0[0], b2[0]],['not proofread','proofread','validated','without text','problematic'],loc=2, prop={'size':'medium'})
 
     pylab.plot_date(count[0][1],pylab.zeros(len(count[0][1])),'k-' )
+    pylab.xlim(min(count[0][1]), max(count[0][1]))
     ax.xaxis.set_major_locator( pylab.YearLocator() )
     ax.xaxis.set_major_formatter( pylab.DateFormatter('%Y-%m-%d') )
     fig.autofmt_xdate()
@@ -74,10 +79,13 @@ def draw_domain(dom):
     pylab.title("%s.wikisource.org"%dom, fontdict = { 'fontsize' : 'xx-large' } )
     pylab.ylim(0)
     pylab.savefig(savepath+n1)
+    pylab.savefig(savepath+n2)
 
     n1 = "Wikisource_-_texts_%s.png"%dom
+    n2 = "Wikisource_-_texts_%s.svg"%dom
     pylab.figure(1, figsize=(12,12))
     pylab.clf()
+    # deprecated
     pylab.hold(True)
     pylab.grid(True)
     count = count_array[dom]
@@ -92,8 +100,9 @@ def draw_domain(dom):
         pylab.legend([b1[0],b2[0]],['with scans','naked'],loc=3, prop={'size':'medium'})
     else:
         pylab.legend([b1[0],b2[0]],['with transclusion (PR2)','older system (PR1)'],loc=3, prop={'size':'medium'})
-    
+
     pylab.plot_date( rm29(dom,count[8][1]),pylab.zeros(len( rm29(dom,count[8][1]) )),'k-' )
+    pylab.xlim(min(count[8][1]), max(count[8][1]))
     ax.xaxis.set_major_locator( pylab.YearLocator() )
     ax.xaxis.set_major_formatter( pylab.DateFormatter('%Y-%m-%d') )
     fig.autofmt_xdate()
@@ -101,20 +110,23 @@ def draw_domain(dom):
     pylab.title("%s.wikisource.org"%dom, fontdict = { 'fontsize' : 'xx-large' } )
     pylab.ylim(0)
     pylab.savefig(savepath+n1)
-
+    pylab.savefig(savepath+n2)
 
 
 def draw(domlist, index, func, max_y, tick, name, log=False):
 
     if not log:
         n1 = "Wikisource_-_%s.png"%name
+        n2 = "Wikisource_-_%s.svg"%name
     else:
         n1 = "Wikisource_-_%s.log.png"%name
+        n2 = "Wikisource_-_%s.log.svg"%name
     
     fig = pylab.figure(1, figsize=(12,12))
     ax = fig.add_subplot(111)
-    
+
     pylab.clf()
+    # deprecated
     pylab.hold(True)
     pylab.grid(True)
 
@@ -148,6 +160,7 @@ def draw(domlist, index, func, max_y, tick, name, log=False):
     pylab.legend(loc=2, ncol=2, prop={'size':'medium'})
     pylab.title(name.replace('_',' '), fontdict = { 'fontsize' : 'xx-large' } )
     pylab.savefig(savepath+n1)
+    pylab.savefig(savepath+n2)
 
 
 def add_point(result, xtime, allpages, num_q0, num_q2, num_q3, num_q4, all_texts, pr_texts, disambig_texts):
@@ -300,16 +313,16 @@ def main():
 
     read_from_file(os.path.expanduser('~/public_html/data/new_stats.py'))
 
-    print "totals"
+    print("totals")
 
-    draw( ["total"], 2, sg, 1600, 100, "proofread_pages_per_day_(all_wikisources)")
-    draw( ["total"], 1, sg, 700, 100, "validated_pages_per_day_(all_wikisources)")
+    draw( ["total"], 2, sg, 2000, 100, "proofread_pages_per_day_(all_wikisources)")
+    draw( ["total"], 1, sg, 800, 100, "validated_pages_per_day_(all_wikisources)")
 
-    print "per day"
+    print("per day")
 
-    draw( names, 2, sg, 750, 30, "proofread_pages_per_day")
-    draw( names, 1, sg, 240, 20, "validated_pages_per_day")
-    draw( names, 0, None, False,100000, "all_pages")
+    draw( names, 2, sg, 900, 30, "proofread_pages_per_day")
+    draw( names, 1, sg, 340, 20, "validated_pages_per_day")
+    draw( names, 0, None, False, 100000, "all_pages")
     draw( names, 2, None, False, 40000, "proofread_pages")
     draw( names, 1, None, False, 20000, "validated_pages")
     draw( names, 0, None, False, 50000, "all_pages", True)
@@ -325,12 +338,12 @@ def main():
     draw( ['de'], 7, rm29bis, False, 500, "nonpr_texts_de")
     draw( ['pl'], 7, rm29bis, False, 500, "nonpr_texts_pl")
 
-    print "domains"
+    print("domains")
 
     for dom in names:
         draw_domain(dom)
 
-    print "creating thumbnails"
+    print("creating thumbnails")
     os.system(os.path.expanduser('~/phe/statistics/mkthumbs'))
 
 

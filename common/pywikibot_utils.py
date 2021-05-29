@@ -23,10 +23,10 @@ def get_all_lang(family):
     results = []
     all_sites = site_matrix()
     for lang in all_sites:
-        if type(all_sites[lang]) == types.DictType:
+        if type(all_sites[lang]) is dict:
             for site in all_sites[lang]['site']:
                 code = all_sites[lang]['code']
-                if site['code'] == family and not site.has_key('closed'):
+                if site['code'] == family and not 'closed' in site:
                     results.append(code)
 
     results.sort()

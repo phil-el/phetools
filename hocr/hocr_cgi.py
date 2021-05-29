@@ -112,9 +112,9 @@ accounting_table_field = [
 ]
 
 def query_params(environ):
-    import cgi
-    field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
-
+    #import cgi
+    #field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
+    from urlparse import parse_qsl
     rdict = {
         'format' : 'html',
         'cmd' : 'status',
@@ -122,11 +122,13 @@ def query_params(environ):
         'book' : '',
         'lang' : ''
         }
-    for name in field:
-        if type(field[name]) == types.ListType:
-            rdict[name] = field[name][-1].value
-        else:
-            rdict[name] = field[name].value
+    for name, value in parse_qsl(environ['QUERY_STRING']):
+        rdict[name] = value
+    #for name in field:
+    #    if type(field[name]) == types.ListType:
+    #        rdict[name] = field[name][-1].value
+    #    else:
+    #        rdict[name] = field[name].value
 
     return rdict
 

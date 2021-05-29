@@ -46,10 +46,10 @@ domain_urls = {
         text += u"""\
     '%(code)s': (
         %(page_ns)d,
-        "%(Proofread)s",
-        "%(Validated)s",
-        "%(Without_text)s",
-        "%(Problematic)s",
+        u"%(Proofread)s",
+        u"%(Validated)s",
+        u"%(Without_text)s",
+        u"%(Problematic)s",
         ),
 """ % format_dict
 
@@ -67,13 +67,13 @@ if __name__ == "__main__":
     target = os.path.expanduser('~/wikisource/ws_category.py')
     old_text = ''
     if os.path.exists(target):
-        fd = open(target, 'r')
+        fd = open(target, 'r', encoding="utf-8")
         old_text = fd.read()
         fd.close()
-    if unicode(old_text, 'utf-8') != text:
-        print "writing file %s, server needs a restart" % target
-        fd = open(target, 'w')
+    if old_text != text:
+        print("writing file %s, server needs a restart" % target)
+        fd = open(target, 'wb')
         fd.write(text.encode('utf-8'))
         fd.close()
     else:
-        print "no change in %s, no server restart needed" % target
+        print("no change in %s, no server restart needed" % target)

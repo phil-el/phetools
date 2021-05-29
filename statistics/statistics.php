@@ -4,8 +4,10 @@
 $header= <<<EOT
 <html>
 <head>
+<title>ProofreadPage Statistics</title>
 <link rel="stylesheet" href="screen.css" type="text/css" media="screen" />
 <link rel="stylesheet" href="shared.css" type="text/css" media="screen" />
+<link rel="stylesheet" href="sorttable.css" type="text/css" media="screen" />
 <link rel="stylesheet" href="commonPrint.css" type="text/css" media="print" />
 <style type="text/css">
 .quality4 { background:#90ff90; }
@@ -49,13 +51,14 @@ EOT;
 
 $diff = isset($_GET["diff"]) ? $_GET["diff"] : 0;
 $daysago = isset($_GET["daysago"]) ? $_GET["daysago"] : 0;
+$lang = isset($_GET["lang"]) ? $_GET["lang"] : '';
 
 if ($daysago || ($diff != 0 && $diff != 1 && $diff != 7 && $diff != 30 && $diff != 365) ) {
 	$n = $daysago+1;
 
 	if($diff) $dd =" -d$diff "; else $dd="";
         // FIXME: use a relative path
-	$cmd = "/data/project/phetools/phe/statistics/gen_stats.py -y$n $dd" ;
+	$cmd = "python3 /data/project/phetools/phe/statistics/gen_stats.py -y$n $dd" ;
 	$retval = 1; 
 	ob_start();
 	passthru( $cmd, $retval );
@@ -71,10 +74,11 @@ if ($daysago || ($diff != 0 && $diff != 1 && $diff != 7 && $diff != 30 && $diff 
 $lines = explode( "\n", $txt ) ;
 
 
-$out = "<table style=\"text-align:right; border:1px solid #999;\" rules=\"all\" cellpadding=\"3px\">";
+$out = "<table id=\"statsTable\" class=\"sortable\" style=\"text-align:right; border:1px solid #999;\" rules=\"all\" cellpadding=\"3px\">";
 $out.='
+<thead>
 <tr>
-<td></td>
+<td><input type="text" id="langFilter" name="lang" value="'.$lang.'" placeholder="Filter by language code(s)" title="Insert any language codes (separated by space or comma)"/></td>
 <th colspan="6" style="text-align:center">Page namespace</th>
 <th colspan="5" style="text-align:center">Main namespace</th>
 </tr>
@@ -91,7 +95,7 @@ $out.='
 <th class="naked">w/o scans</th>
 <th class="disamb">disamb</th>
 <th>percent</th>
-</tr>';
+</tr></thead><tbody>';
 
 
 foreach ($lines as $line_num => $line) {
@@ -99,7 +103,10 @@ foreach ($lines as $line_num => $line) {
   if($a[0]=='total') array_unshift( $a,'-');
 
   if( ( count($a) == 15 && $a[1]!='all') ) {
-    $out .= "<tr><td>". $a[1] 
+    if ($a[1] == 'total') {
+      $out .= '</tbody><tfoot>';
+    }
+    $out .= "<tr data-lang=".$a[1]."><td>". $a[1] 
       ."</td><td>".$a[3]
       ."</td><td>".$a[4]
       ."</td><td>".$a[5]
@@ -116,7 +123,8 @@ foreach ($lines as $line_num => $line) {
   else if( $a[0] == "date:" ) { $out.= substr( $line, 6) . "<br/>"; }
 
  }
-$out .="</table>";
+
+$out .="</tfoot></table>";
 
 
 
@@ -161,6 +169,9 @@ $footer = <<<EOT
  </div>
 
 </div>
+<script src="sorttable.js"></script>
+<script src="jquery-3.5.1.min.js"></script>
+<script src="statistics.js"></script>
 </body></html>
 EOT;
 
