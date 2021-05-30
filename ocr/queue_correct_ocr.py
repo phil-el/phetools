@@ -11,19 +11,20 @@ import sys
 import os
 from jobs import sge_jobs
 
+
 def add_hocr_request(lang, sublang, filename):
     job_req = {
-        'jobname' : 'correct_ocr',
-        'run_cmd' : 'python',
-        'force' : True,
-        'args' : [
+        'jobname': 'correct_ocr',
+        'run_cmd': 'python',
+        'force': True,
+        'args': [
             os.path.expanduser('~/botpywi/correct_ocr.py'),
             '-lang:' + lang,
             '-auto',
             '' + filename
-            ],
-        'max_vmem' : 2048,
-        }
+        ],
+        'max_vmem': 2048,
+    }
 
     if sublang:
         job_req['args'].append('-sublang:' + sublang),
@@ -34,12 +35,14 @@ def add_hocr_request(lang, sublang, filename):
 
     db_obj.add_request(**job_req)
 
+
 def prepare_ocr_request(lang, sublang, filename):
     print "preparing", lang, filename
     if not os.path.exists(filename):
         print >> sys.stderr, "file:", filename, "doesn't exist"
         exit(1)
     add_hocr_request(lang, sublang, filename)
+
 
 if __name__ == "__main__":
     filenames = []

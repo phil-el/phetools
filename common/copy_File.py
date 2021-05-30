@@ -10,6 +10,7 @@
 import utils
 import pywikibot
 
+
 def get_filepage(site, djvuname):
     try:
         page = pywikibot.page.FilePage(site, "File:" + djvuname)
@@ -20,10 +21,11 @@ def get_filepage(site, djvuname):
         try:
             page.fileUrl()
         except:
-            site = pywikibot.Site(code = 'commons', fam = 'commons')
+            site = pywikibot.Site(code='commons', fam='commons')
             page = pywikibot.page.FilePage(site, "File:" + djvuname)
 
     return page
+
 
 def copy_file(lang, family, filename, dest):
     site = pywikibot.getSite(lang, family)
@@ -31,6 +33,8 @@ def copy_file(lang, family, filename, dest):
     url = page.fileUrl()
     utils.copy_file_from_url(url, dest, page.getFileSHA1Sum())
 
+
 if __name__ == "__main__":
     import sys
+
     copy_file(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

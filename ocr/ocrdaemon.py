@@ -20,13 +20,15 @@ from common import tool_connect
 E_OK = 0
 E_ERROR = 1
 
+
 # url user lang t tools conn
 def html_for_queue(queue):
     html = u''
     for i in queue:
         url = i[0]
-        html += date_s(i[3])+' '+i[2]+" "+i[1]+" "+url+"<br />"
+        html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " " + url + "<br />"
     return html
+
 
 def do_status(queue):
     queue = queue.copy_items(True)
@@ -39,14 +41,16 @@ def do_status(queue):
 
     return html
 
+
 def next_pagename(match):
     return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
+
 
 def next_url(url):
     return re.sub(u'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
 
-def bot_listening(queue, cache):
 
+def bot_listening(queue, cache):
     print date_s(time.time()) + " START"
 
     tools = tool_connect.ToolConnect('ws_ocr_daemon', 45133)
@@ -93,17 +97,19 @@ def bot_listening(queue, cache):
                 tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
                 conn.close()
     finally:
-	tools.close()
+        tools.close()
 
 
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
+    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
+
 
 def ret_val(error, text):
     if error:
         print "Error: %d, %s" % (error, text)
-    return  {'error' : error, 'text' : text }
+    return {'error': error, 'text': text}
+
 
 def image_key(url):
     # FIXME: it'll better to use the sha1 of the image itself or rather the
@@ -112,12 +118,14 @@ def image_key(url):
     m.update(url)
     return m.hexdigest()
 
+
 def get_from_cache(cache, url, codelang):
     url = url.encode('utf-8')
 
     cache_key = image_key(url)
 
     return cache.get(cache_key)
+
 
 def ocr_image(cache, url, codelang):
     # This is checked in bot_listening but must be redone here, so if
@@ -156,6 +164,7 @@ def ocr_image(cache, url, codelang):
 
     return ret_val(0, text)
 
+
 def job_thread(queue, cache):
     while True:
         url, codelang, user, t, tools, conn = queue.get()
@@ -170,9 +179,10 @@ def job_thread(queue, cache):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + ' ' + url + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
+        print (date_s(time2) + ' ' + url + ' ' + user + " " + codelang + " (%.2f)" % (time2 - time1)).encode('utf-8')
 
         queue.remove()
+
 
 if __name__ == "__main__":
     try:

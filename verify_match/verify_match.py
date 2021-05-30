@@ -3,6 +3,7 @@
 
 import sys
 import os
+
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_namespaces import page as page_prefixes, index as index_prefixes
 
@@ -14,10 +15,12 @@ from common import utils
 import pywikibot
 from pywikibot import pagegenerators as pagegen
 
+
 def is_imported_page(text):
     if re.search(u'{{[iI]wpage[ ]*\|[^}]+}}', text):
         return True
     return False
+
 
 def load_pages(book_name, opt, cache):
     # It's more efficient to do two pass, in the first we don't preload
@@ -26,13 +29,13 @@ def load_pages(book_name, opt, cache):
     pages = []
     page_ns_name = page_prefixes['wikisource'][opt.lang]
     page_name = page_ns_name + u':' + book_name + u'/'
-    gen = pagegen.PrefixingPageGenerator(page_name, site = opt.site)
+    gen = pagegen.PrefixingPageGenerator(page_name, site=opt.site)
     for p in gen:
         page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
         if not cache.has_key(page_nr) or cache[page_nr][0] != p.latestRevision():
             remaining_pages.append(p)
         else:
-            pages.append( ( None, page_nr, p.latestRevision() ) )
+            pages.append((None, page_nr, p.latestRevision()))
 
     # and in the second pass we preload contents for cache miss,
     # imported pages are never cached, but that's not a no big deal
@@ -40,9 +43,10 @@ def load_pages(book_name, opt, cache):
         text = p.get()
         if not is_imported_page(text):
             page_nr = int(re.match(u'.*/(\d+)$', p.title()).group(1))
-            pages.append( ( text, page_nr, p.latestRevision() ) )
+            pages.append((text, page_nr, p.latestRevision()))
 
     return pages
+
 
 # FIXME: share
 def strip_link(matchobj):
@@ -54,6 +58,7 @@ def strip_link(matchobj):
     link = link.split('|')
     link = link[-1]
     return link
+
 
 def remove_template_pass(text):
     text = re.sub(u'{{[Ee]r}}', u'er', text)
@@ -132,6 +137,7 @@ def remove_template_pass(text):
 
     return text
 
+
 def remove_template(text):
     old_text = None
     while old_text != text:
@@ -139,9 +145,11 @@ def remove_template(text):
         text = remove_template_pass(text)
     return text
 
+
 def remove_ocr_template_pass(text):
     text = re.sub(u'{{[Ss]c\|([^{}]*?)}}', u'\\1', text)
     return text
+
 
 def remove_ocr_template(text):
     old_text = None
@@ -149,6 +157,7 @@ def remove_ocr_template(text):
         old_text = text
         text = remove_ocr_template_pass(text)
     return text
+
 
 def remove_tag_pass(text):
     text = re.sub(u'(?msi)<div[^>]*?>(.*?)</div>', u'\\1', text)
@@ -162,6 +171,7 @@ def remove_tag_pass(text):
     text = re.sub(u'(?msi)<poem[^>]*?>(.*?)</poem>', u'\\1', text)
     return text
 
+
 def remove_tag(text):
     old_text = None
     while old_text != text:
@@ -169,17 +179,19 @@ def remove_tag(text):
         text = remove_tag_pass(text)
     return text
 
+
 def explode_template_params(text):
     result = {}
     for it in re.finditer(u'([\w]+)[ ]*=[ ]*([^|}]*)', text):
         result[it.group(1)] = it.group(2)
     return result
 
+
 def handle_table(text):
     tables = []
     for it in re.finditer(u'(?ms){{[tT]able[ ]*\|[^}]*?}}', text):
         tables.append((it.start(0), it.end(0)))
-    tables.sort(reverse = True)
+    tables.sort(reverse=True)
     for t in tables:
         result = explode_template_params(text[t[0]:t[1]])
         new_text = u''
@@ -190,9 +202,10 @@ def handle_table(text):
         if result.has_key(u'page'):
             new_text += result[u'page'] + u' '
         text = text[0:t[0]] + u' ' + new_text + text[t[1]:]
-    #if len(tables):
+    # if len(tables):
     #    print text.encode(u'utf-8')
     return text
+
 
 def common_transform(text):
     text = text.replace(u'…', u'...')
@@ -202,8 +215,8 @@ def common_transform(text):
     text = text.replace(u'ſ', u's')
     return text
 
-def transform_text(text, opt):
 
+def transform_text(text, opt):
     header, text, footer = ws_utils.split_page_text(text)
     text = re.sub(u'(?msi)<noinclude[^>]*?>(.*?)</noinclude>', u'\\1', text)
     text = re.sub(u'\n[:]+', u'\n', text)
@@ -275,6 +288,7 @@ def transform_text(text, opt):
         text = text.upper()
     return text
 
+
 def transform_ocr_text(ocr_text, opt):
     ocr_text = re.sub(u'\n«[ ]*', u'\n', ocr_text)
     ocr_text = re.sub(u'-[ ]*\n', u'', ocr_text)
@@ -286,12 +300,13 @@ def transform_ocr_text(ocr_text, opt):
         ocr_text = ocr_text.upper()
     return ocr_text
 
+
 def run_diff(ocr_text, text, opt):
     ocr_text = u"\n".join(ocr_text) + u"\n"
-    temp1 = tempfile.NamedTemporaryFile(suffix = '.txt')
+    temp1 = tempfile.NamedTemporaryFile(suffix='.txt')
     utils.write_file(temp1.name, ocr_text)
     text = u"\n".join(text) + u"\n"
-    temp2 = tempfile.NamedTemporaryFile(suffix = '.txt')
+    temp2 = tempfile.NamedTemporaryFile(suffix='.txt')
     utils.write_file(temp2.name, text)
     cmdline = "diff -U %d " % opt.diff_context + temp1.name + " " + temp2.name
     fd = os.popen(cmdline)
@@ -302,35 +317,37 @@ def run_diff(ocr_text, text, opt):
 
     return unicode(diff, 'utf-8')
 
+
 def white_list(left, right):
     lst = {
-        u'CLANS' : 'DANS',
-        u'CELTE' : u'CETTE',
-        u"CLOUTE" : u"DOUTE",
-        u"INONDE" : u"MONDE",
-        u"CLOUTAIS" : u"DOUTAIS",
-        u"GRECLINS" : u"GREDINS",
-        u"GRECLIN" : u"GREDIN",
-        u"CLOUTER" : u"DOUTER",
-        u"CLOUTÂT" : u"DOUTÂT",
-        u"CLIGNE" : u"DIGNE",
-        u"US" : u"ILS",
-        u"CLAMES" : u"DAMES",
-        u"CLAME" : u"DAME",
-        u"TON" : u"L’ON",
-        u"JUE" : u"QUE",
-        u"CJUE" : u"QUE",
-        u"FDLES" : u"FILLES",
-        u"FDLE" : u"FILLE",
-        u"H" : u"À",
-        u"A" : u"À",
-        u"I" : u"",
-        u"TÉtat" : u"L’ÉTAT",
-        }
+        u'CLANS': 'DANS',
+        u'CELTE': u'CETTE',
+        u"CLOUTE": u"DOUTE",
+        u"INONDE": u"MONDE",
+        u"CLOUTAIS": u"DOUTAIS",
+        u"GRECLINS": u"GREDINS",
+        u"GRECLIN": u"GREDIN",
+        u"CLOUTER": u"DOUTER",
+        u"CLOUTÂT": u"DOUTÂT",
+        u"CLIGNE": u"DIGNE",
+        u"US": u"ILS",
+        u"CLAMES": u"DAMES",
+        u"CLAME": u"DAME",
+        u"TON": u"L’ON",
+        u"JUE": u"QUE",
+        u"CJUE": u"QUE",
+        u"FDLES": u"FILLES",
+        u"FDLE": u"FILLE",
+        u"H": u"À",
+        u"A": u"À",
+        u"I": u"",
+        u"TÉtat": u"L’ÉTAT",
+    }
 
     if left in lst and right == lst[left]:
         return True
     return False
+
 
 def transform_ocr_diff(diff):
     diff = diff.replace(u'OEUVRÉ', u'ŒUVRÉ')
@@ -351,11 +368,12 @@ def transform_ocr_diff(diff):
 
     return diff
 
+
 def check_diff(text, opt):
     text = text.split(u'\n')
-    left = u''.join([ x[1:] for x in text if len(x) > 1 and x[0] == '-' ])
-    right= u''.join([ x[1:] for x in text if len(x) > 1 and x[0] == '+' ])
-    #if (re.search(u'DE', right) and re.search(u'À', left)) or (re.search(u'DE', left) and re.search(u'À', right)):
+    left = u''.join([x[1:] for x in text if len(x) > 1 and x[0] == '-'])
+    right = u''.join([x[1:] for x in text if len(x) > 1 and x[0] == '+'])
+    # if (re.search(u'DE', right) and re.search(u'À', left)) or (re.search(u'DE', left) and re.search(u'À', right)):
     #    print right
     #    print left
     if len(left) <= 3 and len(right) <= 3:
@@ -363,9 +381,10 @@ def check_diff(text, opt):
             return False
     if white_list(left.upper(), right.upper()):
         return False
-    #print left.encode('utf-8')
-    #print right.encode('utf-8')
+    # print left.encode('utf-8')
+    # print right.encode('utf-8')
     return True
+
 
 def has_nr_template(text):
     match = re.search(u'{{[Nn](r|umérotation)\|([^|}]*)\|([^|}]*)\|([^|}]*)}}', text)
@@ -376,6 +395,7 @@ def has_nr_template(text):
         if match:
             return True
     return False
+
 
 def do_diff(ocr_text, text, opt):
     if opt.ignore_punct:
@@ -399,6 +419,7 @@ def do_diff(ocr_text, text, opt):
 
     return diff
 
+
 def filter_diff(diff, opt):
     result = []
     for d in diff:
@@ -407,12 +428,14 @@ def filter_diff(diff, opt):
 
     return result
 
+
 def do_transform(text, ocr_text, opt):
     text = common_transform(text)
     text = transform_text(text, opt)
     ocr_text = common_transform(ocr_text)
     ocr_text = transform_ocr_text(ocr_text, opt)
     return text, ocr_text
+
 
 def verify_match(page_name, ocr_text, text, opt):
     has_nr = has_nr_template(text)
@@ -440,7 +463,7 @@ def verify_match(page_name, ocr_text, text, opt):
 
     result = u''
     if len(diff):
-            result += u'* [[' + page_name + u']]\n'
+        result += u'* [[' + page_name + u']]\n'
     for d in diff:
         d = d.split(u'\n')
         moins = u' '.join([x[1:] for x in d if len(x) > 1 and x[0] in u' -'])
@@ -455,6 +478,7 @@ def verify_match(page_name, ocr_text, text, opt):
 
     return result
 
+
 def read_djvu(book_name, cached_text, datas, opt):
     from match_and_split import align
     data = align.get_djvu(cached_text, opt.site, book_name, True)
@@ -462,6 +486,7 @@ def read_djvu(book_name, cached_text, datas, opt):
         text = re.sub(u'(?ms)<noinclude>(.*?)</noinclude>', u'', text)
         datas.setdefault(pos + 1, [])
         datas[pos + 1].append(text)
+
 
 def main(book_name, cached_diff_cache, cached_text_cache, opt):
     link = pywikibot.Link(book_name, opt.site)
@@ -480,7 +505,7 @@ def main(book_name, cached_diff_cache, cached_text_cache, opt):
     rev_ids = {}
     for it in pages:
         rev_ids[it[1]] = it[2]
-        datas[it[1]] = [ it[0] ]
+        datas[it[1]] = [it[0]]
 
     read_djvu(book_name, cached_text_cache, datas, opt)
 
@@ -510,11 +535,12 @@ def main(book_name, cached_diff_cache, cached_text_cache, opt):
     if opt.save:
         page = pywikibot.Page(opt.site, link.canonical_title() + u'/Diff')
         page = page.toggleTalkPage()
-        page.put(result, comment = u'Mise à jour')
+        page.put(result, comment=u'Mise à jour')
     else:
         print result.encode('utf-8')
 
     cached_diff_cache.set(book_name + '.dat', cached_diff)
+
 
 def default_options():
     class Options:
@@ -522,7 +548,7 @@ def default_options():
 
     options = Options()
     options.lang = u'fr'
-    options.site = pywikibot.Site(code = options.lang, fam = 'wikisource')
+    options.site = pywikibot.Site(code=options.lang, fam='wikisource')
     # By default this script write on a wiki page.
     options.save = True
     # FIXME: If you change these options, you must stop the server, delete
@@ -534,6 +560,7 @@ def default_options():
     options.diff_context = 1
 
     return options
+
 
 if __name__ == "__main__":
 
@@ -547,7 +574,7 @@ if __name__ == "__main__":
         elif arg.startswith('-diff_context'):
             options.diff_context = int(arg[len('-diff_context:'):])
         else:
-            gen = [ { u'title' : unicode(arg, 'utf-8') } ]
+            gen = [{u'title': unicode(arg, 'utf-8')}]
 
     try:
         for p in gen:

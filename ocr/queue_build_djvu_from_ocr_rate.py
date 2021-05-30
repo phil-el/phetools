@@ -11,18 +11,19 @@ import sys
 import os
 from jobs import sge_jobs
 
+
 def add_request(lang, filenames):
     job_req = {
-        'jobname' : 'build_djvu',
-        'run_cmd' : 'python',
-        'force' : True,
-        'args' : [
+        'jobname': 'build_djvu',
+        'run_cmd': 'python',
+        'force': True,
+        'args': [
             os.path.expanduser('build_djvu_from_ocr_rate.py'),
             '-lang:' + lang,
-            '-only_text', 
-            ],
-        'max_vmem' : 768,
-        }
+            '-only_text',
+        ],
+        'max_vmem': 768,
+    }
 
     for f in filenames:
         job_req['args'].append(f)
@@ -33,6 +34,7 @@ def add_request(lang, filenames):
 
     db_obj.add_request(**job_req)
 
+
 def prepare_request(lang, filenames):
     print "preparing", lang, filenames
     for f in filenames:
@@ -40,6 +42,7 @@ def prepare_request(lang, filenames):
             print >> sys.stderr, "file:", f, "doesn't exist"
             exit(1)
     add_request(lang, filenames)
+
 
 if __name__ == "__main__":
     filenames = []

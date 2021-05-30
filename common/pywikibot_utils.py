@@ -8,16 +8,19 @@ import types
 import utils
 import sys
 
+
 def site_matrix():
     req = api.Request(site=pywikibot.Site('meta', 'meta'), action='sitematrix')
     data = req.submit()
     return data['sitematrix']
+
 
 def proofread_info(lang):
     req = api.Request(site=pywikibot.getSite(lang, 'wikisource'),
                       action='query', meta='proofreadinfo')
     data = req.submit()
     return data['query']
+
 
 def get_all_lang(family):
     results = []
@@ -32,6 +35,7 @@ def get_all_lang(family):
     results.sort()
     return results
 
+
 def safe_put(page, text, comment):
     if re.match("^[\s\n]*$", text):
         return
@@ -42,7 +46,7 @@ def safe_put(page, text, comment):
     while retry_count < max_retry:
         retry_count += 1
         try:
-            page.put(text, comment = comment)
+            page.put(text, comment=comment)
             break
         except pywikibot.LockedPage:
             print >> sys.stderr, "put error : Page %s is locked?!" % page.title(asUrl=True).encode("utf8")
@@ -57,7 +61,7 @@ def safe_put(page, text, comment):
             utils.print_traceback()
             break
         except pywikibot.PageNotSaved:
-            print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8") 
+            print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8")
             print >> sys.stderr, "text len: ", len(text)
             utils.print_traceback()
             print >> sys.stderr, "sleeping for:", 10 * retry_count

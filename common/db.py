@@ -16,6 +16,7 @@ from contextlib import contextmanager
 replica_cnf = os.path.expanduser('~/replica.my.cnf')
 _db_prefix = None
 
+
 def user_db_prefix():
     global _db_prefix
     if _db_prefix == None:
@@ -23,9 +24,10 @@ def user_db_prefix():
         _db_prefix = re.search(".*user='(.*)'.*", text).group(1) + '__'
     return _db_prefix
 
+
 def database_name(domain, family):
     if family == 'wikisource':
-        if domain in [ 'old', 'www', 'mul' ]:
+        if domain in ['old', 'www', 'mul']:
             dbname = 'sourceswiki_p'
         elif domain == 'zh-min-nan':
             dbname = 'zh_min_nanwikisource_p'
@@ -35,19 +37,21 @@ def database_name(domain, family):
         dbname = domain + family + '_p'
     return dbname
 
-def use_db(conn, domain, family, cursor_class = None):
+
+def use_db(conn, domain, family, cursor_class=None):
     q = 'use ' + database_name(domain, family)
     cursor = conn.cursor(cursor_class)
     cursor.execute(q)
     return cursor
 
+
 def create_conn(**kwargs):
     conn_params = {
-        'read_default_file' : replica_cnf,
-        'use_unicode' : True,
-        'charset' : "utf8"
-        }
-    #if kwargs.has_key('domain'):
+        'read_default_file': replica_cnf,
+        'use_unicode': True,
+        'charset': "utf8"
+    }
+    # if kwargs.has_key('domain'):
     if 'domain' in kwargs:
         domain = kwargs['domain']
         family = kwargs['family']
@@ -61,7 +65,8 @@ def create_conn(**kwargs):
     else:
         db_server = kwargs['server']
 
-    return MySQLdb.connect(host = db_server, **conn_params)
+    return MySQLdb.connect(host=db_server, **conn_params)
+
 
 # Base class for user db, only handle open/close + a context manager.
 # Creating a UserDb obj doesn't open the db, either use the context manager
@@ -74,7 +79,7 @@ class UserDb(object):
         self.conn = self.cursor = None
 
     def open(self):
-        self.conn = create_conn(server = 'tools-db')
+        self.conn = create_conn(server='tools-db')
         self.cursor = self.conn.cursor(MySQLdb.cursors.DictCursor)
         self.cursor.execute('use ' + self.db_name)
 
@@ -85,6 +90,7 @@ class UserDb(object):
         if self.conn:
             self.conn.close()
             self.conn = None
+
 
 @contextmanager
 def connection(db_obj):
@@ -99,13 +105,14 @@ def connection(db_obj):
     finally:
         db_obj.close()
 
+
 if __name__ == "__main__":
     print('db_prefix:', user_db_prefix())
 
-    conn = create_conn(domain = 'commons', family = 'wiki')
+    conn = create_conn(domain='commons', family='wiki')
     conn.close()
 
-    conn = create_conn(server = 'tools-db')
+    conn = create_conn(server='tools-db')
     cursor = conn.cursor()
     q = 'use ' + user_db_prefix() + 'sge_jobs'
     cursor.execute(q)

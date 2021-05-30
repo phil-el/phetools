@@ -13,6 +13,7 @@ from collections import deque
 import copy
 import utils
 
+
 # A simple job queue serializable to filesytem.
 # use: put() put() get() remove(), get() remove() must be paired, put()
 # can occur between get/remove pair, copy_items() between a get/remove
@@ -21,7 +22,7 @@ import utils
 # a job crash, and the application restart the saved jobs will not contain
 # the job that crashed the worker.
 class JobQueue:
-    def __init__(self, filename = None):
+    def __init__(self, filename=None):
         # Deque has it's own lock but we need your own to copy item.
         self._lock = thread.allocate_lock()
         self._items = deque()
@@ -35,7 +36,7 @@ class JobQueue:
 
     def remove(self):
         with self._lock:
-            self._last= None
+            self._last = None
 
     def get(self):
         got_it = False
@@ -50,7 +51,7 @@ class JobQueue:
 
         return data
 
-    def copy_items(self, get_last = False):
+    def copy_items(self, get_last=False):
         with self._lock:
             data = copy.copy(self._items)
             if get_last and self._last:
@@ -76,13 +77,16 @@ class JobQueue:
         for d in items:
             self.put(*d)
 
+
 if __name__ == "__main__":
     import os
+
 
     def expect(func, data, *args):
         d = func(*args)
         if d != data:
             raise ValueError("expect: " + str(data) + ", found: " + str(d))
+
 
     def put_get_save_test():
         jobs = JobQueue()
@@ -105,23 +109,27 @@ if __name__ == "__main__":
         expect(jobs.copy_items, [(5, 6), (3, 4)], True)
         os.remove('test_job_queue.dat')
 
+
     def thread_test():
         last = 1000
+
         def thread1(jobs):
-            for i in range(1, last+1):
+            for i in range(1, last + 1):
                 jobs.put(i)
+
         def thread2(jobs):
             for i in range(1, last):
                 jobs.copy_items()
                 jobs.get()
 
         jobs = JobQueue()
-        thread.start_new_thread(thread1, (jobs, ))
-        thread.start_new_thread(thread2, (jobs, ))
+        thread.start_new_thread(thread1, (jobs,))
+        thread.start_new_thread(thread2, (jobs,))
 
         jobs.get()
         while not jobs.empty():
             pass
+
 
     put_get_save_test()
     thread_test()

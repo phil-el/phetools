@@ -12,15 +12,17 @@ import re
 
 djvulibre_path = ''
 
+
 def setrlimits():
     mega = 1 << 20
-    resource.setrlimit(resource.RLIMIT_AS, (1536*mega, 1536*mega))
-    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
-    resource.setrlimit(resource.RLIMIT_CPU, (30*60, 30*60))
+    resource.setrlimit(resource.RLIMIT_AS, (1536 * mega, 1536 * mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128 * mega, 128 * mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (30 * 60, 30 * 60))
+
 
 def get_nr_pages_djvu(filename):
     djvused = djvulibre_path + 'djvused'
-    ls = subprocess.Popen([ djvused, "-e", "n", filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([djvused, "-e", "n", filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds=True)
     text = utils.safe_read(ls.stdout)
     ls.wait()
     if ls.returncode != 0:
@@ -28,9 +30,11 @@ def get_nr_pages_djvu(filename):
         return None
     return int(text)
 
+
 def image_size(page_nr, filename):
     djvused = djvulibre_path + 'djvused'
-    ls = subprocess.Popen([ djvused, "-e", "select %d; size" % page_nr, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([djvused, "-e", "select %d; size" % page_nr, filename], stdout=subprocess.PIPE,
+                          preexec_fn=setrlimits, close_fds=True)
     text = utils.safe_read(ls.stdout)
     ls.wait()
     if ls.returncode != 0:
@@ -40,12 +44,13 @@ def image_size(page_nr, filename):
     match = re.search('width=(\d+) height=(\d+)', text)
     return int(match.group(1)), int(match.group(2))
 
+
 def extract_image(opt, page_nr, filename):
     try:
         width, height = image_size(page_nr, filename)
 
         subsample = 1
-        while (width*height) / subsample > (1 << 20) * 50:
+        while (width * height) / subsample > (1 << 20) * 50:
             subsample += 1
 
         subsample = min(subsample, 12)
@@ -58,7 +63,9 @@ def extract_image(opt, page_nr, filename):
 
     tiff_name = opt.temp_tiff_dir + '/page_%04d.tif' % page_nr
     ddjvu = djvulibre_path + 'ddjvu'
-    ls = subprocess.Popen([ ddjvu, "-format=tiff", "-page=%d" % page_nr, "-subsample=%d" % subsample, filename, tiff_name], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen(
+        [ddjvu, "-format=tiff", "-page=%d" % page_nr, "-subsample=%d" % subsample, filename, tiff_name],
+        stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds=True)
     text = utils.safe_read(ls.stdout)
     if text:
         print text
@@ -67,6 +74,7 @@ def extract_image(opt, page_nr, filename):
         print >> sys.stderr, "extract_image fail: ", ls.returncode, filename, page_nr
         return None
     return tiff_name
+
 
 def do_one_page(opt, page_nr, filename):
     tiff_name = extract_image(opt, page_nr, filename)
@@ -86,6 +94,7 @@ def do_one_page(opt, page_nr, filename):
 
     os.remove(tiff_name)
 
+
 def do_file(job_queue, opt, filename):
     while True:
         page_nr = job_queue.get()
@@ -97,8 +106,8 @@ def do_file(job_queue, opt, filename):
         except Exception:
             utils.print_traceback(filename)
 
-def ocr_djvu(opt, filename, task_scheduler = None):
 
+def ocr_djvu(opt, filename, task_scheduler=None):
     if type(filename) == type(u''):
         filename = filename.encode('utf-8')
 
@@ -115,7 +124,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
     if opt.num_thread == -1:
         opt.num_thread = multiprocessing.cpu_count()
         if not task_scheduler:
-            opt.num_thread = max(int(opt.num_thread/2), 1)
+            opt.num_thread = max(int(opt.num_thread / 2), 1)
 
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
@@ -161,6 +170,7 @@ def ocr_djvu(opt, filename, task_scheduler = None):
 
     return True
 
+
 def default_options():
     class Options:
         pass
@@ -183,6 +193,7 @@ def default_options():
 
     return options
 
+
 if __name__ == "__main__":
     options = default_options()
 
@@ -200,7 +211,6 @@ if __name__ == "__main__":
             options.compress = arg[len('-compress:'):]
         else:
             options.base_files.append(arg)
-
 
     for filename in options.base_files:
         path = os.path.split(filename)

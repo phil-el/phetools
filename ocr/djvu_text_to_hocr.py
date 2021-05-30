@@ -37,7 +37,7 @@ hocr_end = """ </body>
 hocr_page_begin = """  <div class='ocr_page' id='page_%(logical_page_id)d' title='image "%(image_title)s"; bbox %(page_bbox)s; ppageno %(physical_page_id)d'>
 """
 
-hocr_page_end ="""  </div>
+hocr_page_end = """  </div>
 """
 
 # carea are called PAGECOLUMN in xml output
@@ -62,8 +62,9 @@ hocr_word_begin = """<span class='ocrx_word' id='word_%(word_id)d' title="bbox %
 
 hocr_word_end = """</span> """
 
+
 class Bbox:
-    def __init__(self, x1 = None, y1 = None, x2 = None, y2 = None):
+    def __init__(self, x1=None, y1=None, x2=None, y2=None):
         self.x1 = x1
         self.x2 = x2
         self.y1 = y1
@@ -88,6 +89,7 @@ class Bbox:
     # compatible with hocr bbox string
     def __str__(self):
         return str(self.x1) + " " + str(self.y1) + " " + str(self.x2) + " " + str(self.y2)
+
 
 class OcrPage:
     def __init__(self):
@@ -121,11 +123,11 @@ class OcrPage:
 
     def end_page(self, e):
         data = {
-            'page_bbox' : '0 0 %d %d'  % (self.width, self.height),
-            'image_title' : self.page_name,
-            'logical_page_id' : self.logical_page_id,
-            'physical_page_id' : self.physical_page_id
-            }
+            'page_bbox': '0 0 %d %d' % (self.width, self.height),
+            'image_title': self.page_name,
+            'logical_page_id': self.logical_page_id,
+            'physical_page_id': self.physical_page_id
+        }
         self.page_buffer += hocr_page_begin % data + self.column_buffer + hocr_page_end
         self.logical_page_id += 1
         self.physical_page_id += 1
@@ -138,9 +140,9 @@ class OcrPage:
 
     def end_column(self, e):
         data = {
-            'column_bbox' : str(self.column_box),
-            'column_id' : self.column_id
-            }
+            'column_bbox': str(self.column_box),
+            'column_id': self.column_id
+        }
         self.column_buffer += hocr_carea_begin % data + self.para_buffer + hocr_carea_end
         self.column_id += 1
 
@@ -166,9 +168,9 @@ class OcrPage:
         self.grow_bbox(self.region_box, self.para_box)
         self.grow_bbox(self.column_box, self.para_box)
         data = {
-            'para_bbox' : str(self.para_box),
-            'para_id' : self.para_id
-            }
+            'para_bbox': str(self.para_box),
+            'para_id': self.para_id
+        }
         self.para_buffer += hocr_para_begin % data + self.line_buffer + hocr_para_end
         self.para_id += 1
 
@@ -183,9 +185,9 @@ class OcrPage:
         self.grow_bbox(self.region_box, self.line_box)
         self.grow_bbox(self.column_box, self.line_box)
         data = {
-            'line_bbox' : str(self.line_box),
-            'line_id' : self.line_id
-            }
+            'line_bbox': str(self.line_box),
+            'line_id': self.line_id
+        }
         self.line_buffer += hocr_line_begin % data + self.word_buffer + hocr_line_end
         self.line_id += 1
 
@@ -203,9 +205,9 @@ class OcrPage:
         # this can occur for empty words after input sanitization.
         if self.word_text != None:
             data = {
-                'word_bbox' : str(self.word_box),
-                'word_id' : self.word_id
-                }
+                'word_bbox': str(self.word_box),
+                'word_id': self.word_id
+            }
             self.word_buffer += hocr_word_begin % data + self.word_text + hocr_word_end
             self.word_id += 1
 
@@ -230,6 +232,7 @@ class OcrPage:
 
     def __str__(self):
         return str(self.width) + ' ' + str(self.height) + ' ' + self.page_name
+
 
 # FIX a bug in djvutoxml, some control char are outside any tag and are
 # invalid xml entity
@@ -256,6 +259,7 @@ class XmlFile:
 
         return text
 
+
 def begin_elem(page, e):
     tag = e.tag.lower()
     if tag == 'param':
@@ -275,6 +279,7 @@ def begin_elem(page, e):
     else:
         print >> sys.stderr, "unsuported tag", tag
         raise 'unsuported tag'
+
 
 def end_elem(page, e):
     tag = e.tag.lower()
@@ -296,25 +301,28 @@ def end_elem(page, e):
         print >> sys.stderr, "unsuported tag", tag
         raise 'unsuported tag'
 
+
 def parse_page_recursive(page, elem):
     for e in elem:
         begin_elem(page, e)
         parse_page_recursive(page, e)
         end_elem(page, e)
 
+
 def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
+
 def setrlimits():
     mega = 1 << 20
-    resource.setrlimit(resource.RLIMIT_AS, (1024*mega, 1024*mega))
-    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
-    resource.setrlimit(resource.RLIMIT_CPU, (1*60*60, 1*60*60))
+    resource.setrlimit(resource.RLIMIT_AS, (1024 * mega, 1024 * mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128 * mega, 128 * mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (1 * 60 * 60, 1 * 60 * 60))
+
 
 def do_parse(opt, filename):
-
     try:
-        ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+        ls = subprocess.Popen([djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds=True)
 
         page_nr = 1
         for event, elem in etree.iterparse(XmlFile(ls.stdout)):
@@ -346,6 +354,7 @@ def do_parse(opt, filename):
 
     return ls.returncode
 
+
 def parse(opt, filename):
     try:
         ret_code = do_parse(opt, filename)
@@ -354,6 +363,7 @@ def parse(opt, filename):
         ret_code = -1
 
     return ret_code
+
 
 def default_options():
     class Options:
@@ -364,9 +374,11 @@ def default_options():
 
     return Options()
 
+
 # Kludgy.
 def has_word_bbox(filename):
-    ls = subprocess.Popen([ djvutxt, filename, '--detail=word'], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([djvutxt, filename, '--detail=word'], stdout=subprocess.PIPE, preexec_fn=setrlimits,
+                          close_fds=True)
     for line in ls.stdout:
         if re.search('\(word \d+ \d+ \d+ \d+ ".*"', line):
             ls.kill()
@@ -374,6 +386,7 @@ def has_word_bbox(filename):
             return True
     ls.wait()
     return False
+
 
 if __name__ == "__main__":
     options = default_options()

@@ -5,14 +5,17 @@ import signal
 import multiprocessing
 import itertools
 
+
 # helper function
 def read_cpu_time():
     fd = open('/proc/stat', 'r')
     line = fd.readline()
     fd.close()
-    return [ int(x) for x in line.split(' ')[2:] ]
+    return [int(x) for x in line.split(' ')[2:]]
+
 
 last_data = read_cpu_time()
+
 
 # return the idle time in [0-1] range
 def idle_time():
@@ -27,6 +30,7 @@ def idle_time():
         # this can occur at startup because /proc/stat is polled too fast.
         return 0.0
 
+
 def sanitize_thread_array(thread_array, silent):
     for i in range(len(thread_array) - 1, -1, -1):
         # for some unknow reason is_alive doesn't work
@@ -35,8 +39,9 @@ def sanitize_thread_array(thread_array, silent):
                 print "deleting thread", thread_array[i].pid
             del thread_array[i]
 
+
 class TaskScheduler:
-    def __init__(self, alarm_time = 1, silent = False):
+    def __init__(self, alarm_time=1, silent=False):
         self.running_thread = []
         self.paused_thread = []
         self.alarm_time = alarm_time
@@ -57,7 +62,7 @@ class TaskScheduler:
     # helper function, caller must ensure it exists at least one paused thread
     def wakeup_process(self):
         if not self.silent:
-            print "wakeup:",  self.paused_thread[0].pid
+            print "wakeup:", self.paused_thread[0].pid
         self.running_thread.append(self.paused_thread[0])
         os.killpg(os.getpgid(self.paused_thread[0].pid), signal.SIGCONT)
         del self.paused_thread[0]
@@ -97,13 +102,14 @@ class TaskScheduler:
         self.reset_group(self.paused_thread)
         self.reset_group(self.running_thread)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
 
     def thread_func():
         print os.getpid()
         while True:
             pass
+
 
     def start_jobs(task_scheduler):
         thread_array = []
@@ -115,6 +121,7 @@ if __name__ == "__main__":
             task_scheduler.job_started(t)
             thread_array.append(t)
         return thread_array
+
 
     t = TaskScheduler()
 

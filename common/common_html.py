@@ -18,7 +18,8 @@ html5_head = u"""<!DOCTYPE html>
 </head>
 """
 
-def get_head(title, css = None, html5 = False):
+
+def get_head(title, css=None, html5=False):
     if not css:
         css = ''
     else:

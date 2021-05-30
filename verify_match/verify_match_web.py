@@ -26,10 +26,10 @@ E_OK = 0
 def ret_val(error, text):
     if error:
         print >> sys.stderr, "Error: %d, %s" % (error, text)
-    return  { 'error' : error, 'text' : text }
+    return {'error': error, 'text': text}
+
 
 def do_match(mysite, cached_diff, cached_text, maintitle, user):
-
     opt = verify_match.default_options()
     opt.site = mysite
     maintitle = maintitle.replace(u'_', u' ')
@@ -37,6 +37,7 @@ def do_match(mysite, cached_diff, cached_text, maintitle, user):
     verify_match.main(maintitle, cached_diff, cached_text, opt)
 
     return ret_val(E_OK, "")
+
 
 # title user lang t tools conn
 def html_for_queue(queue):
@@ -47,14 +48,15 @@ def html_for_queue(queue):
         try:
             msite = pywikibot.getSite(codelang, 'wikisource')
             page = pywikibot.Page(msite, mtitle)
-            path = msite.nice_get_address(page.title(asUrl = True))
+            path = msite.nice_get_address(page.title(asUrl=True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except BaseException:
             utils.print_traceback()
             url = ""
 
-        html += date_s(i[3])+' '+i[2]+" "+i[1]+" <a href=\""+url+"\">"+i[0]+"</a><br/>"
+        html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " <a href=\"" + url + "\">" + i[0] + "</a><br/>"
     return html
+
 
 def do_status(queue):
     queue = queue.copy_items(True)
@@ -66,9 +68,9 @@ def do_status(queue):
     html += u'</div></body></html>'
     return html
 
-def bot_listening(queue):
 
-    print date_s(time.time())+ " START"
+def bot_listening(queue):
+    print date_s(time.time()) + " START"
 
     tools = tool_connect.ToolConnect('verify_match', 45131)
 
@@ -111,9 +113,10 @@ def bot_listening(queue):
         tools.close()
         print >> sys.stderr, "STOP"
 
+
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
+    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
 
 
 def job_thread(queue):
@@ -140,7 +143,7 @@ def job_thread(queue):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
+        print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2 - time1)).encode('utf-8')
 
         queue.remove()
 
@@ -154,7 +157,7 @@ if __name__ == "__main__":
         os.mkdir(os.path.expanduser('~/cache/' + cache_dir2))
     try:
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, ))
+        thread.start_new_thread(job_thread, (queue,))
         bot_listening(queue)
     except KeyboardInterrupt:
         pywikibot.stopme()

@@ -14,12 +14,13 @@ import sys
 
 qstat = '/usr/bin/qstat'
 
+
 # Return an empty set if qstat fail.
 def running_jobs(job_base_name):
     jobs = set()
     try:
-        ls = subprocess.Popen([ qstat, '-xml' ], stdout=subprocess.PIPE,
-                              close_fds = True)
+        ls = subprocess.Popen([qstat, '-xml'], stdout=subprocess.PIPE,
+                              close_fds=True)
         for event, elem in etree.iterparse(ls.stdout):
             if event == 'end' and elem.tag == 'job_list':
                 job_id = elem.find('JB_job_number').text
@@ -39,6 +40,7 @@ def running_jobs(job_base_name):
         jobs = set()
 
     return jobs
+
 
 if __name__ == "__main__":
     print running_jobs('')

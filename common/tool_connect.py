@@ -14,6 +14,7 @@ import json
 import sys
 import urllib
 
+
 class ToolConnect:
     def __init__(self, server_name, port):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,7 +46,7 @@ class ToolConnect:
             print >> sys.stderr, "ill formed request", data.encode('utf-8')
         except:
             pass
-        self.send_reply(conn, { 'error' : 4, 'text' : 'Ill formed request' })
+        self.send_reply(conn, {'error': 4, 'text': 'Ill formed request'})
         conn.close()
 
     def wait_request(self):
@@ -87,5 +88,6 @@ class ToolConnect:
         if self.sock:
             self.sock.close()
 
+
 if __name__ == "__main__":
-	pass
+    pass

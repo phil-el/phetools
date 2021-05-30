@@ -12,6 +12,7 @@ import hocr_request
 import hocr
 from common import db
 
+
 def delete(bookname, lang):
     if type(bookname) == type(u''):
         bookname = bookname.encode('utf-8')
@@ -27,6 +28,7 @@ def delete(bookname, lang):
     if os.path.exists(path + 'sha1.sum'):
         os.remove(path + 'sha1.sum')
 
+
 if __name__ == "__main__":
     db_hocr = hocr_request.DbHocr()
     db_hocr.open()
@@ -35,6 +37,6 @@ if __name__ == "__main__":
     for p in db_hocr.cursor.fetchall():
         print p['lang'], p['title']
         # commented for safety
-        #delete(p['title'], p['lang'])
+        # delete(p['title'], p['lang'])
 
     db_hocr.close()

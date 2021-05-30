@@ -9,6 +9,7 @@
 
 import sys
 import os
+
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_category import domain_urls as urls
 from ws_namespaces import index as index_name
@@ -16,6 +17,7 @@ from common import db
 from gen_stats import all_domain
 from common import common_html
 import urllib.parse
+
 
 def filter_result(books):
     result = []
@@ -34,10 +36,10 @@ def filter_result(books):
                               FROM recentchanges
                               WHERE rc_bot=0 AND rc_cur_id IN (%s)
                            """ % fmt_strs,
-                           page_ids )
+                           page_ids)
 
             if not cursor.fetchone()[0]:
-                result.append( ( len(page_ids), key ) )
+                result.append((len(page_ids), key))
             else:
                 print("filtered:", key)
 
@@ -48,9 +50,10 @@ def filter_result(books):
                 for x in range(cursor.rowcount):
                     print(cursor.fetchone()[0])
 
-    result.sort(reverse = True)
+    result.sort(reverse=True)
 
     return result
+
 
 def format_html_line(domain, bookname, count):
     title = index_name['wikisource'][domain] + ':' + bookname
@@ -72,6 +75,7 @@ def format_html_line(domain, bookname, count):
 
     return result
 
+
 def not_transcluded(domain, cursor):
     # set of Page: in cat 3/4 not transcluded from main
     query = """
@@ -83,13 +87,13 @@ SELECT page_title, page_id FROM categorylinks LEFT JOIN page ON page_id=cl_from
     ns = urls[domain][0]
     cat3 = urls[domain][1]
     cat4 = urls[domain][2]
-    cursor.execute(query, [ cat3, cat4, ns ])
+    cursor.execute(query, [cat3, cat4, ns])
     print(cursor.rowcount)
     result = {}
     for x in range(cursor.rowcount):
         title, page_id = cursor.fetchone()
         title = title.decode().split('/')[0]
-        if title[-5:] in [ '.djvu', '.pdf', '.tif' ]:
+        if title[-5:] in ['.djvu', '.pdf', '.tif']:
             result.setdefault(title, [])
             result[title].append(page_id)
 
@@ -109,7 +113,7 @@ SELECT page_title, page_id FROM categorylinks LEFT JOIN page ON page_id=cl_from
     out_fd = open(out_file, 'w')
 
     title = '%s.wikisource.org not transcluded page' % domain
-    head = common_html.get_head(title, html5 = True) #.encode('utf-8')
+    head = common_html.get_head(title, html5=True)  # .encode('utf-8')
     print(head, file=out_fd)
     print('<body>', file=out_fd)
     if len(result):
@@ -127,16 +131,17 @@ SELECT page_title, page_id FROM categorylinks LEFT JOIN page ON page_id=cl_from
 
     return len(result)
 
+
 if __name__ == "__main__":
     tot_count = 0
     for domain in all_domain:
         print(domain)
 
-        #if domain != 'fr':
+        # if domain != 'fr':
         #    continue
 
-        conn = db.create_conn(domain = domain, family = 'wikisource')
-        cursor = db.use_db(conn, domain = domain, family = 'wikisource')
+        conn = db.create_conn(domain=domain, family='wikisource')
+        cursor = db.use_db(conn, domain=domain, family='wikisource')
 
         tot_count += not_transcluded(domain, cursor)
 

@@ -9,6 +9,7 @@
 
 import utils
 
+
 class CompressedStorage():
     def __init__(self, filename):
         self.base_path = "/".join(filename.split('/')[:-1])
@@ -46,12 +47,13 @@ class CompressedStorage():
     def close(self):
         self.fd_data.close()
 
+
 class CompressedStorageBuilder():
     # use compress = None to default to no compression
-    def __init__(self, filename, compress = 'bz2'):
+    def __init__(self, filename, compress='bz2'):
         self.index = {
-            'compress' : compress,
-            'items' : {}
+            'compress': compress,
+            'items': {}
         }
         self.filename = filename
         self.fd_data = open(self.filename, 'w')
@@ -61,7 +63,7 @@ class CompressedStorageBuilder():
         utils.save_obj(self.filename + '.index', self.index)
 
     # Pass None to avoid compression.
-    def add_item(self, key, data, compress = 'default', extra_data = None):
+    def add_item(self, key, data, compress='default', extra_data=None):
         if compress == 'default':
             compress = self.index['compress']
 
@@ -76,10 +78,10 @@ class CompressedStorageBuilder():
 
         self.raw_add_item(key, data, compress, extra_data)
 
-    def raw_add_item(self, key, data, compress, extra_data = None):
+    def raw_add_item(self, key, data, compress, extra_data=None):
         self.index['items'][key] = {
-            'offset' : self.fd_data.tell(),
-            'size' : len(data)
+            'offset': self.fd_data.tell(),
+            'size': len(data)
         }
         if compress != self.index['compress']:
             self.index['items'][key]['compress'] = compress
@@ -91,10 +93,11 @@ class CompressedStorageBuilder():
 
 if __name__ == "__main__":
     import sys
+    import os
+
     compress = sys.argv[1]
     builder = CompressedStorageBuilder('test.' + compress, compress)
 
-    import os
     base_path = '/usr/src/phe/botpywi/temp/'
     for filename in os.listdir(base_path):
         if filename.endswith('.html'):
@@ -104,7 +107,7 @@ if __name__ == "__main__":
     builder.close()
 
     compressed_storage = CompressedStorage('test.' + compress)
-    for filename in  os.listdir(base_path):
+    for filename in os.listdir(base_path):
         if filename.endswith('.html'):
             print compressed_storage.data(filename)
 

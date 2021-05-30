@@ -11,16 +11,19 @@ import urllib
 import sys
 import time
 
+
 def read_file(filename):
     fd = open(filename)
-    text =  unicode(fd.read(), 'utf-8')
+    text = unicode(fd.read(), 'utf-8')
     fd.close()
     return text
+
 
 def write_file(filename, text):
     fd = open(filename, 'w')
     fd.write(text.encode('utf-8'))
     fd.close()
+
 
 # a simple serializer
 def save_obj(filename, data):
@@ -28,11 +31,13 @@ def save_obj(filename, data):
     cPickle.dump(data, fd)
     fd.close()
 
+
 def load_obj(filename):
     fd = open(filename, 'rb')
     data = cPickle.load(fd)
     fd.close()
     return data
+
 
 def sha1(filename):
     fd = open(filename)
@@ -46,17 +51,20 @@ def sha1(filename):
 
     return h.hexdigest()
 
+
 def write_sha1(sha1, filename):
     fd = open(filename, 'w')
     fd.write(sha1)
     fd.close()
+
 
 def url_opener():
     opener = urllib.URLopener()
     opener.addheaders = [('User-agent', 'MW_phetools')]
     return opener
 
-def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
+
+def copy_file_from_url(url, out_file, expect_sha1=None, max_retry=4):
     retry = 0
     max_retry = min(max(1, max_retry), 5)
     ok = False
@@ -77,7 +85,7 @@ def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
                 if sha1(out_file) != expect_sha1:
                     retry += 1
                     if retry < max_retry:
-                        time.sleep(60*(retry << 1))
+                        time.sleep(60 * (retry << 1))
                 else:
                     ok = True
             else:
@@ -85,8 +93,7 @@ def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
         except IOError, e:
             if e[0] == 'http error' and e[1] == 302:
                 new_url = e[3]['Location']
-                return copy_file_from_url(new_url, out_file, expect_sha1,
-                                          max_retry - 1)
+                return copy_file_from_url(new_url, out_file, expect_sha1, max_retry - 1)
             raise
         except Exception:
             print_traceback("upload error:", url, out_file)
@@ -94,7 +101,7 @@ def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
                 os.remove(out_file)
             retry += 1
             if retry < max_retry:
-                time.sleep(60*(retry << 1))
+                time.sleep(60 * (retry << 1))
 
     if retry:
         if ok:
@@ -103,6 +110,7 @@ def copy_file_from_url(url, out_file, expect_sha1 = None, max_retry = 4):
             print >> sys.stderr, "upload failure after %d retry" % retry, url, out_file
 
     return ok
+
 
 def compress_file_data(out_filename, data, compress_type):
     if compress_type in ['bzip2', 'gzip']:
@@ -115,10 +123,12 @@ def compress_file_data(out_filename, data, compress_type):
     else:
         raise ValueError('Unhandled compression scheme: ' + str(compress_type))
 
+
 def compress_file(out_filename, in_filename, compress_type):
     f_in = open(in_filename)
     compress_file_data(out_filename, f_in.read(), compress_type)
     f_in.close()
+
 
 # return None if the file doesn't exist, raise a ValueError if compress_type
 # is not supported or compress_type == []. Note than returning '' and None
@@ -153,22 +163,26 @@ def uncompress_file(filename, compress_type):
 
     raise ValueError('Empty compression scheme: ' + str(compress_type))
 
+
 # Protect a call against EINTR.
 def _retry_on_eintr(func, *args):
     while True:
         try:
             return func(*args)
         except (IOError, OSError) as e:
-            #print "EINTR, retrying"
+            # print "EINTR, retrying"
             if e.errno != errno.EINTR:
                 raise
             continue
 
+
 def safe_read(fd):
     return _retry_on_eintr(fd.read)
 
+
 def safe_write(fd, text):
     return _retry_on_eintr(fd.write, text)
+
 
 def print_traceback(*kwargs):
     import traceback
@@ -184,6 +198,7 @@ def print_traceback(*kwargs):
     except:
         print >> sys.stderr, "ERROR: An exception occured during traceback"
         raise
+
 
 # File can be written during reading but it's assumed write are line buffered
 # or caller must ignore the first line because it can be a partial line.

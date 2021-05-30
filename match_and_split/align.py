@@ -11,6 +11,7 @@ from common import utils
 from common import copy_File
 import subprocess
 
+
 def match_page(target, source):
     s = difflib.SequenceMatcher()
     text1 = source
@@ -18,12 +19,13 @@ def match_page(target, source):
     p = re.compile(ur'[\W]+')
     text1 = p.split(text1)
     text2 = p.split(text2)
-    s.set_seqs(text1,text2)
+    s.set_seqs(text1, text2)
     ratio = s.ratio()
     return ratio
 
+
 def unquote_text_from_djvu(text):
-    #text = text.replace(u'\\r', u'\r')
+    # text = text.replace(u'\\r', u'\r')
     text = text.replace(u'\\n', u'\n')
     text = text.replace(u'\\"', u'"')
     text = text.replace(u'\\\\', u'\\')
@@ -32,6 +34,7 @@ def unquote_text_from_djvu(text):
     text = text.replace(u'\\013', u'')
     text = text.rstrip(u'\n')
     return text
+
 
 def extract_djvu_text(url, filename, sha1):
     print "extracting text layer"
@@ -45,7 +48,7 @@ def extract_djvu_text(url, filename, sha1):
     # GTK app are very touchy
     os.environ['LANG'] = 'en_US.UTF8'
     # FIXME: check return code
-    ls = subprocess.Popen([ 'djvutxt', filename, '--detail=page'], stdout=subprocess.PIPE, close_fds = True)
+    ls = subprocess.Popen(['djvutxt', filename, '--detail=page'], stdout=subprocess.PIPE, close_fds=True)
     text = ls.stdout.read()
     ls.wait()
     for t in re.finditer(u'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
@@ -63,10 +66,12 @@ def extract_djvu_text(url, filename, sha1):
 def ret_val(error, text):
     if error:
         print "Error: %d, %s" % (error, text)
-    return  { 'error' : error, 'text' : text }
+    return {'error': error, 'text': text}
+
 
 E_ERROR = 1
 E_OK = 0
+
 
 # returns result, status
 def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
@@ -76,7 +81,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
     is_poem = False
 
     try:
-        last_page = cached_text[number - ((step+1)/2)]
+        last_page = cached_text[number - ((step + 1) / 2)]
     except:
         return ret_val(E_ERROR, "Unable to retrieve text layer for page: " + str(number))
 
@@ -86,10 +91,10 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             return ret_val(E_ERROR, "error : could not find a text layer.")
 
         page1 = last_page
-        last_page = page2 = cached_text[pagenum + (step/2)]
+        last_page = page2 = cached_text[pagenum + (step / 2)]
 
-        text1 = page1+page2
-        text2 = target[offset:offset+ int(1.5*len(text1))]
+        text1 = page1 + page2
+        text2 = target[offset:offset + int(1.5 * len(text1))]
 
         p = re.compile(ur'[\W]+', re.U)
         fp = re.compile(ur'([\W]+)', re.U)
@@ -99,7 +104,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
         page1 = p.split(page1)
         text1 = p.split(text1)
         text2 = p.split(text2)
-        s.set_seqs(text1,text2)
+        s.set_seqs(text1, text2)
 
         mb = s.get_matching_blocks()
         if len(mb) < 2:
@@ -107,9 +112,9 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             break
         ccc = mb[-2]
         # no idea what was the purpose of this
-        #dummy = mb[-1]
+        # dummy = mb[-1]
         ratio = s.ratio()
-        #print i, ccc, ratio
+        # print i, ccc, ratio
 
         if ratio < 0.1:
             print "low ratio", ratio
@@ -119,17 +124,17 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
         for i in range(ccc[0] + ccc[2]):
             matched = False
             for m in mb:
-                if i >= m[0] and i < m[0]+m[2] :
-                   matched = True
-                   if i >= len(page1):
-                       overflow = True
-                   break
+                if i >= m[0] and i < m[0] + m[2]:
+                    matched = True
+                    if i >= len(page1):
+                        overflow = True
+                    break
             if not overflow:
-                ss = ftext1[2*i]
+                ss = ftext1[2 * i]
                 if matched:
-                    ss =u"\033[1;32m%s\033[0;49m"%ss
-                if 2*i+1 < len(ftext1):
-                    mstr = mstr + ss + ftext1[2*i+1]
+                    ss = u"\033[1;32m%s\033[0;49m" % ss
+                if 2 * i + 1 < len(ftext1):
+                    mstr = mstr + ss + ftext1[2 * i + 1]
         if verbose:
             pywikibot.output(mstr)
             print "--------------------------------"
@@ -137,30 +142,30 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
         mstr = ""
         no_color = ""
         overflow = False
-        for i in range(ccc[1]+ccc[2]):
+        for i in range(ccc[1] + ccc[2]):
             matched = False
             for m in mb:
-                if i >= m[1] and i < m[1]+m[2] :
-                   matched = True
-                   if m[0]+i-m[1] >= len(page1):
-                       overflow = True
-                   break
+                if i >= m[1] and i < m[1] + m[2]:
+                    matched = True
+                    if m[0] + i - m[1] >= len(page1):
+                        overflow = True
+                    break
 
             if not overflow:
-                ss = ftext2[2*i]
+                ss = ftext2[2 * i]
                 if matched:
-                    ss =u"\033[1;31m%s\033[0;49m"%ss
-                if 2*i+1 < len(ftext2):
-                    mstr = mstr + ss + ftext2[2*i+1]
-                    no_color = no_color + ftext2[2*i] + ftext2[2*i+1]
+                    ss = u"\033[1;31m%s\033[0;49m" % ss
+                if 2 * i + 1 < len(ftext2):
+                    mstr = mstr + ss + ftext2[2 * i + 1]
+                    no_color = no_color + ftext2[2 * i] + ftext2[2 * i + 1]
         if verbose:
             pywikibot.output(mstr)
             print "===================================="
 
         if is_poem:
-            sep = u"\n</poem>\n==[["+prefix+":%s/%d]]==\n<poem>\n"%(djvuname,pagenum)
+            sep = u"\n</poem>\n==[[" + prefix + ":%s/%d]]==\n<poem>\n" % (djvuname, pagenum)
         else:
-            sep = u"\n==[["+prefix+":%s/%d]]==\n"%(djvuname,pagenum)
+            sep = u"\n==[[" + prefix + ":%s/%d]]==\n" % (djvuname, pagenum)
 
         # Move the end of the last page to the start of the next page
         # if the end of the last page look like a paragraph start. 16 char
@@ -176,7 +181,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
 
         offset += len(no_color)
 
-        if no_color and no_color[0]==u'\n':
+        if no_color and no_color[0] == u'\n':
             no_color = no_color[1:]
         no_color = no_color.lstrip(u' ')
         output += sep + no_color
@@ -199,11 +204,11 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
     else:
         return ret_val(E_OK, output)
 
+
 # It's possible to get a name collision if two different wiki have local
 # file with the same name but different contents. In this case the cache will
 # be ineffective but no wrong data can be used as we check its sha1.
-def get_djvu(cache, mysite, djvuname, check_timestamp = False):
-
+def get_djvu(cache, mysite, djvuname, check_timestamp=False):
     print "get_djvu", repr(djvuname)
 
     djvuname = djvuname.replace(" ", "_")

@@ -2,24 +2,30 @@
 
 import os
 import sys
+
 sys.path.append(os.path.expanduser('~/wikisource'))
 import ws_namespaces as namespaces
 from common import db
 
-def default_userdict(count = 0):
+
+def default_userdict(count=0):
     # credits are returned in a dict with user name associated with this value
-    return { 'count' : count, 'flags' : [] }
+    return {'count': count, 'flags': []}
+
 
 def get_source_ns(domain, family):
     return namespaces.namespaces[family][domain]
 
+
 def get_index_ns(domain, family):
     return namespaces.index[family][domain]
+
 
 def get_page_ns(domain, family):
     return namespaces.page[family][domain]
 
-def prefix_index(cursor, start, ns, max_count = 5000):
+
+def prefix_index(cursor, start, ns, max_count=5000):
     count = 0
     last = start
     cont = True
@@ -29,7 +35,7 @@ def prefix_index(cursor, start, ns, max_count = 5000):
                           WHERE page_namespace = %s AND page_title >= %s
                           ORDER BY page_title LIMIT 500
                        """,
-                       [ ns, last ])
+                       [ns, last])
         for r in cursor.fetchall():
             count += 1
             if not r[0].startswith(start) or count > max_count:
@@ -38,28 +44,31 @@ def prefix_index(cursor, start, ns, max_count = 5000):
             last = r[0]
             yield r
 
+
 def get_rev_actor(cursor, rev_ids):
     if len(rev_ids):
-        rev_id_str = [str(x) for x in rev_ids ]
+        rev_id_str = [str(x) for x in rev_ids]
         q = """SELECT rev_actor
                FROM revision
                WHERE rev_page IN (%s)
-            """ % ( ",".join(rev_id_str), )
+            """ % (",".join(rev_id_str),)
         cursor.execute(q)
         for r in cursor.fetchall():
             if r[0] is not None:
                 yield r
+
 
 def get_user_id(cursor, actor_ids):
     actor_id_str = [str(x) for x in actor_ids]
     q = """SELECT actor_user
            FROM actor
            WHERE actor_id IN (%s)
-        """ % ( ",".join(actor_id_str), )
+        """ % (",".join(actor_id_str),)
     cursor.execute(q)
     for r in cursor.fetchall():
         if r[0] is not None:
             yield r
+
 
 def get_user_groups(cursor, actor_ids):
     if len(actor_ids):
@@ -73,15 +82,17 @@ def get_user_groups(cursor, actor_ids):
         for r in cursor.fetchall():
             yield r
 
+
 def get_user_names(cursor, actor_ids):
     if len(actor_ids):
-        actor_id_str = [str(x) for x in actor_ids ]
+        actor_id_str = [str(x) for x in actor_ids]
         cursor.execute("""SELECT actor_id, actor_name
                        FROM actor
                        WHERE actor_id IN (%s)
                        """ % (','.join(actor_id_str)))
         for x in cursor.fetchall():
             yield x
+
 
 def merge_contrib(a, b):
     for key in b:
@@ -91,10 +102,12 @@ def merge_contrib(a, b):
             if not flag in a[key]['flags']:
                 a[key]['flags'].append(flag)
 
+
 def book_pages_id(cursor, book, page_ns):
     book = book.replace(' ', '_')
     pages_id = [x[1] for x in prefix_index(cursor, book + '/', page_ns)]
     return pages_id
+
 
 def credit_from_pages_id(cursor, pages_id):
     actor_ids = {}
@@ -109,11 +122,12 @@ def credit_from_pages_id(cursor, pages_id):
 
     results = {}
     for r in get_user_names(cursor, actor_ids):
-        results[r[1]] = { 'count' : actor_ids[r[0]], 'flags' : [] }
+        results[r[1]] = {'count': actor_ids[r[0]], 'flags': []}
         if r[0] in user_groups:
             results[r[1]]['flags'] = user_groups[r[0]]
 
     return results
+
 
 def get_book_credit(domain, family, cursor, book, ns):
     book = book.replace(' ', '_')
@@ -121,15 +135,17 @@ def get_book_credit(domain, family, cursor, book, ns):
     pages_id = book_pages_id(cursor, book, page_ns)
     return credit_from_pages_id(cursor, pages_id)
 
+
 def get_page_id(cursor, ns_nr, pages):
     fmt_strs = ','.join(['%s'] * len(pages))
     cursor.execute("""SELECT page_id
                       FROM page
                       WHERE page_namespace = %s AND page_title IN (%s)
                       """ % ('%s', fmt_strs),
-                   [ ns_nr ] + list(pages) )
+                   [ns_nr] + list(pages))
     for r in cursor.fetchall():
         yield r
+
 
 def get_pages_credit(cursor, pages, ns):
     splitted = {}
@@ -145,10 +161,11 @@ def get_pages_credit(cursor, pages, ns):
 
     pages_id = []
     for ns_nr in splitted:
-        for r in get_page_id(cursor, ns_nr, splitted[ns_nr]) :
+        for r in get_page_id(cursor, ns_nr, splitted[ns_nr]):
             pages_id.append(r[0])
 
     return credit_from_pages_id(cursor, pages_id)
+
 
 def get_images_credit_db(cursor, images):
     if len(images):
@@ -169,6 +186,7 @@ def get_images_credit_db(cursor, images):
         for r in cursor.fetchall():
             yield r
 
+
 # cursor is the cursor to the local DB
 def get_images_credit(cursor, images):
     if not len(images):
@@ -176,7 +194,7 @@ def get_images_credit(cursor, images):
 
     images = [x.replace(' ', '_') for x in images]
 
-    conn = db.create_conn(domain = 'commons', family = 'wiki')
+    conn = db.create_conn(domain='commons', family='wiki')
     common_cursor = db.use_db(conn, 'commons', 'wiki')
     temp = []
     for r in get_images_credit_db(common_cursor, images):
@@ -192,8 +210,9 @@ def get_images_credit(cursor, images):
 
     return results
 
+
 def get_credit(domain, family, books, pages, images):
-    conn = db.create_conn(domain = domain, family = family)
+    conn = db.create_conn(domain=domain, family=family)
     ns = get_source_ns(domain, family)
     cursor = db.use_db(conn, domain, family)
 
@@ -216,9 +235,12 @@ def get_credit(domain, family, books, pages, images):
 
     return results
 
+
 if __name__ == "__main__":
     family = 'wikisource'
-    print get_credit('fr', family, [ "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ], [ ], [ ])
+    print get_credit('fr', family, [
+        "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu"], [], [])
     # this one has hidden user id, check if we handle it correctly
     print get_credit('pl', family, [], ['Strona:Oscar_Wilde_-_De_profundis.djvu/37'], [])
-    print get_credit('fr', family, [], [], ["Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu" ])
+    print get_credit('fr', family, [], [], [
+        "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu"])

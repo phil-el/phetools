@@ -15,15 +15,16 @@ from common import utils
 import types
 import json
 
+
 def query_params(environ):
     import cgi
-    field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
+    field = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
     rdict = {
-        'format' : 'html',
-        'cmd' : 'status',
-        'title' : '',
-        'lang' : ''
-        }
+        'format': 'html',
+        'cmd': 'status',
+        'title': '',
+        'lang': ''
+    }
     for name in field:
         if type(field[name]) == types.ListType:
             rdict[name] = field[name][-1].value
@@ -35,6 +36,7 @@ def query_params(environ):
 
     return rdict
 
+
 def return_response(start_response, obj, to_json, ret_code, mime_type):
     if to_json:
         try:
@@ -42,7 +44,7 @@ def return_response(start_response, obj, to_json, ret_code, mime_type):
         except UnicodeDecodeError:
             print >> sys.stderr, obj
             ret_code = '400 Bad Request'
-            text = json.dumps({ 'error' : 1, 'text' : ret_code })
+            text = json.dumps({'error': 1, 'text': ret_code})
     else:
         text = obj
 
@@ -50,28 +52,28 @@ def return_response(start_response, obj, to_json, ret_code, mime_type):
                                mime_type + '; charset=UTF-8'),
                               ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
-    return [ text ]
+    return [text]
 
 
 def handle_ping(start_response):
-
-    data = { 'error' : 0,
-             'text' : 'pong',
-             'server' : 'modernization',
-             'ping' : 0.001
-             }
+    data = {'error': 0,
+            'text': 'pong',
+            'server': 'modernization',
+            'ping': 0.001
+            }
 
     return return_response(start_response, data, True, '200 OK', 'text/plain')
 
-def handle_status(params, start_response):
 
-    text = common_html.get_head('modernization', css = 'shared.css').encode('utf-8') + '\n  <body>\n'
+def handle_status(params, start_response):
+    text = common_html.get_head('modernization', css='shared.css').encode('utf-8') + '\n  <body>\n'
 
     text += '<h1>OK</h1>'
 
     text += '  </body>\n</html>'
 
     return return_response(start_response, text, False, '200 OK', 'text/html')
+
 
 def handle_suggest_query(params, start_response):
     if params['lang'] and params['title']:
@@ -82,12 +84,13 @@ def handle_suggest_query(params, start_response):
         except:
             utils.print_traceback()
             ret_code = '500 Internal Server Error'
-            result = { 'error' : 1, 'text' : ret_code }
+            result = {'error': 1, 'text': ret_code}
     else:
         ret_code = '400 Bad Request'
-        result = { 'error' : 1, 'text' : ret_code }
+        result = {'error': 1, 'text': ret_code}
 
     return return_response(start_response, result, True, ret_code, 'application/json')
+
 
 def handle_blacklist_query(params, start_response):
     if params['lang'] and params['blacklist']:
@@ -96,16 +99,17 @@ def handle_blacklist_query(params, start_response):
             blacklist = json.loads(params['blacklist'])
             modernize.save_blacklist(blacklist)
             ret_code = '200 OK'
-            result = { 'error' : 0, 'text' :'OK' }
+            result = {'error': 0, 'text': 'OK'}
         except:
             utils.print_traceback()
             ret_code = '500 Internal Server Error'
-            result = { 'error' : 1, 'text' : ret_code }
+            result = {'error': 1, 'text': ret_code}
     else:
         ret_code = '400 Bad Request'
-        result = { 'error' : 1, 'text' : ret_code }
+        result = {'error': 1, 'text': ret_code}
 
     return return_response(start_response, result, True, ret_code, 'application/json')
+
 
 def myapp(environ, start_response):
     params = query_params(environ)
@@ -121,10 +125,12 @@ def myapp(environ, start_response):
     else:
         return handle_status(params, start_response)
 
+
 if __name__ == "__main__":
     sys.stderr = open(os.path.expanduser('~/log/modernization.err'), 'a')
 
     from flup.server.cgi import WSGIServer
+
     try:
         WSGIServer(myapp).run()
     except BaseException:

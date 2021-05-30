@@ -17,10 +17,12 @@ from common import job_queue
 E_ERROR = 1
 E_OK = 0
 
+
 def ret_val(error, text):
     if error:
         print >> sys.stderr, "Error: %d, %s" % (error, text)
-    return  { 'error' : error, 'text' : text }
+    return {'error': error, 'text': text}
+
 
 def do_exec(title, cmd):
     if cmd == 'timeout':
@@ -28,6 +30,7 @@ def do_exec(title, cmd):
         return ret_val(E_ERROR, "timeout: 60 sec: " + title)
 
     return ret_val(E_OK, "exec ok: " + title)
+
 
 # cmd title t tools conn
 def html_for_queue(queue):
@@ -37,6 +40,7 @@ def html_for_queue(queue):
 
         html += date_s(i[1]) + ' ' + mtitle + "<br/>"
     return html
+
 
 def do_status(queue):
     queue = queue.copy_items(True)
@@ -48,8 +52,8 @@ def do_status(queue):
     html += u'</div></body></html>'
     return html
 
-def bot_listening(queue):
 
+def bot_listening(queue):
     print date_s(time.time()) + " START"
 
     tools = tool_connect.ToolConnect('dummy_robot', 45139)
@@ -73,7 +77,7 @@ def bot_listening(queue):
 
             print (date_s(t) + " REQUEST " + cmd + ' ' + title).encode('utf-8')
 
-            if cmd in [ "exec", "timeout" ]:
+            if cmd in ["exec", "timeout"]:
                 queue.put(cmd, title, t, tools, conn)
             elif cmd == 'status':
                 html = do_status(queue)
@@ -90,9 +94,10 @@ def bot_listening(queue):
         tools.close()
         print >> sys.stderr, "STOP"
 
+
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
+    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
 
 
 def job_thread(queue, func):
@@ -108,7 +113,7 @@ def job_thread(queue, func):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + ' ' + title + " (%.2f)" % (time2-time1)).encode('utf-8')
+        print (date_s(time2) + ' ' + title + " (%.2f)" % (time2 - time1)).encode('utf-8')
 
         queue.remove()
 
