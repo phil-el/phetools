@@ -28,7 +28,7 @@ E_OK = 0
 
 def ret_val(error, text):
     if error:
-        print "Error: %d, %s" % (error, text)
+        print(f"Error: {error}, {text}")
     return {'error': error, 'text': text}
 
 
@@ -38,7 +38,7 @@ def do_extract(mysite, maintitle, user, codelang, cache):
         return ret_val(E_ERROR, "no prefix")
 
     djvuname = maintitle.replace(' ', '_')
-    print djvuname.encode('utf-8')
+    print(djvuname)
 
     text_layer = align.get_djvu(cache, mysite, djvuname, True)
     if not text_layer:
@@ -46,10 +46,10 @@ def do_extract(mysite, maintitle, user, codelang, cache):
 
     text = ''
     for pos, page_text in enumerate(text_layer):
-        text += '==[[' + prefix + ':' + maintitle + '/' + unicode(pos + 1) + ']]==\n'
+        text += f'==[[{prefix}:{maintitle}/{pos + 1}]]==\n'
         text += page_text + '\n'
 
-    page = pywikibot.Page(mysite, 'User:' + user + '/Text')
+    page = pywikibot.Page(mysite, f'User:{user}/Text')
     safe_put(page, text, comment='extract text')
 
     return ret_val(E_OK, "")
@@ -66,7 +66,7 @@ def html_for_queue(queue):
             index_prefix = unicode(index_prefixes['wikisource'].get(codelang), 'utf-8')
             page = pywikibot.Page(msite, index_prefix + ':' + mtitle)
             path = msite.nice_get_address(page.title(asUrl=True))
-            url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
+            url = f'{msite.protocol()}://{msite.hostname()}{path}'
         except:
             url = ""
         html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " <a href=\"" + url + "\">" + i[0] + "</a><br/>"
@@ -78,14 +78,14 @@ def do_status(queue):
 
     html = common_html.get_head('Extract text layer')
     html += "<body><div>The robot is running.<br/><hr/>"
-    html += "<br/>%d jobs in extract queue.<br/>" % len(queue)
+    html += f"<br/>{len(queue)} jobs in extract queue.<br/>"
     html += html_for_queue(queue)
     html += '</div></body></html>'
     return html
 
 
 def bot_listening(queue):
-    print date_s(time.time()) + " START"
+    print(date_s(time.time()) + ' START')
 
     tools = tool_connect.ToolConnect('extract_text_layer', 45132)
 
@@ -94,7 +94,7 @@ def bot_listening(queue):
             request, conn = tools.wait_request()
 
             try:
-                print request
+                print(request)
 
                 cmd = request['cmd']
                 title = request.get('title', '')
@@ -109,9 +109,9 @@ def bot_listening(queue):
             t = time.time()
             user = user.replace(' ', '_')
 
-            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
+            print(f'{date_s(t)} REQUEST {user} {lang} {cmd} {title}')
 
-            if cmd == "extract":
+            if cmd == 'extract':
                 queue.put(title, lang, user, t, tools, conn)
             elif cmd == 'status':
                 html = do_status(queue)
@@ -121,12 +121,13 @@ def bot_listening(queue):
                 tools.send_reply(conn, ret_val(E_OK, 'pong'))
                 conn.close()
             else:
-                tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
+                tools.send_reply(conn, ret_val(E_ERROR, f'unknown command: {cmd}'))
                 conn.close()
 
     finally:
         tools.close()
-        print >> sys.stderr, "STOP"
+        print("STOP", file=sys.stderr)
+
 
 
 def date_s(at):
@@ -143,7 +144,7 @@ def job_thread(queue, cache):
         try:
             mysite = pywikibot.getSite(codelang, 'wikisource')
         except:
-            out = ret_val(E_ERROR, "site error: " + repr(codelang))
+            out = ret_val(E_ERROR, f'site error: {codelang}')
             mysite = False
 
         if mysite:
@@ -154,7 +155,7 @@ def job_thread(queue, cache):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2 - time1)).encode('utf-8')
+        print(f'{date_s(time2)}{title} {user} {codelang} {time2 - time1:.2f}')
 
         queue.remove()
 

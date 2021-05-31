@@ -286,7 +286,7 @@ def sg(pp, dom):
             if ok:
                 av = 0.99 * av + 0.01 * d
                 # av = d
-                # if abs( d )>500: print dom, int(t[i]), d, dv, dt
+                # if abs( d )>500: print(dom, int(t[i]), d, dv, dt)
 
         # FIXME: this ignore all negative value from one day to another
         # which can occur if a wiki delete some corrected pages (cpvio trouble

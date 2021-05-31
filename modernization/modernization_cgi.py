@@ -31,7 +31,7 @@ def query_params(environ):
             rdict[name] = field[name].value
 
     for key in rdict:
-        rdict[key] = unicode(rdict[key], 'utf-8')
+        rdict[key] = rdict[key]
 
     return rdict
 
@@ -41,7 +41,7 @@ def return_response(start_response, obj, to_json, ret_code, mime_type):
         try:
             text = json.dumps(obj)
         except UnicodeDecodeError:
-            print >> sys.stderr, obj
+            print(obj, file=sys.stderr)
             ret_code = '400 Bad Request'
             text = json.dumps({'error': 1, 'text': ret_code})
     else:
@@ -65,7 +65,7 @@ def handle_ping(start_response):
 
 
 def handle_status(params, start_response):
-    text = common_html.get_head('modernization', css='shared.css').encode('utf-8') + '\n  <body>\n'
+    text = common_html.get_head('modernization', css='shared.css') + '\n  <body>\n'
 
     text += '<h1>OK</h1>'
 
@@ -113,7 +113,7 @@ def handle_blacklist_query(params, start_response):
 def myapp(environ, start_response):
     params = query_params(environ)
 
-    print >> sys.stderr, params
+    print(params, file=sys.stderr)
 
     if params['cmd'] == 'ping':
         return handle_ping(start_response)

@@ -30,7 +30,7 @@ def queue_pdf_to_djvu(ia_id):
 
     db_obj = sge_jobs.DbJob()
 
-    print job_req
+    print(job_req)
 
     db_obj.add_request(**job_req)
 
@@ -50,7 +50,7 @@ def query_params(environ):
 
 
 def handle_query(params, start_response):
-    print >> sys.stderr, params
+    print(params, file=sys.stderr)
 
     answer = '200 OK'
 
@@ -142,7 +142,7 @@ def handle_get(environ, params, start_response):
     else:
         size = os.path.getsize(djvu_name)
         fd = open(djvu_name)
-        save_name = ia_files['pdf']['name'][:-3].encode('utf-8') + 'djvu'
+        save_name = ia_files['pdf']['name'][:-3] + 'djvu'
         start_response("200 OK",
                        [('Content-Type', 'application/octet-stream'),
                         ('Content-Length', str(size)),

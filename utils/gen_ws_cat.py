@@ -61,7 +61,7 @@ if __name__ == "__main__":
     langs = pywikibot_utils.get_all_lang('wikisource')
     text = gen_ws_category(langs)
 
-    # print text.encode('utf-8')
+    # print(text)
     target = os.path.expanduser('~/wikisource/ws_category.py')
     old_text = ''
     if os.path.exists(target):

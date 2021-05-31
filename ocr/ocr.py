@@ -53,7 +53,7 @@ def ocr(filename, out_basename, lang, config=''):
                           preexec_fn=setrlimits, close_fds=True)
     text = utils.safe_read(ls.stdout)
     if text:
-        print text,
+        print(text, end=' ')
     ls.wait()
 
     if config == '':
@@ -63,7 +63,7 @@ def ocr(filename, out_basename, lang, config=''):
 
     if not os.path.exists(out_filename) or ls.returncode:
         # in case returncode == 0
-        print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
+        print("ocr.ocr() fail to exec tesseract:", ls.returncode, filename, file=sys.stderr)
 
         fd = open(out_filename, 'w')
         fd.write('An error occurred during ocr processing: ' + filename)
@@ -74,7 +74,7 @@ def ocr(filename, out_basename, lang, config=''):
     fd.close()
 
     if ls.returncode != 0:
-        print >> sys.stderr, "ocr.ocr() fail to exec tesseract:", ls.returncode, filename
+        print("ocr.ocr() fail to exec tesseract:", ls.returncode, filename, file=sys.stderr)
         return None
 
     return txt
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     url = 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Petitot_-_Collection_compl%C3%A8te_des_m%C3%A9moires_relatifs_%C3%A0_l%E2%80%99histoire_de_France%2C_2e_s%C3%A9rie%2C_tome_45.djvu/page280-1024px-Petitot_-_Collection_compl%C3%A8te_des_m%C3%A9moires_relatifs_%C3%A0_l%E2%80%99histoire_de_France%2C_2e_s%C3%A9rie%2C_tome_45.djvu.jpg'
     lang = 'fr'
     utils.copy_file_from_url(url, image_filename)
-    print ocr(image_filename, image_filename, tesseract_languages[lang], config='hocr')
+    print(ocr(image_filename, image_filename, tesseract_languages[lang], config='hocr'))
 
     os.remove(image_filename)
     os.remove(image_filename + ".txt")

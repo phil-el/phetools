@@ -51,7 +51,7 @@ def next_url(url):
 
 
 def bot_listening(queue, cache):
-    print date_s(time.time()) + " START"
+    print(date_s(time.time()) + " START")
 
     tools = tool_connect.ToolConnect('ws_ocr_daemon', 45133)
 
@@ -71,7 +71,7 @@ def bot_listening(queue, cache):
                 continue
 
             t = time.time()
-            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + url).encode('utf-8')
+            print(f'{date_s(t)} REQUEST {user} {lang} {cmd} {url}')
 
             if cmd == "ocr":
                 # bypass the job queue if the ocr is cached to ensure a cached
@@ -102,12 +102,12 @@ def bot_listening(queue, cache):
 
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
+    return time.strftime("%d/%m/%Y:%H:%M:%S", t)
 
 
 def ret_val(error, text):
     if error:
-        print "Error: %d, %s" % (error, text)
+        print("Error: %d, %s" % (error, text))
     return {'error': error, 'text': text}
 
 
@@ -120,8 +120,6 @@ def image_key(url):
 
 
 def get_from_cache(cache, url, codelang):
-    url = url.encode('utf-8')
-
     cache_key = image_key(url)
 
     return cache.get(cache_key)
@@ -134,8 +132,6 @@ def ocr_image(cache, url, codelang):
     text = get_from_cache(cache, url, codelang)
     if text:
         return ret_val(0, text)
-
-    url = url.encode('utf-8')
 
     cache_key = image_key(url)
 
@@ -179,7 +175,7 @@ def job_thread(queue, cache):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + ' ' + url + ' ' + user + " " + codelang + " (%.2f)" % (time2 - time1)).encode('utf-8')
+        print(f'{date_s(time2)} {url} {user} {codelang} ({time2 - time1}:.2f)')
 
         queue.remove()
 

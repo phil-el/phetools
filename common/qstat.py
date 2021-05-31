@@ -30,16 +30,17 @@ def running_jobs(job_base_name):
 
         ls.wait()
         if ls.returncode:
-            print >> sys.stderr, 'qstat failed', ls.returncode
-            print >> sys.stderr, 'RECOVER'
+            print('qstat failed', ls.returncode, file=sys.stderr)
+            print('RECOVER', file=sys.stderr)
+
             jobs = set()
     except:
         utils.print_traceback()
-        print >> sys.stderr, 'RECOVER'
+        print('RECOVER', file=sys.stderr)
         jobs = set()
 
     return jobs
 
 
 if __name__ == "__main__":
-    print running_jobs('')
+    print(running_jobs(''))

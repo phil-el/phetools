@@ -60,10 +60,7 @@ class LogFile:
             raise Exception('File has been closed, oh noes!')
         if not self.keep_open:
             self.file = open(self._total_name, 'a+')
-        if prefix:
-            _prefix = '[%s] ' % time.strftime('%H:%M:%S')
-        else:
-            _prefix = ''
+        _prefix = time.strftime('[%H:%M:%S]') if prefix else ''
 
         self.file.write(_prefix + message + '\n')
 
@@ -225,7 +222,7 @@ def _connected_checker():
     global server
     server.execute_delayed(120, _connected_checker)
     if not server.is_connected():
-        print >> sys.stderr, "disconnected, reconnect"
+        print("disconnected, reconnect", file=sys.stderr)
         connect()
 
 

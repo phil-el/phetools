@@ -169,13 +169,13 @@ class Modernization:
         result = self.default_cache()
 
         html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
-        root = etree.fromstring(html.encode('utf-8'))
+        root = etree.fromstring(html)
         text = ''
         for it in root.findall(r".//{http://www.w3.org/1999/xhtml}li"):
             text += self.get_etree_text(it, set())
 
         for line in text.split('\n'):
-            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
+            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?://.*?)?$', line, re.UNICODE)
             if match:
                 result[match.group(1)] = match.group(2)
 
@@ -194,13 +194,13 @@ class Modernization:
         html_id = self.config[variant]['modernize_div_id']
 
         html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
-        root = etree.fromstring(html.encode('utf-8'))
+        root = etree.fromstring(html)
         text = ''
         for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
             text += self.get_etree_text(it, set())
 
         for line in text.split('\n'):
-            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
+            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?://.*?)?$', line, re.UNICODE)
             if match:
                 result[match.group(1)] = match.group(2)
 
@@ -233,7 +233,7 @@ class Modernization:
                 new_cache[p.latestRevision()] = (p.title(), result)
                 count += 1
 
-            print >> sys.stderr, count, '\r',
+            print(count, '\r', end = ' ', file=sys.stderr)
 
         pages = self.get_global_dict(variant)
         md5 = hashlib.md5()
@@ -254,7 +254,7 @@ class Modernization:
 
         self.save_dicts(variant, new_cache)
 
-        print '\ncache nr items', count
+        print('\ncache nr items', count)
 
     def update_cache(self):
         for variant in self.variants:
@@ -268,11 +268,11 @@ class Modernization:
         return result
 
     def dump_dict_entry(self, key, dictionary):
-        print '*' + key.encode('utf-8') + ' : ' + dictionary[key].encode('utf-8')
+        print('*' + key + ' : ' + dictionary[key])
 
     def dump_redundant_words(self, title, redundant_words):
         if len(redundant_words):
-            print title.encode('utf-8')
+            print(title)
             for word in redundant_words:
                 self.dump_dict_entry(word, redundant_words)
 
@@ -281,7 +281,7 @@ class Modernization:
         if not len(redundant_words):
             return
 
-        print '*[[' + title.encode('utf-8') + ']]'
+        print(f'*[[{title}]]')
         for key in local_dict:
             if not key in redundant_words:
                 self.dump_dict_entry(key, local_dict)
@@ -323,7 +323,7 @@ class Modernization:
 
         for data in replace:
             if data[0] >= 5:
-                print data[1].encode('utf-8'), data[2].encode('utf-8'), data[0]
+                print(data[1], data[2], data[0])
 
     def optimize_all_global_dict(self):
         for variant in self.variants:
@@ -336,13 +336,13 @@ class Modernization:
         try:
             last_rev = page.latestRevision()
         except pywikibot.exceptions.NoPage:
-            print 'Page does not exist'
+            print('Page does not exist')
             return
 
         if last_rev in cache:
-            print 'Found'
+            print('Found')
             local_dict = cache[last_rev][1]
-            print local_dict
+            print(local_dict)
             if 'global_dict' in cache:
                 global_dict = cache['global_dict'][1]
             else:
@@ -351,7 +351,7 @@ class Modernization:
             redundant_words = self.get_dict_redundancy(global_dict, local_dict)
             self.dump_redundant_words(title, redundant_words)
         else:
-            print 'Not found'
+            print('Not found')
 
     def check_title(self, title):
         for variant in self.variants:
@@ -385,9 +385,9 @@ class Modernization:
             for word in local_dict:
                 if re.search(regex, word) or re.search(regex, local_dict[word]):
                     if type(cache[key][0]) == type(3):
-                        print 'global_dict'
+                        print('global_dict')
                     else:
-                        print cache[key][0].encode('utf-8')
+                        print(cache[key][0])
                     self.dump_dict_entry(word, local_dict)
 
     def get_useless_char(self):
@@ -446,7 +446,7 @@ class Modernization:
         html = self.get_html(p)
 
         new_html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
-        root = etree.fromstring(new_html.encode('utf-8'))
+        root = etree.fromstring(new_html)
 
         exclude = set()
 
@@ -562,9 +562,9 @@ class Modernization:
         for key in cache:
             if cache[key][1].has_key(word):
                 if type(cache[key][0]) == type(3):
-                    print 'global_dict'
+                    print('global_dict')
                 else:
-                    print cache[key][0].encode('utf-8')
+                    print(cache[key][0])
 
     def locate_all_dict(self, word):
         for variant in self.variants:
@@ -577,7 +577,7 @@ class Modernization:
             html = self.get_html(p)
             new_html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
 
-            root = etree.fromstring(new_html.encode('utf-8'))
+            root = etree.fromstring(new_html)
             exclude = set()
             html_id = self.config[variant]['modernize_div_id']
 
@@ -616,7 +616,7 @@ class Modernization:
                                                                {})
 
                     if repl:
-                        print p.title().encode('utf-8')
+                        print(p.title())
                         break
                     else:
                         i += 1
@@ -635,7 +635,7 @@ class Modernization:
                 local_dict = cache[p.latestRevision()][1]
                 used_word = set()
 
-                # print text.encode('utf-8')
+                # print(text.encode('utf-8'))
 
                 i = 0
                 while True:
@@ -656,9 +656,9 @@ class Modernization:
                 for key in local_dict:
                     if not key in used_word:
                         if first:
-                            print cache[p.latestRevision()][0].encode('utf-8')
+                            print(cache[p.latestRevision()][0])
                             first = False
-                        print '* ' + key.encode('utf-8')
+                        print('* ' + key)
 
     def useless_dict_entry(self):
         for variant in self.variants:
@@ -668,18 +668,18 @@ class Modernization:
         pages = self.get_global_dict(variant)
         result = {}
         for p in pages:
-            print p.title().encode('utf-8')
+            print(p.title())
             html = self.get_html(p)
             result.update(self.parse_global_dict(html))
         for key in result:
-            print key.encode('utf-8'), result[key].encode('utf-8')
+            print(key, result[key])
 
     def test_suggest_dict(self, title):
         result = self.suggest_dict(title)
         for variant in result:
-            print variant
+            print(variant)
             for key in result[variant]:
-                print key, result[variant][key]
+                print(key, result[variant][key])
 
     def test_global_dict_config(self):
         for variant in self.variants:
@@ -688,7 +688,7 @@ class Modernization:
     def test_local_dict_config(self):
         for variant in self.variants:
             for p in self.get_local_dict_list(variant):
-                print p.latestRevision()
+                print(p.latestRevision())
 
     def test_cache(self, variant):
         cache = self.load_dicts(variant)
@@ -710,11 +710,11 @@ if __name__ == '__main__':
         elif arg.startswith('-cmd:'):
             cmd = arg[len('-cmd:'):]
         elif arg.startswith('-title:'):
-            title = unicode(arg[len('-title:'):], 'utf-8')
+            title = arg[len('-title:'):]
         elif arg.startswith('-word:'):
-            word = unicode(arg[len('-word:'):], 'utf-8')
+            word = arg[len('-word:'):]
         else:
-            print >> sys.stderr, "unknown arg:", arg
+            print("unknown arg:", arg, file=sys.stderr)
             exit(1)
 
     modernization = Modernization(lang)
@@ -744,4 +744,4 @@ if __name__ == '__main__':
     elif cmd == 'useless_dict_entry':
         modernization.useless_dict_entry()
     else:
-        print "unknown -cmd:", cmd
+        print("unknown -cmd:", cmd)

@@ -104,9 +104,9 @@ def copy_file_from_url(url, out_file, expect_sha1=None, max_retry=4):
 
     if retry:
         if ok:
-            print >> sys.stderr, "upload success after %d retry" % retry, url, out_file
+            print(f"upload success after {retry} retry", url, out_file, file=sys.stderr)
         else:
-            print >> sys.stderr, "upload failure after %d retry" % retry, url, out_file
+            print(f"upload failure after {retry} retry", url, out_file, url, out_file, file=sys.stderr)
 
     return ok
 
@@ -120,7 +120,7 @@ def compress_file_data(out_filename, data, compress_type):
         f_out.write(data)
         f_out.close()
     else:
-        raise ValueError('Unhandled compression scheme: ' + str(compress_type))
+        raise ValueError('Unhandled compression scheme: ' + compress_type)
 
 
 def compress_file(out_filename, in_filename, compress_type):
@@ -160,7 +160,7 @@ def uncompress_file(filename, compress_type):
         fd_in.close()
         return data
 
-    raise ValueError('Empty compression scheme: ' + str(compress_type))
+    raise ValueError('Empty compression scheme: ' + compress_type)
 
 
 # Protect a call against EINTR.
@@ -169,7 +169,7 @@ def _retry_on_eintr(func, *args):
         try:
             return func(*args)
         except (IOError, OSError) as e:
-            # print "EINTR, retrying"
+            # print("EINTR, retrying")
             if e.errno != errno.EINTR:
                 raise
             continue
@@ -188,14 +188,12 @@ def print_traceback(*kwargs):
     try:
         traceback.print_exc()
         if len(kwargs):
-            print >> sys.stderr, "arguments:",
+            print("arguments:", file=sys.stderr)
             for f in kwargs:
-                if type(f) == type(''):
-                    f = f.encode('utf-8')
-                print >> sys.stderr, str(f),
-            print >> sys.stderr
+                print(f, file=sys.stderr)
+            print('', file=sys.stderr)
     except:
-        print >> sys.stderr, "ERROR: An exception occured during traceback"
+        print("ERROR: An exception occured during traceback", file=sys.stderr)
         raise
 
 

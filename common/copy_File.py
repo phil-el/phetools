@@ -12,7 +12,7 @@ import pywikibot
 
 def get_filepage(site, djvuname):
     try:
-        page = pywikibot.page.FilePage(site, "File:" + djvuname)
+        page = pywikibot.page.FilePage(site, f"File:{djvuname}")
     except pywikibot.NoPage:
         page = None
 
@@ -21,14 +21,14 @@ def get_filepage(site, djvuname):
             page.fileUrl()
         except:
             site = pywikibot.Site(code='commons', fam='commons')
-            page = pywikibot.page.FilePage(site, "File:" + djvuname)
+            page = pywikibot.page.FilePage(site, f"File:{djvuname}")
 
     return page
 
 
 def copy_file(lang, family, filename, dest):
     site = pywikibot.getSite(lang, family)
-    page = get_filepage(site, unicode(filename, 'utf-8'))
+    page = get_filepage(site, filename)
     url = page.fileUrl()
     utils.copy_file_from_url(url, dest, page.getFileSHA1Sum())
 

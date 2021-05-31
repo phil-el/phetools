@@ -236,9 +236,9 @@ def get_credit(domain, family, books, pages, images):
 
 if __name__ == "__main__":
     family = 'wikisource'
-    print get_credit('fr', family, [
-        "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu"], [], [])
+    print(get_credit('fr', family, [
+        "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu"], [], []))
     # this one has hidden user id, check if we handle it correctly
-    print get_credit('pl', family, [], ['Strona:Oscar_Wilde_-_De_profundis.djvu/37'], [])
-    print get_credit('fr', family, [], [], [
-        "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu"])
+    print(get_credit('pl', family, [], ['Strona:Oscar_Wilde_-_De_profundis.djvu/37'], []))
+    print(get_credit('fr', family, [], [], [
+        "Cervantes - L’Ingénieux Hidalgo Don Quichotte de la Manche, traduction Viardot, 1836, tome 1.djvu"]))

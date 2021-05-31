@@ -31,4 +31,4 @@ def distance(a, b, cost_replace=None):
 
 
 if __name__ == "__main__":
-    print distance(sys.argv[1], sys.argv[2])
+    print(distance(sys.argv[1], sys.argv[2]))

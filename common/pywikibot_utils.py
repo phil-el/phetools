@@ -45,41 +45,42 @@ def safe_put(page, text, comment):
     retry_count = 0
     while retry_count < max_retry:
         retry_count += 1
+        title = page.title(asUrl=True)
         try:
             page.put(text, comment=comment)
             break
         except pywikibot.LockedPage:
-            print >> sys.stderr, "put error : Page %s is locked?!" % page.title(asUrl=True).encode("utf8")
+            print(f"put error : Page", title, "is locked?!", file=sys.stderr)
             utils.print_traceback()
             break
         except pywikibot.NoPage:
-            print >> sys.stderr, "put error : Page does not exist %s" % page.title(asUrl=True).encode("utf8")
+            print("put error : Page does not exist", title, file=sys.stderr)
             utils.print_traceback()
             break
         except pywikibot.NoUsername:
-            print >> sys.stderr, "put error : No user name on wiki %s" % page.title(asUrl=True).encode("utf8")
+            print("put error : No user name on wiki", title, file=sys.stderr)
             utils.print_traceback()
             break
-        except pywikibot.PageNotSaved:
-            print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8")
-            print >> sys.stderr, "text len: ", len(text)
+        except pywikibot.PageSaveRelatedError:
+            print("put error : Page not saved", title, file=sys.stderr)
+            print("text len: ", len(text), file=sys.stderr)
             utils.print_traceback()
-            print >> sys.stderr, "sleeping for:", 10 * retry_count
+            print("sleeping for:", 10 * retry_count, file=sys.stderr)
             time.sleep(10 * retry_count)
             continue
         except pywikibot.OtherPageSaveError:
             # this can occur for read-only DB because slave lag, so retry
             # a few time
-            print >> sys.stderr, "put error : Page not saved %s" % page.title(asUrl=True).encode("utf8")
-            print >> sys.stderr, "retrying in", retry_count, "minute(s)"
+            print("put error : Page not saved", title, file=sys.stderr)
+            print("retrying in", retry_count, "minute(s)", file=sys.stderr)
             time.sleep(retry_count * 60)
             continue
-        except:
-            print >> sys.stderr, "put error: unknown exception"
+        except Exception as e:
+            print("put error: unknown exception", e, file=sys.stderr)
             utils.print_traceback()
             time.sleep(10)
             break
 
     if retry_count >= max_retry:
-        print >> sys.stderr, "unable to save page after", max_retry, "try, bailing out"
+        print("unable to save page after", max_retry, "try, bailing out", file=sys.stderr)
         pass

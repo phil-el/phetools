@@ -25,7 +25,7 @@ E_OK = 0
 
 def ret_val(error, text):
     if error:
-        print >> sys.stderr, "Error: %d, %s" % (error, text)
+        print(f"Error: {error}, {text}", file=sys.stderr)
     return {'error': error, 'text': text}
 
 
@@ -70,7 +70,7 @@ def do_status(queue):
 
 
 def bot_listening(queue):
-    print date_s(time.time()) + " START"
+    print(date_s(time.time()) + " START")
 
     tools = tool_connect.ToolConnect('verify_match', 45131)
 
@@ -79,7 +79,7 @@ def bot_listening(queue):
             request, conn = tools.wait_request()
 
             try:
-                print request
+                print(request)
 
                 cmd = request['cmd']
                 title = request.get('title', '')
@@ -94,7 +94,7 @@ def bot_listening(queue):
             t = time.time()
             user = user.replace(' ', '_')
 
-            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title).encode('utf-8')
+            print(f'{date_s(t)} REQUEST {user} {lang} {cmd} {title}')
 
             if cmd == "verify":
                 queue.put(title, lang, user, t, tools, conn)
@@ -111,12 +111,12 @@ def bot_listening(queue):
 
     finally:
         tools.close()
-        print >> sys.stderr, "STOP"
+        print("STOP", file=sys.stderr)
 
 
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
+    return time.strftime("%d/%m/%Y:%H:%M:%S", t)
 
 
 def job_thread(queue):
@@ -143,7 +143,7 @@ def job_thread(queue):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + title + ' ' + user + " " + codelang + " (%.2f)" % (time2 - time1)).encode('utf-8')
+        print(f'{date_s(time2)}{title} {user} {codelang} ({time2 - time1}.2f)')
 
         queue.remove()
 

@@ -11,7 +11,8 @@ import thread
 import os
 import json
 import sys
-import urllib
+import urllib.parse
+
 
 
 class ToolConnect:
@@ -21,7 +22,7 @@ class ToolConnect:
         try:
             self.sock.bind(('', port))
         except:
-            print "could not start listener : socket already in use"
+            print("could not start listener : socket already in use")
             thread.interrupt_main()
             return
 
@@ -42,7 +43,7 @@ class ToolConnect:
 
     def _ill_formed_request(self, conn, data):
         try:
-            print >> sys.stderr, "ill formed request", data.encode('utf-8')
+            print("ill formed request", data, file=sys.stderr)
         except:
             pass
         self.send_reply(conn, {'error': 4, 'text': 'Ill formed request'})
@@ -63,8 +64,8 @@ class ToolConnect:
             if request:
                 for key in request:
                     try:
-                        value = urllib.unquote(request[key].encode('utf-8'))
-                        request[key] = unicode(value, 'utf-8')
+                        value = urllib.parse.unquote(request[key])
+                        request[key] = value
                     except:
                         self._ill_formed_request(conn, data)
                         request = None
@@ -76,7 +77,7 @@ class ToolConnect:
 
     def send_text_reply(self, conn, data):
         if conn:
-            conn.sendall(data.encode('utf-8'))
+            conn.sendall(data)
 
     def send_reply(self, conn, data):
         if conn:

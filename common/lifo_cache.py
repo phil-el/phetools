@@ -11,7 +11,7 @@ import sys
 import types
 
 
-class LifoCacheMem(object):
+class LifoCacheMem:
     def __init__(self, cache_size):
         self._lock = thread.allocate_lock()
         self.cache_size = cache_size
@@ -77,7 +77,7 @@ hit ratio:\t\t%(hit ratio)7.2f%%""" % format_dict
 # FIXME: add a params to ctor to allow transparent compression.
 class LifoCache(LifoCacheMem):
     def __init__(self, cache_name, mem_cache_size=4, disk_cache_size=32):
-        super(LifoCache, self).__init__(mem_cache_size)
+        super().__init__(mem_cache_size)
         if mem_cache_size > disk_cache_size:
             raise ValueError("LifoCache: mem_cache_size > disk_cache_size")
         self.disk_cache_dir = os.path.expanduser('~/cache/') + cache_name + '/'
@@ -95,9 +95,7 @@ class LifoCache(LifoCacheMem):
 
     def get(self, filename):
         with self._disk_lock:
-            if type(filename) == types.UnicodeType:
-                filename = filename.encode('utf-8')
-            data = super(LifoCache, self).get(filename)
+            data = super().get(filename)
             if not data:
                 self.disk_read_count += 1
                 if filename in self.disk_cache:
@@ -107,13 +105,11 @@ class LifoCache(LifoCacheMem):
                     del self.disk_cache[filename]
                     if data:
                         self.disk_cache[filename] = True
-                        super(LifoCache, self).set(filename, data)
+                        super().set(filename, data)
         return data
 
     def set(self, filename, data):
         with self._disk_lock:
-            if type(filename) == types.UnicodeType:
-                filename = filename.encode('utf-8')
             self.disk_write_count += 1
             if filename in self.disk_cache:
                 del self.disk_cache[filename]
@@ -123,10 +119,10 @@ class LifoCache(LifoCacheMem):
 
             self.disk_cache[filename] = True
             utils.save_obj(self.disk_cache_dir + filename, data)
-            super(LifoCache, self).set(filename, data)
+            super().set(filename, data)
 
     def access_stat(self, as_type=None):
-        result = super(LifoCache, self).access_stat(as_type)
+        result = super().access_stat(as_type)
         hit = self.stat_ratio(self.disk_read_hit, self.disk_read_count)
         if as_type == 'str' or as_type == 'html':
             format_dict = {
@@ -166,6 +162,6 @@ if __name__ == "__main__":
     # expected, 1000 access, mem_hit around 90%, disk_hit around 6%,
     # write_hit around 6%, mem + disk hit around 96.5%
     if len(sys.argv) > 1:
-        print lifo_cache.access_stat(sys.argv[1])
+        print(lifo_cache.access_stat(sys.argv[1]))
     else:
-        print lifo_cache.access_stat('str')
+        print(lifo_cache.access_stat('str'))

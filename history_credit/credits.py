@@ -58,7 +58,7 @@ def query_params(environ):
 def handle_query(params, start_response):
     # Avoid to flood log.
     if not random.randint(0, 100) % 100:
-        print >> sys.stderr, params
+        print(params, file=sys.stderr)
 
     # FIXME: handle ill formed request (400)
     result = get_credit(domain=params['lang'],

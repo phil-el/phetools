@@ -30,15 +30,15 @@ def add_hocr_request(lang, sublang, filename):
 
     db_obj = sge_jobs.DbJob()
 
-    print job_req
+    print(job_req)
 
     db_obj.add_request(**job_req)
 
 
 def prepare_ocr_request(lang, sublang, filename):
-    print "preparing", lang, filename
+    print("preparing", lang, filename)
     if not os.path.exists(filename):
-        print >> sys.stderr, "file:", filename, "doesn't exist"
+        print("file:", filename, "doesn't exist", file=sys.stderr)
         exit(1)
     add_hocr_request(lang, sublang, filename)
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
             filenames.append(arg)
 
     if not lang:
-        print >> sys.stderr, "-lang: required"
+        print("-lang: required", file=sys.stderr)
         exit(1)
 
     for f in filenames:

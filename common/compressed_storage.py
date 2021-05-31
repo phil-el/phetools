@@ -108,6 +108,6 @@ if __name__ == "__main__":
     compressed_storage = CompressedStorage('test.' + compress)
     for filename in os.listdir(base_path):
         if filename.endswith('.html'):
-            print compressed_storage.data(filename)
+            print(compressed_storage.data(filename))
 
     compressed_storage.close()

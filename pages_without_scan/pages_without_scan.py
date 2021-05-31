@@ -33,7 +33,7 @@ def query_params(environ):
             rdict[name] = field[name].value
 
     for key in rdict:
-        rdict[key] = unicode(rdict[key], 'utf-8')
+        rdict[key] = rdict[key]
 
     return rdict
 
@@ -43,7 +43,7 @@ def return_response(start_response, obj, to_json, ret_code, mime_type):
         try:
             text = json.dumps(obj)
         except UnicodeDecodeError:
-            print >> sys.stderr, obj
+            print(obj, file=sys.stderr)
             ret_code = '400 Bad Request'
             text = json.dumps({'error': 1, 'text': ret_code})
     else:
@@ -67,7 +67,7 @@ def handle_ping(start_response):
 
 
 def handle_status(params, start_response):
-    text = common_html.get_head('pages without scan', css='shared.css').encode('utf-8') + '\n  <body>\n'
+    text = common_html.get_head('pages without scan', css='shared.css') + '\n  <body>\n'
 
     text += '<h1>OK</h1>'
 
@@ -110,7 +110,7 @@ def prev_next_link(prev, size, lang, limit, offset):
 
 
 def handle_scan_query(params, start_response):
-    text = common_html.get_head('pages without scan', css='shared.css').encode('utf-8') + '\n  <body>\n'
+    text = common_html.get_head('pages without scan', css='shared.css') + '\n  <body>\n'
 
     if params['lang']:
         try:
@@ -123,11 +123,11 @@ def handle_scan_query(params, start_response):
             result = pages_without_scan(ns, cursor)
             result_len = len(result)
             result = result[offset:offset + limit]
-            result = [(unicode(x[0], 'utf-8'), x[1]) for x in result]
-            text += 'Total: ' + str(result_len) + '<br />'
+            result = [(str(x[0]), x[1]) for x in result]
+            text += f'Total: {result_len}<br />'
             next_link = prev_next_link(False, result_len, lang, limit, offset)
             prev_link = prev_next_link(True, result_len, lang, limit, offset)
-            text += prev_link + '&#160;' + next_link + '<br /><br />'
+            text += f'{prev_link}&#160;{next_link}<br /><br />'
 
             for x in result:
                 text += f'<a href="//{lang}.wikisource.org/wiki/{x[0]}">{x[0].replace("_", " ")}</a>, {x[1]}<br />'
@@ -146,13 +146,13 @@ def handle_scan_query(params, start_response):
 
     text += '  </body>\n</html>'
 
-    return return_response(start_response, text.encode('utf-8'), False, ret_code, 'text/html')
+    return return_response(start_response, text, False, ret_code, 'text/html')
 
 
 def myapp(environ, start_response):
     params = query_params(environ)
 
-    print >> sys.stderr, params
+    print(params, file=sys.stderr)
 
     if params['cmd'] == 'ping':
         return handle_ping(start_response)

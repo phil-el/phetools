@@ -81,7 +81,7 @@ class DbJob(db.UserDb):
             else:
                 args = state_filter + (limit,) + (offset,)
             q += ' ORDER BY job_id DESC LIMIT %s OFFSET %s'
-            # print >> sys.stderr, q % (state_filter + (limit, ) + (offset,))
+            # print(q % (state_filter + (limit, ) + (offset,)), file=sys.stderr)
             self.cursor.execute(q, args)
             data = self.cursor.fetchall()
 
@@ -140,7 +140,7 @@ class DbJob(db.UserDb):
                 q = 'UPDATE job SET job_state="pending" WHERE job_id=%s'
                 self.cursor.execute(q, [job_id])
             else:
-                print >> sys.stderr, "Job %d reached its max try count, rejected" % job_id, args
+                print("Job %d reached its max try count, rejected" % job_id, args, file=sys.stderr)
         elif not num:
             job_data = {
                 'job_sha1': sha1,
@@ -194,7 +194,7 @@ class DbJob(db.UserDb):
                 really_pending = True
 
         if not really_pending:
-            print >> sys.stderr, "run request for job_id %s cancelled, as it's no longer pending" % r['job_id']
+            print("run request for job_id %s cancelled, as it's no longer pending" % r['job_id'], file=sys.stderr)
             return
 
         cmdline_arg = job_cmdline_arg(r, 'job_run_cmd')
@@ -220,7 +220,7 @@ class DbJob(db.UserDb):
         max_to_run = max(min(limit - nr_running, limit), 0)
         if max_to_run:
             for r in self.pending_request(max_to_run):
-                print "starting:", r
+                print("starting:", r)
                 self.exec_request(r)
 
     def _exec_check(self, request):
@@ -261,14 +261,14 @@ class DbJob(db.UserDb):
                 jobs[jobnumber].append(accounting)
                 nr_job -= 1
                 if nr_job == 0:
-                    print "breaking after %d line" % count
+                    print("breaking after %d line" % count)
                     break
 
             # end_time == 0 occur when sge failed to start a task, don't
             # use it to get the elapsed time between end_time and now.
             if int(accounting.end_time) and now - int(accounting.end_time) >= last_time_day * 86400:
-                print "breaking after %d line, TIMEOUT" % count
-                print jobs
+                print("breaking after %d line, TIMEOUT" % count)
+                print(jobs)
                 break
 
     def update_accounting(self):
@@ -354,7 +354,7 @@ def sge_cmdline_arg(request):
 
 if __name__ == "__main__":
 
-    print "sge_jobs.py starting at:", time.ctime()
+    print("sge_jobs.py starting at:", time.ctime())
 
     db_job = DbJob()
 
@@ -362,9 +362,9 @@ if __name__ == "__main__":
 
     nr_running = db_job.check_running()
 
-    print "running task:", nr_running
+    print("running task:", nr_running)
 
     if nr_running:
         db_job.run_batch(nr_running, limit=32 + 7)
 
-    print "sge_jobs.py ending at:", time.ctime()
+    print("sge_jobs.py ending at:", time.ctime())

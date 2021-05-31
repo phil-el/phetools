@@ -34,7 +34,7 @@ def sanitize_thread_array(thread_array, silent):
         # for some unknow reason is_alive doesn't work
         if thread_array[i].exitcode != None:
             if not silent:
-                print "deleting thread", thread_array[i].pid
+                print("deleting thread", thread_array[i].pid)
             del thread_array[i]
 
 
@@ -52,7 +52,7 @@ class TaskScheduler:
     # you have no warranty than at least one process is running)
     def pause_process(self):
         if not self.silent:
-            print "pausing:", self.running_thread[0].pid
+            print("pausing:", self.running_thread[0].pid)
         self.paused_thread.append(self.running_thread[0])
         os.killpg(os.getpgid(self.running_thread[0].pid), signal.SIGSTOP)
         del self.running_thread[0]
@@ -60,7 +60,7 @@ class TaskScheduler:
     # helper function, caller must ensure it exists at least one paused thread
     def wakeup_process(self):
         if not self.silent:
-            print "wakeup:", self.paused_thread[0].pid
+            print("wakeup:", self.paused_thread[0].pid)
         self.running_thread.append(self.paused_thread[0])
         os.killpg(os.getpgid(self.paused_thread[0].pid), signal.SIGCONT)
         del self.paused_thread[0]
@@ -72,7 +72,7 @@ class TaskScheduler:
         nr_cpu = multiprocessing.cpu_count()
         nr_free_proc = idle_time() * nr_cpu
         if not self.silent:
-            print "nr_running proc: %d, nr free_proc: %d" % (len(self.running_thread), nr_free_proc)
+            print("nr_running proc: %d, nr free_proc: %d" % (len(self.running_thread), nr_free_proc))
         if nr_free_proc > 0.5 and len(self.paused_thread):
             self.wakeup_process()
         elif nr_free_proc < 0.25 and len(self.running_thread) > 1:
@@ -104,7 +104,7 @@ class TaskScheduler:
 if __name__ == "__main__":
 
     def thread_func():
-        print os.getpid()
+        print(os.getpid())
         while True:
             pass
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     def start_jobs(task_scheduler):
         thread_array = []
         for i in range(multiprocessing.cpu_count()):
-            print "starting thread"
+            print("starting thread")
             t = multiprocessing.Process(target=thread_func, args=())
             t.daemon = True
             t.start()
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     t = TaskScheduler()
 
     thread_array = start_jobs(t)
-    print len(thread_array)
+    print(len(thread_array))
 
     while True:
         for i in range(len(thread_array)):

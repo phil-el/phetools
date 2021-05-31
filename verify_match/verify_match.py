@@ -202,7 +202,7 @@ def handle_table(text):
             new_text += result['page'] + ' '
         text = text[0:t[0]] + ' ' + new_text + text[t[1]:]
     # if len(tables):
-    #    print text.encode(u'utf-8')
+    #    print(text)
     return text
 
 
@@ -314,7 +314,7 @@ def run_diff(ocr_text, text, opt):
         diff += t
     fd.close()
 
-    return unicode(diff, 'utf-8')
+    return diff
 
 
 def white_list(left, right):
@@ -373,15 +373,15 @@ def check_diff(text, opt):
     left = ''.join([x[1:] for x in text if len(x) > 1 and x[0] == '-'])
     right = ''.join([x[1:] for x in text if len(x) > 1 and x[0] == '+'])
     # if (re.search(u'DE', right) and re.search(u'À', left)) or (re.search(u'DE', left) and re.search(u'À', right)):
-    #    print right
-    #    print left
+    #    print(right)
+    #    print(left)
     if len(left) <= 3 and len(right) <= 3:
         if re.search('[0-9]', left) or re.search('[0-9]', right):
             return False
     if white_list(left.upper(), right.upper()):
         return False
-    # print left.encode('utf-8')
-    # print right.encode('utf-8')
+    # print(left)
+    # print(right)
     return True
 
 
@@ -536,7 +536,7 @@ def main(book_name, cached_diff_cache, cached_text_cache, opt):
         page = page.toggleTalkPage()
         page.put(result, comment='Mise à jour')
     else:
-        print result.encode('utf-8')
+        print(result)
 
     cached_diff_cache.set(book_name + '.dat', cached_diff)
 
@@ -568,16 +568,16 @@ if __name__ == "__main__":
 
     for arg in sys.argv[1:]:
         if arg == '-help':
-            print sys.argv[0], ""
+            print(sys.argv[0], "")
             sys.exit(1)
         elif arg.startswith('-diff_context'):
             options.diff_context = int(arg[len('-diff_context:'):])
         else:
-            gen = [{'title': unicode(arg, 'utf-8')}]
+            gen = [{'title': arg}]
 
     try:
         for p in gen:
-            print >> sys.stderr, p['title'].encode('utf-8')
+            print(p['title'], file=sys.stderr)
             if p['title'].endswith('.pdf'):
                 continue
             main(p['title'], options)

@@ -32,12 +32,12 @@ pl_dict = {}
 
 
 def rddm_name(year, volume):
-    return "Revue des Deux Mondes - %s - tome %s.djvu" % (year, volume)
+    return f"Revue des Deux Mondes - {year} - tome {volume}.djvu"
 
 
 def get_pl(year, vol):
     global pl_dict
-    key = year + "," + vol
+    key = f'{year},{vol}'
     pl = pl_dict.get(key)
     if pl != None:
         return pl
@@ -45,12 +45,12 @@ def get_pl(year, vol):
     site = pywikibot.Site('fr', 'wikisource')
     indexpage = pywikibot.Page(site, "Livre:" + rddm_name(year, vol))
     text = indexpage.get()
-    m = re.search(r"(?ms)<pagelist\s+(.*?)/>", text)
+    m = re.search(r'(?ms)<pagelist\s+(.*?)/>', text)
     if m:
         el = m.group(1).split()
         l = []
         for item in el:
-            mm = re.match(r"(\d+)=(\d+)", item)
+            mm = re.match(r'(\d+)=(\d+)', item)
             if mm:
                 l.append((int(mm.group(1)), int(mm.group(2))))
 
@@ -75,12 +75,12 @@ def repl(m):
     vol = m.group(2)
     page = int(m.group(3))
     pagenum = offset_pagenum(get_pl(year, vol), page)
-    return "==[[Page:" + rddm_name(year, vol) + "/%d]]==\n" % pagenum
+    return '==[[Page:%s/%d]]==\n' % (rddm_name(year, vol), pagenum)
 
 
 def ret_val(error, text):
     if error:
-        print "Error: %d, %s" % (error, text)
+        print(f"Error: {error}, {text}")
     return {'error': error, 'text': text}
 
 
@@ -101,12 +101,12 @@ def do_match(mysite, maintitle, user, codelang):
     if text.find("{{R2Mondes") != -1:
         global pl_dict
         pl_dict = {}
-        p0 = re.compile(r"\{\{R2Mondes\|(\d+)\|(\d+)\|(\d+)\}\}\s*\n")
+        p0 = re.compile(r'{{R2Mondes\|(\d+)\|(\d+)\|(\d+)}}\s*\n')
         try:
             new_text = p0.sub(repl, text)
         except pywikibot.NoPage:
             return ret_val(E_ERROR, "Erreur : impossible de trouver l'index")
-        p = re.compile(r'==\[\[Page:([^=]+)\]\]==\n')
+        p = re.compile(r'==\[\[Page:([^=]+)]]==\n')
 
         cache = lifo_cache.LifoCache('match_and_split_text_layer')
         bl = p.split(new_text)
@@ -121,14 +121,14 @@ def do_match(mysite, maintitle, user, codelang):
             if not cached_text:
                 return ret_val(E_ERROR, "Erreur : fichier absent")
             if content.find("R2Mondes") != -1:
-                p0 = re.compile(r"\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
+                p0 = re.compile(r'{{R2Mondes\|\d+\|\d+\|(\d+)}}\s*\n')
                 bl0 = p0.split(text)
                 title0 = bl0[i * 2 + 1].encode("utf8")
                 return ret_val(E_ERROR, "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page " + title0)
             r = align.match_page(content, cached_text[int(pagenum) - 1])
-            print "%s %s  : %f" % (filename, pagenum, r)
+            print(f"{filename} {pagenum}  : {r}")
             if r < 0.1:
-                return ret_val(E_ERROR, "Erreur : Le texte ne correspond pas, page %s" % pagenum)
+                return ret_val(E_ERROR, f"Erreur : Le texte ne correspond pas, page {pagenum}")
         # the page is ok
         new_text = re.sub(r'<references[ ]*/>', '', new_text)
         new_text = re.sub(r'[ ]([,])', r'\1', new_text)
@@ -142,7 +142,7 @@ def do_match(mysite, maintitle, user, codelang):
 
         # workaround some buggy text
         new_text = re.sub(r'([;:!?»]) \n', r'\1\n', new_text)
-        new_text = re.sub(r'([;:!?»])\'\'([ \n])', r"\1''\2", new_text)
+        new_text = re.sub(r"([;:!?»])''([ \n])", r"\1''\2", new_text)
         # <&nbsp;><space>
         # new_text = re.sub(r'  ([;:!?»])', r' \1', new_text)
         # new_text = re.sub(r' ([;:!?»])', r' \1', new_text)
@@ -216,7 +216,6 @@ def do_split(mysite, rootname, user, codelang):
     prefix = page_prefixes['wikisource'].get(codelang)
     if not prefix:
         return ret_val(E_ERROR, "no Page: prefix")
-    prefix = prefix.decode('utf-8')
 
     try:
         page = pywikibot.Page(mysite, rootname)
@@ -260,12 +259,12 @@ def do_split(mysite, rootname, user, codelang):
                 pto = pfrom
             else:
                 if filename != group:
-                    titles = titles + "<pages index=\"%s\" from=%d to=%d />\n" % (group, pfrom, pto)
+                    titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} />\n'
                     group = filename
                     pfrom = pagenum
                     pto = pfrom
                 elif pagenum != pto + 1:
-                    titles = titles + "<pages index=\"%s\" from=%d to=%d />\n" % (group, pfrom, pto)
+                    titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} />\n'
                     group = filename
                     pfrom = pagenum
                     pto = pfrom
@@ -273,7 +272,7 @@ def do_split(mysite, rootname, user, codelang):
                     pto = pagenum
         else:
             if group:
-                titles = titles + "<pages index=\"%s\" from=%d to=%d />\n" % (group, pfrom, pto)
+                titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} />\n'
                 group = False
 
             titles = titles + "{{" + pagetitle + "}}\n"
@@ -294,7 +293,7 @@ def do_split(mysite, rootname, user, codelang):
                 m = re.match(r'<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>', old_text,
                              re.MULTILINE | re.DOTALL)
                 if m and (i == 0 or i == (len(bl) / 2 - 1)):
-                    print "creating sections"
+                    print("creating sections")
                     old_text = m.group(2)
                     if i == 0:
                         first_part = old_text
@@ -312,21 +311,19 @@ def do_split(mysite, rootname, user, codelang):
                               + "<section begin=s2/>" + second_part + "<section end=s2/><noinclude>" + m.group(
                         3) + "</noinclude>"
             else:
-                m = re.match(
-                    "<noinclude><pagequality level=\"1\" user=\"(.*?)\" />(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
-                    old_text, re.MULTILINE | re.DOTALL)
+                m = re.match(r'<noinclude><pagequality level="1" user="(.*?)" />(.*?)</noinclude>'
+                             r'(.*)<noinclude>(.*?)</noinclude>', old_text, flags=re.MULTILINE | re.DOTALL)
                 if m:
-                    print "ok, quality 1, first try"
-                    content = "<noinclude><pagequality level=\"1\" user=\"" + m.group(1) + "\" />" + m.group(
-                        2) + "</noinclude>" + content + "<noinclude>" + m.group(4) + "</noinclude>"
-                    m2 = re.match(
-                        r"<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
-                        old_text, re.MULTILINE | re.DOTALL)
+                    print("ok, quality 1, first try")
+                    content = f'<noinclude><pagequality level="1" user="{m.group(1)}" />{m.group(2)}</noinclude>' \
+                              f'{content}<noinclude>{m.group(4)}</noinclude>'
+                    m2 = re.match(r'<noinclude>\{\{PageQuality\|1\|(.*?)}}(.*?)</noinclude>'
+                                  r'(.*)<noinclude>(.*?)</noinclude>', old_text, flags=re.MULTILINE | re.DOTALL)
                     if m2:
                         # FIXME: shouldn't use an hardcoded name here
-                        print "ok, quality 1, second try"
-                        content = "<noinclude><pagequality level=\"1\" user=\"Phe-bot\" />" + m2.group(
-                            2) + "</noinclude>" + content + "<noinclude>" + m2.group(4) + "</noinclude>"
+                        print("ok, quality 1, second try")
+                        content = f'<noinclude><pagequality level="1" user="Phe-bot" />{m2.group(2)}</noinclude>' \
+                                  f'{content}<noinclude>{m2.group(4)}</noinclude>'
 
         else:
             header = '<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
@@ -336,30 +333,30 @@ def do_split(mysite, rootname, user, codelang):
         do_put = True
         if pl.exists():
             if hasattr(pl, '_quality') and pl._quality != 1:
-                print "quality != 1, not saved"
+                print("quality != 1, not saved")
                 do_put = False
             else:
-                print "can't get quality level"
+                print("can't get quality level")
         if do_put:
             safe_put(pl, content, user + ": split")
 
     if group:
-        titles = titles + "<pages index=\"%s\" from=%d to=%d %s%s/>\n" % (group, pfrom, pto, fromsection, tosection)
+        titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} {fromsection}{tosection}/>\n'
 
     if fromsection and fromsection_page:
         rtext = fromsection_page.get()
-        m = re.search("<pages index=\"(.*?)\" from=(.*?) to=(.*?) (fromsection=s2 |)/>", rtext)
+        m = re.search(r'<pages index="(.*?)" from=(.*?) to=(.*?) (fromsection=s2 |)/>', rtext)
         if m and m.group(1) == group:
             rtext = rtext.replace(m.group(0), m.group(0)[:-2] + "tosection=s1 />")
-            print "new rtext"
+            print("new rtext")
             safe_put(fromsection_page, rtext, user + ": split")
 
     if tosection and tosection_page:
         rtext = tosection_page.get()
-        m = re.search("<pages index=\"(.*?)\" from=(.*?) to=(.*?) (tosection=s1 |)/>", rtext)
+        m = re.search(r'<pages index="(.*?)" from=(.*?) to=(.*?) (tosection=s1 |)/>', rtext)
         if m and m.group(1) == group:
             rtext = rtext.replace(m.group(0), m.group(0)[:-2] + "fromsection=s2 />")
-            print "new rtext"
+            print("new rtext")
             safe_put(tosection_page, rtext, user + ": split")
 
     header = bl[0]
@@ -384,7 +381,7 @@ def html_for_queue(queue):
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:
             url = ""
-        html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " <a href=\"" + url + "\">" + i[0] + "</a><br/>"
+        html += f'{date_s(i[3])} {i[2]} {i[1]} <a href="{url}">{i[0]}</a><br/>'
     return html
 
 
@@ -417,7 +414,7 @@ def stop_queue(queue):
 
 # either called through a SIGUSR2 or a finally clause.
 def on_exit(sig_nr, frame):
-    print "STOP"
+    print("STOP")
 
     jobs['match_queue'] = stop_queue(jobs['match_queue'])
     jobs['split_queue'] = stop_queue(jobs['split_queue'])
@@ -426,7 +423,7 @@ def on_exit(sig_nr, frame):
 
 
 def bot_listening():
-    print date_s(time.time()) + " START"
+    print(date_s(time.time()) + " START")
 
     tools = tool_connect.ToolConnect('match_and_split', 45130)
 
@@ -435,7 +432,7 @@ def bot_listening():
             request, conn = tools.wait_request()
 
             try:
-                print request
+                print(request)
 
                 cmd = request['cmd']
                 title = request.get('title', '')
@@ -451,7 +448,7 @@ def bot_listening():
             t = time.time()
             user = user.replace(' ', '_')
 
-            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + title + ' ' + server).encode('utf-8')
+            print(f'{date_s(t)} REQUEST {user} {lang} {cmd} {title} {server}')
 
             if cmd == "status":
                 html = do_status()
@@ -502,8 +499,7 @@ def job_thread(queue, func):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + ' ' + title + ' ' + user + ' ' + codelang + " " + server + " (%.2f)" % (
-                    time2 - time1)).encode('utf-8')
+        print(f'{date_s(time2)} {title} {user} {codelang} {server} {time2 - time1:.2f}')
 
         queue.remove()
 

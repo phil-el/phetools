@@ -150,7 +150,7 @@ def prepare_request(db_hocr, lang):
     # separately.
     for title in file_to_sha1:
         if file_to_sha1[title] not in hocr_sha1:
-            print lang, title, file_to_sha1[title]
+            print(lang, title, file_to_sha1[title])
             add_hocr_request(lang, title)
 
 
@@ -224,20 +224,20 @@ def move_dir(title, count, lang):
     old = old_cache_path(title)
     new = new_cache_path(title, lang)
     if True:
-        print "echo " + str(count)
+        print("echo " + str(count))
 
-        print "mkdir -p " + new
-        print "mv " + old + '* ' + new
-        print "rmdir -p --ignore-fail-on-non-empty " + old
+        print("mkdir -p " + new)
+        print("mv " + old + '* ' + new)
+        print("rmdir -p --ignore-fail-on-non-empty " + old)
     else:
         if not os.path.exists(new):
-            print "#misssing data", new
+            print("#misssing data", new)
         elif not os.path.exists(new + "sha1.sum"):
-            print "#misssing sha1.sum data", new
+            print("#misssing sha1.sum data", new)
         if os.path.exists(old):
-            print "#old data", old
-            print "rm " + old + '*'
-            print "rmdir -p --ignore-fail-on-non-empty " + old
+            print("#old data", old)
+            print("rm " + old + '*')
+            print("rmdir -p --ignore-fail-on-non-empty " + old)
 
 
 def move_tree(lang, count):
@@ -250,7 +250,7 @@ def move_tree(lang, count):
         title = p[0]
         if title.endswith('.djvu') or title.endswith('.pdf'):
             count += 1
-            print >> sys.stderr, count, '\r',
+            print(count, '\r', end = ' ', file=sys.stderr)
             move_dir(title, count, lang)
 
     close_db(conn, cursor)
@@ -271,7 +271,7 @@ if __name__ == "__main__":
         elif arg == '-prepare_request':
             prepare_request(db_hocr, lang)
         else:
-            print >> sys.stderr, "Unknown option:", arg
+            print("Unknown option:", arg, file=sys.stderr)
 
         # count = move_tree(lang, count)
         # count = prepare_request(lang, count)

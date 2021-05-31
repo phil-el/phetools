@@ -28,13 +28,13 @@ def add_tidy_ocr_request(lang, filename):
 
     db_obj = sge_jobs.DbJob()
 
-    print job_req
+    print(job_req)
 
     db_obj.add_request(**job_req)
 
 
 def prepare_tidy_ocr_request(lang, filename):
-    print "preparing", lang, filename
+    print("preparing", lang, filename)
     add_tidy_ocr_request(lang, filename)
 
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
             filenames.append(arg)
 
     if not lang:
-        print >> sys.stderr, "-lang: required"
+        print("-lang: required", file=sys.stderr)
         exit(1)
 
     for f in filenames:

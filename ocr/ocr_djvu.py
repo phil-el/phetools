@@ -25,7 +25,7 @@ def get_nr_pages_djvu(filename):
     text = utils.safe_read(ls.stdout)
     ls.wait()
     if ls.returncode != 0:
-        print >> sys.stderr, "Error: djvused fail to exec", ls.returncode
+        print("Error: djvused fail to exec", ls.returncode, file=sys.stderr)
         return None
     return int(text)
 
@@ -37,7 +37,7 @@ def image_size(page_nr, filename):
     text = utils.safe_read(ls.stdout)
     ls.wait()
     if ls.returncode != 0:
-        print >> sys.stderr, "Error: djvused fail to exec", ls.returncode
+        print("Error: djvused fail to exec", ls.returncode, file=sys.stderr)
         return None
 
     match = re.search(r'width=(\d+) height=(\d+)', text)
@@ -58,19 +58,19 @@ def extract_image(opt, page_nr, filename):
         subsample = 1
 
     if subsample != 1:
-        print "subsample", subsample
+        print("subsample", subsample)
 
-    tiff_name = opt.temp_tiff_dir + '/page_%04d.tif' % page_nr
+    tiff_name = f'{opt.temp_tiff_dir}/page_{page_nr:04}.tif'
     ddjvu = djvulibre_path + 'ddjvu'
     ls = subprocess.Popen(
         [ddjvu, "-format=tiff", "-page=%d" % page_nr, "-subsample=%d" % subsample, filename, tiff_name],
         stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds=True)
     text = utils.safe_read(ls.stdout)
     if text:
-        print text
+        print(text)
     ls.wait()
     if ls.returncode != 0:
-        print >> sys.stderr, "extract_image fail: ", ls.returncode, filename, page_nr
+        print("extract_image fail: ", ls.returncode, filename, page_nr, file=sys.stderr)
         return None
     return tiff_name
 
@@ -80,13 +80,13 @@ def do_one_page(opt, page_nr, filename):
     if not tiff_name:
         return
 
-    out_filename = opt.out_dir + "page_%04d" % page_nr
+    out_filename = f'{opt.out_dir}page_{page_nr:04}'
     if opt.config == 'hocr':
         out_filename += '.hocr'
     else:
         out_filename += '.txt'
 
-    ocr.ocr(tiff_name, opt.out_dir + 'page_%04d' % page_nr, opt.lang, opt.config)
+    ocr.ocr(tiff_name, f'{opt.out_dir}page_{page_nr:04}', opt.lang, opt.config)
     if opt.compress:
         utils.compress_file(out_filename, out_filename, opt.compress)
         os.remove(out_filename)
@@ -107,10 +107,7 @@ def do_file(job_queue, opt, filename):
 
 
 def ocr_djvu(opt, filename, task_scheduler=None):
-    if type(filename) == type(''):
-        filename = filename.encode('utf-8')
-
-    print "Starting to process:", filename
+    print("Starting to process:", filename)
 
     if not opt.out_dir.endswith('/'):
         opt.out_dir += '/'
@@ -128,7 +125,7 @@ def ocr_djvu(opt, filename, task_scheduler=None):
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
             if not opt.silent:
-                utils.safe_write(sys.stderr, str(nr) + '/' + str(nr_pages) + '\r')
+                utils.safe_write(sys.stderr, f'{nr}/{nr_pages}\r')
             do_one_page(opt, nr, filename)
     else:
         thread_array = []
@@ -136,7 +133,7 @@ def ocr_djvu(opt, filename, task_scheduler=None):
         args = (job_queue, opt, filename)
         for i in range(opt.num_thread):
             if not opt.silent:
-                print "starting thread"
+                print("starting thread")
             t = multiprocessing.Process(target=do_file, args=args)
             t.daemon = True
             t.start()
@@ -146,7 +143,7 @@ def ocr_djvu(opt, filename, task_scheduler=None):
 
         for nr in range(1, nr_pages + 1):
             if not opt.silent:
-                utils.safe_write(sys.stderr, str(nr) + '/' + str(nr_pages) + '\r')
+                utils.safe_write(sys.stderr, f'{nr}/{nr_pages}\r')
             job_queue.put(nr)
 
         for i in range(opt.num_thread):
@@ -162,7 +159,7 @@ def ocr_djvu(opt, filename, task_scheduler=None):
                         raise ose
 
         if not opt.silent:
-            print "all thread finished"
+            print("all thread finished")
 
     if not opt.silent:
         utils.safe_write(sys.stderr, "\n")
@@ -184,10 +181,10 @@ def default_options():
     # tiff temp file are the biggest IO, move them to /tmp/$ui_$pid/
     # this assume /tmp is not nfs mounted so this dir name is not racy
     # with other process running on a different exec node.
-    options.temp_tiff_dir = '/tmp/' + str(os.getuid()) + '_' + str(os.getpid())
+    options.temp_tiff_dir = f'/tmp/{os.getuid()}_{os.getpid()}'
 
     if not os.path.exists(options.temp_tiff_dir):
-        print >> sys.stderr, "creating temp dir:", options.temp_tiff_dir
+        print("creating temp dir:", options.temp_tiff_dir, file=sys.stderr)
         os.mkdir(options.temp_tiff_dir)
 
     return options
@@ -198,7 +195,7 @@ if __name__ == "__main__":
 
     for arg in sys.argv[1:]:
         if arg == '-help':
-            print sys.argv[0], "dir/djvu_name -config: -lang: -j: -compress"
+            print(sys.argv[0], "dir/djvu_name -config: -lang: -j: -compress")
             sys.exit(1)
         elif arg.startswith('-config:'):
             options.config = arg[len('-config:'):]
@@ -219,4 +216,4 @@ if __name__ == "__main__":
     try:
         os.rmdir(options.temp_tiff_dir)
     except:
-        print >> sys.stderr, "unable to remove directory:", options.temp_tiff_dir
+        print("unable to remove directory:", options.temp_tiff_dir, file=sys.stderr)

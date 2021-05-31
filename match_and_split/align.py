@@ -36,7 +36,7 @@ def unquote_text_from_djvu(text):
 
 
 def extract_djvu_text(url, filename, sha1):
-    print "extracting text layer"
+    print("extracting text layer")
 
     if type(filename) == type(''):
         filename = filename.encode('utf-8')
@@ -64,7 +64,7 @@ def extract_djvu_text(url, filename, sha1):
 
 def ret_val(error, text):
     if error:
-        print "Error: %d, %s" % (error, text)
+        print(f"Error: {error}, {text}")
     return {'error': error, 'text': text}
 
 
@@ -82,7 +82,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
     try:
         last_page = cached_text[number - ((step + 1) / 2)]
     except:
-        return ret_val(E_ERROR, "Unable to retrieve text layer for page: " + str(number))
+        return ret_val(E_ERROR, "Unable to retrieve text layer for page: " + number)
 
     for pagenum in range(number, min(number + 1000, len(cached_text)), step):
 
@@ -107,16 +107,16 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
 
         mb = s.get_matching_blocks()
         if len(mb) < 2:
-            print "LEN(MB) < 2, breaking"
+            print("LEN(MB) < 2, breaking")
             break
         ccc = mb[-2]
         # no idea what was the purpose of this
         # dummy = mb[-1]
         ratio = s.ratio()
-        # print i, ccc, ratio
+        # print(i, ccc, ratio)
 
         if ratio < 0.1:
-            print "low ratio", ratio
+            print("low ratio", ratio)
             break
         mstr = ''
         overflow = False
@@ -136,7 +136,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
                     mstr = mstr + ss + ftext1[2 * i + 1]
         if verbose:
             pywikibot.output(mstr)
-            print "--------------------------------"
+            print("--------------------------------")
 
         mstr = ""
         no_color = ""
@@ -159,12 +159,11 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
                     no_color = no_color + ftext2[2 * i] + ftext2[2 * i + 1]
         if verbose:
             pywikibot.output(mstr)
-            print "===================================="
+            print("====================================")
 
+        sep = f"\n==[[{prefix}:{djvuname}/{pagenum}]]==\n"
         if is_poem:
-            sep = "\n</poem>\n==[[" + prefix + ":%s/%d]]==\n<poem>\n" % (djvuname, pagenum)
-        else:
-            sep = "\n==[[" + prefix + ":%s/%d]]==\n" % (djvuname, pagenum)
+            sep = f"\n</poem>{sep}<poem>\n"
 
         # Move the end of the last page to the start of the next page
         # if the end of the last page look like a paragraph start. 16 char
@@ -208,14 +207,14 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
 # file with the same name but different contents. In this case the cache will
 # be ineffective but no wrong data can be used as we check its sha1.
 def get_djvu(cache, mysite, djvuname, check_timestamp=False):
-    print "get_djvu", repr(djvuname)
+    print("get_djvu", djvuname)
 
     djvuname = djvuname.replace(" ", "_")
     cache_filename = djvuname + '.dat'
 
     obj = cache.get(cache_filename)
     if not obj:
-        print "CACHE MISS"
+        print("CACHE MISS")
         filepage = copy_File.get_filepage(mysite, djvuname)
         if not filepage:
             # can occur if File: has been deleted
@@ -238,7 +237,7 @@ def get_djvu(cache, mysite, djvuname, check_timestamp=False):
                 return None
             sha1 = filepage.getFileSHA1Sum()
             if sha1 != obj[0]:
-                print "OUTDATED FILE"
+                print("OUTDATED FILE")
                 url = filepage.fileUrl()
                 try:
                     obj = extract_djvu_text(url, djvuname, sha1)

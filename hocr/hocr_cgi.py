@@ -19,10 +19,10 @@ import hocr
 
 def log(params):
     try:
-        print >> sys.stderr, params
+        print(params, file=sys.stderr)
     except OSError as e:
         sys.stderr = open(os.path.expanduser('~/log/hocr_cgi.err'), 'a')
-        print >> sys.stderr, params
+        print(params, file=sys.stderr)
 
 
 def span_anchor(anchor, table):
@@ -58,9 +58,7 @@ def format_sge_jobnumber_accounting(sge_jobnumber, fields):
 def format_args(args, fields):
     args = json.loads(args)
     if fields['job_run_cmd'] == 'python':
-        args = [x.encode('utf-8') for x in args[1:]]
-    else:
-        args = [x.encode('utf-8') for x in args]
+        args = args[1:]
     new_args = []
     prefix = '/data/project/phetools/'
     for a in args:
@@ -295,7 +293,7 @@ def handle_status(params, start_response):
 
     db_obj = sge_jobs.DbJob()
 
-    text = common_html.get_head('hocr', css='shared.css').encode('utf-8') + '\n  <body>\n'
+    text = common_html.get_head('hocr', css='shared.css') + '\n  <body>\n'
 
     html, jobs = job_table(db_obj, state_filter, limit, offset,
                            default_limit, max_limit, cmd_filter)

@@ -25,16 +25,15 @@ class Speller:
                                       ('lang', lang))
 
     def check(self, word):
-        return True if self.speller.check(word.encode('utf-8')) else False
+        return True if self.speller.check(word) else False
 
     def suggest(self, word):
-        suggest = self.speller.suggest(word.encode('utf-8'))
-        return [unicode(x, 'utf-8') for x in suggest]
+        return self.speller.suggest(word)
 
 
 if __name__ == "__main__":
     import sys
 
     speller = Speller(sys.argv[1])
-    print speller.check(sys.argv[2])
-    print speller.suggest(sys.argv[2])
+    print(speller.check(sys.argv[2]))
+    print(speller.suggest(sys.argv[2]))

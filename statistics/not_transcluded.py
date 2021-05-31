@@ -112,7 +112,7 @@ SELECT page_title, page_id FROM categorylinks LEFT JOIN page ON page_id=cl_from
     out_fd = open(out_file, 'w')
 
     title = '%s.wikisource.org not transcluded page' % domain
-    head = common_html.get_head(title, html5=True)  # .encode('utf-8')
+    head = common_html.get_head(title, html5=True)
     print(head, file=out_fd)
     print('<body>', file=out_fd)
     if len(result):

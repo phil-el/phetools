@@ -276,7 +276,7 @@ def begin_elem(page, e):
     elif tag == 'char':
         page.start_char(e)
     else:
-        print >> sys.stderr, "unsuported tag", tag
+        print("unsuported tag", tag, file=sys.stderr)
         raise 'unsuported tag'
 
 
@@ -297,7 +297,7 @@ def end_elem(page, e):
     elif tag == 'char':
         page.end_char(e)
     else:
-        print >> sys.stderr, "unsuported tag", tag
+        print("unsuported tag", tag, file=sys.stderr)
         raise 'unsuported tag'
 
 
@@ -328,7 +328,7 @@ def do_parse(opt, filename):
             if elem.tag.lower() == 'object':
                 page = OcrPage()
                 if not opt.silent:
-                    print >> sys.stderr, page_nr, '\r',
+                    print(page_nr, '\r', end=' ', file=sys.stderr)
                 page.start_page(elem)
                 parse_page(page, elem, page_nr)
                 page.end_page(elem)
@@ -336,7 +336,7 @@ def do_parse(opt, filename):
                 filename = opt.out_dir + 'page_%04d.hocr' % page_nr
 
                 if opt.compress:
-                    text = page.get_hocr_html().encode('utf-8')
+                    text = page.get_hocr_html()
                     utils.compress_file_data(filename, text, opt.compress)
                 else:
                     utils.write_file(filename, text)
@@ -346,7 +346,7 @@ def do_parse(opt, filename):
 
     finally:
         if not opt.silent:
-            print >> sys.stderr
+            print('', file=sys.stderr)
 
         ls.stdout.read()
         ls.wait()
@@ -391,7 +391,7 @@ if __name__ == "__main__":
     options = default_options()
     for arg in sys.argv[1:]:
         if arg == '-help':
-            print sys.argv[0], "-help -compress: -out_dir:dir -silent"
+            print(sys.argv[0], "-help -compress: -out_dir:dir -silent")
             sys.exit(1)
         elif arg.startswith('-compress:'):
             options.compress = arg[len('-compress'):]
@@ -405,7 +405,7 @@ if __name__ == "__main__":
             filename = arg
 
     if not os.path.exists(filename):
-        print "file:", filename, "doesn't exist"
+        print(f"file: {filename} doesn't exist")
         sys.exit(1)
 
     parse(options, filename)

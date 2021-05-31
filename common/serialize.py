@@ -140,5 +140,5 @@ def get_serializer(serializer_type, user_serializer=None):
 
 if __name__ == "__main__":
     serializer = get_serializer("json")
-    print serializer.content_type()
-    print serializer.serialize({"a": 1, "b": [1, 2, 3]})
+    print(serializer.content_type())
+    print(serializer.serialize({"a": 1, "b": [1, 2, 3]}))

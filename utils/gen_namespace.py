@@ -25,22 +25,19 @@ def name_from_ns(namespaces, ns):
 
 def gen_namespace(lang):
     site = pywikibot.Site(lang, 'wikisource')
-    text = 'namespaces["wikisource"]["' + lang + '"] = {\n'
+    text = 'namespaces["wikisource"]["%s"] = {\n' % lang
 
     namespaces = site.namespaces()
     for ns in namespaces:
         for name in namespaces[ns]:
             if name:
-                text += '    "' + name + '" : ' + unicode(ns) + ',\n'
+                text += '    "%s" : %s,\n' % (name, ns)
     text += '}\n'
 
     data = pywikibot_utils.proofread_info(lang)['proofreadnamespaces']
 
-    text += 'index["wikisource"]["' + lang + '"] = '
-    text += '"' + name_from_ns(namespaces, data['index']['id']) + '"\n'
-
-    text += 'page["wikisource"]["' + lang + '"] = '
-    text += '"' + name_from_ns(namespaces, data['page']['id']) + '"\n'
+    text += 'index["wikisource"]["%s"] = "%s"\n' % (lang, name_from_ns(namespaces, data['index']['id']))
+    text += 'page["wikisource"]["%s"] = "%s"\n' % (lang, name_from_ns(namespaces, data['page']['id']))
 
     return text
 
@@ -116,8 +113,8 @@ if __name__ == "__main__":
         fd = open(target, 'r')
         old_text = fd.read()
         fd.close()
-    if unicode(old_text, 'utf-8') != text:
-        print "writing file, match and split server needs a restart"
+    if old_text != text:
+        print("writing file, match and split server needs a restart")
         fd = open(target, 'w')
-        fd.write(text.encode('utf-8'))
+        fd.write(text)
         fd.close()
