@@ -37,7 +37,7 @@ def get_all_lang(family):
 
 
 def safe_put(page, text, comment):
-    if re.match("^[\s\n]*$", text):
+    if re.match(r"^[\s\n]*$", text):
         return
 
     max_retry = 5

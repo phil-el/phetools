@@ -37,34 +37,34 @@ def do_extract(mysite, maintitle, user, codelang, cache):
     if not prefix:
         return ret_val(E_ERROR, "no prefix")
 
-    djvuname = maintitle.replace(u' ', u'_')
+    djvuname = maintitle.replace(' ', '_')
     print djvuname.encode('utf-8')
 
     text_layer = align.get_djvu(cache, mysite, djvuname, True)
     if not text_layer:
         return ret_val(E_ERROR, "unable to retrieve text layer")
 
-    text = u''
+    text = ''
     for pos, page_text in enumerate(text_layer):
-        text += u'==[[' + prefix + u':' + maintitle + u'/' + unicode(pos + 1) + u']]==\n'
-        text += page_text + u'\n'
+        text += '==[[' + prefix + ':' + maintitle + '/' + unicode(pos + 1) + ']]==\n'
+        text += page_text + '\n'
 
-    page = pywikibot.Page(mysite, u'User:' + user + u'/Text')
-    safe_put(page, text, comment=u'extract text')
+    page = pywikibot.Page(mysite, 'User:' + user + '/Text')
+    safe_put(page, text, comment='extract text')
 
     return ret_val(E_OK, "")
 
 
 # title user lang t tools conn
 def html_for_queue(queue):
-    html = u''
+    html = ''
     for i in queue:
         mtitle = i[0]
         codelang = i[1]
         try:
             msite = pywikibot.getSite(codelang, 'wikisource')
             index_prefix = unicode(index_prefixes['wikisource'].get(codelang), 'utf-8')
-            page = pywikibot.Page(msite, index_prefix + u':' + mtitle)
+            page = pywikibot.Page(msite, index_prefix + ':' + mtitle)
             path = msite.nice_get_address(page.title(asUrl=True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:
@@ -77,10 +77,10 @@ def do_status(queue):
     queue = queue.copy_items(True)
 
     html = common_html.get_head('Extract text layer')
-    html += u"<body><div>The robot is running.<br/><hr/>"
-    html += u"<br/>%d jobs in extract queue.<br/>" % len(queue)
+    html += "<body><div>The robot is running.<br/><hr/>"
+    html += "<br/>%d jobs in extract queue.<br/>" % len(queue)
     html += html_for_queue(queue)
-    html += u'</div></body></html>'
+    html += '</div></body></html>'
     return html
 
 

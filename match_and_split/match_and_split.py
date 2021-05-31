@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 # GPL V2, author thomasv1 at gmx dot de, phe
 
 __module_name__ = "match_and_split_daemon"
@@ -46,12 +45,12 @@ def get_pl(year, vol):
     site = pywikibot.Site('fr', 'wikisource')
     indexpage = pywikibot.Page(site, "Livre:" + rddm_name(year, vol))
     text = indexpage.get()
-    m = re.search("(?ms)<pagelist\s+(.*?)/>", text)
+    m = re.search(r"(?ms)<pagelist\s+(.*?)/>", text)
     if m:
         el = m.group(1).split()
         l = []
         for item in el:
-            mm = re.match("(\d+)=(\d+)", item)
+            mm = re.match(r"(\d+)=(\d+)", item)
             if mm:
                 l.append((int(mm.group(1)), int(mm.group(2))))
 
@@ -102,12 +101,12 @@ def do_match(mysite, maintitle, user, codelang):
     if text.find("{{R2Mondes") != -1:
         global pl_dict
         pl_dict = {}
-        p0 = re.compile("\{\{R2Mondes\|(\d+)\|(\d+)\|(\d+)\}\}\s*\n")
+        p0 = re.compile(r"\{\{R2Mondes\|(\d+)\|(\d+)\|(\d+)\}\}\s*\n")
         try:
             new_text = p0.sub(repl, text)
         except pywikibot.NoPage:
             return ret_val(E_ERROR, "Erreur : impossible de trouver l'index")
-        p = re.compile('==\[\[Page:([^=]+)\]\]==\n')
+        p = re.compile(r'==\[\[Page:([^=]+)\]\]==\n')
 
         cache = lifo_cache.LifoCache('match_and_split_text_layer')
         bl = p.split(new_text)
@@ -122,7 +121,7 @@ def do_match(mysite, maintitle, user, codelang):
             if not cached_text:
                 return ret_val(E_ERROR, "Erreur : fichier absent")
             if content.find("R2Mondes") != -1:
-                p0 = re.compile("\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
+                p0 = re.compile(r"\{\{R2Mondes\|\d+\|\d+\|(\d+)\}\}\s*\n")
                 bl0 = p0.split(text)
                 title0 = bl0[i * 2 + 1].encode("utf8")
                 return ret_val(E_ERROR, "Erreur : Syntaxe 'R2Mondes' incorrecte, dans la page " + title0)
@@ -131,40 +130,40 @@ def do_match(mysite, maintitle, user, codelang):
             if r < 0.1:
                 return ret_val(E_ERROR, "Erreur : Le texte ne correspond pas, page %s" % pagenum)
         # the page is ok
-        new_text = re.sub(u'<references[ ]*/>', u'', new_text)
-        new_text = re.sub(u'[ ]([,])', u'\\1', new_text)
-        new_text = re.sub(u'([^.])[ ]([,.])', u'\\1\\2', new_text)
-        new_text = re.sub(u'\.\.\.', u'…', new_text)
+        new_text = re.sub(r'<references[ ]*/>', '', new_text)
+        new_text = re.sub(r'[ ]([,])', r'\1', new_text)
+        new_text = re.sub(r'([^.])[ ]([,.])', r'\1\2', new_text)
+        new_text = re.sub(r'\.\.\.', '…', new_text)
 
-        new_text = re.sub(u'([^ \s])([;:!?])', u'\\1 \\2', new_text)
-        new_text = re.sub(u'([«;:!?])([^ \s…])', u'\\1 \\2', new_text)
+        new_text = re.sub(r'([^ \s])([;:!?])', r'\1 \2', new_text)
+        new_text = re.sub(r'([«;:!?])([^ \s…])', r'\1 \2', new_text)
         # separated from the previous regexp else "word!»" overlap
-        new_text = re.sub(u'([^ \s])([»])', u'\\1 \\2', new_text)
+        new_text = re.sub(r'([^ \s])([»])', r'\1 \2', new_text)
 
         # workaround some buggy text
-        new_text = re.sub(u'([;:!?»]) \n', u'\\1\n', new_text)
-        new_text = re.sub(u'([;:!?»])\'\'([ \n])', u'\\1\'\'\\2', new_text)
+        new_text = re.sub(r'([;:!?»]) \n', r'\1\n', new_text)
+        new_text = re.sub(r'([;:!?»])\'\'([ \n])', r"\1''\2", new_text)
         # <&nbsp;><space>
-        # new_text = re.sub(u'  ([;:!?»])', u' \\1', new_text)
-        # new_text = re.sub(u' ([;:!?»])', u' \\1', new_text)
-        new_text = re.sub(u'([;:!?»]) <br />', u'\\1<br />', new_text)
-        new_text = new_text.replace(u'Page : ', u'Page:')
-        new_text = new_text.replace(u'\n: ', u'\n:')
-        new_text = new_text.replace(u'\n:: ', u'\n::')
-        new_text = new_text.replace(u'\n::: ', u'\n:::')
-        new_text = new_text.replace(u'\n:::: ', u'\n::::')
-        new_text = new_text.replace(u'\n::::: ', u'\n:::::')
-        new_text = re.sub(u'1er (janvier|février|avril|mars|mai|juin|juillet|août|septembre|octobre|novembre|décembre)',
-                          u'1{{er}} \\1', new_text)
-        new_text = re.sub(u'([0-9])e ', u'\\1{{e}} ', new_text)
-        # text = re.sub(u'([;:!?»]) <div>\n', u'\\1\n', new_text)
+        # new_text = re.sub(r'  ([;:!?»])', r' \1', new_text)
+        # new_text = re.sub(r' ([;:!?»])', r' \1', new_text)
+        new_text = re.sub(r'([;:!?»]) <br />', r'\1<br />', new_text)
+        new_text = new_text.replace('Page : ', 'Page:')
+        new_text = new_text.replace('\n: ', '\n:')
+        new_text = new_text.replace('\n:: ', '\n::')
+        new_text = new_text.replace('\n::: ', '\n:::')
+        new_text = new_text.replace('\n:::: ', '\n::::')
+        new_text = new_text.replace('\n::::: ', '\n:::::')
+        new_text = re.sub(r'1er (janvier|février|avril|mars|mai|juin|juillet|août|septembre|octobre|novembre|décembre)',
+                          r'1{{er}} \1', new_text)
+        new_text = re.sub(r'([0-9])e ', r'\1{{e}} ', new_text)
+        # text = re.sub(r'([;:!?»]) <div>\n', r'\1\n', new_text)
 
         # try to move the title inside the M&S
-        match_title = re.search(u"{{[Jj]ournal[ ]*\|*(.*?)\|", new_text)
+        match_title = re.search(r'{{[Jj]ournal[ ]*\|*(.*?)\|', new_text)
         if match_title:
-            pos = re.search(u'==(.*?)==', new_text)
+            pos = re.search(r'==(.*?)==', new_text)
             if pos:
-                new_text = new_text[0:pos.end(0)] + u'\n{{c|' + match_title.group(1) + u'|fs=140%}}\n\n\n' \
+                new_text = new_text[0:pos.end(0)] + '\n{{c|' + match_title.group(1) + '|fs=140%}}\n\n\n' \
                            + new_text[pos.end(0):]
 
         safe_put(page, new_text, user + ": match")
@@ -176,7 +175,7 @@ def do_match(mysite, maintitle, user, codelang):
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
     prefix = prefix.decode('utf-8')
-    p = re.compile("==__MATCH__:\[\[" + prefix + ":(.*?)/(\d+)(\|step=(\d+))?\]\]==")
+    p = re.compile(r"==__MATCH__:\[\[" + prefix + r":(.*?)/(\d+)(\|step=(\d+))?\]\]==")
     m = re.search(p, text)
     if m:
         djvuname = m.group(1)
@@ -225,7 +224,7 @@ def do_split(mysite, rootname, user, codelang):
     except:
         return ret_val(E_ERROR, "unable to read page")
 
-    p = re.compile('==\[\[(' + prefix + ':[^=]+)\]\]==\n')
+    p = re.compile(r'==\[\[(' + prefix + r':[^=]+)\]\]==\n')
     bl = p.split(text)
     titles = '\n'
 
@@ -240,7 +239,7 @@ def do_split(mysite, rootname, user, codelang):
         title = bl[i * 2 + 1]
         content = bl[i * 2 + 2]
 
-        # for illegalChar in ['#', '<', '>', '[', ']', '|', '{', '}', '\n', u'\ufffd']:
+        # for illegalChar in ['#', '<', '>', '[', ']', '|', '{', '}', '\n', '\ufffd']:
         #    if illegalChar in title:
         #        title = title.replace(illegalChar,'_')
 
@@ -251,7 +250,7 @@ def do_split(mysite, rootname, user, codelang):
 
         pl = pywikibot.Page(mysite, pagetitle)
 
-        m = re.match(prefix + ':(.*?)/(\d+)', pagetitle)
+        m = re.match(prefix + r':(.*?)/(\d+)', pagetitle)
         if m:
             filename = m.group(1)
             pagenum = int(m.group(2))
@@ -292,7 +291,7 @@ def do_split(mysite, rootname, user, codelang):
 
             # first and last pages : check if they are transcluded
             if numrefs > 0:
-                m = re.match("<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>", old_text,
+                m = re.match(r'<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>', old_text,
                              re.MULTILINE | re.DOTALL)
                 if m and (i == 0 or i == (len(bl) / 2 - 1)):
                     print "creating sections"
@@ -321,7 +320,7 @@ def do_split(mysite, rootname, user, codelang):
                     content = "<noinclude><pagequality level=\"1\" user=\"" + m.group(1) + "\" />" + m.group(
                         2) + "</noinclude>" + content + "<noinclude>" + m.group(4) + "</noinclude>"
                     m2 = re.match(
-                        "<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
+                        r"<noinclude>\{\{PageQuality\|1\|(.*?)\}\}(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>",
                         old_text, re.MULTILINE | re.DOTALL)
                     if m2:
                         # FIXME: shouldn't use an hardcoded name here
@@ -330,8 +329,8 @@ def do_split(mysite, rootname, user, codelang):
                             2) + "</noinclude>" + content + "<noinclude>" + m2.group(4) + "</noinclude>"
 
         else:
-            header = u'<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
-            footer = u'<noinclude>\n<references/></noinclude>'
+            header = '<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
+            footer = '<noinclude>\n<references/></noinclude>'
             content = header + content + footer
 
         do_put = True
@@ -395,13 +394,13 @@ def do_status():
 
     html = common_html.get_head('Match and split')
 
-    html += u"<body><div>the robot is running.<br/><hr/>"
-    html += u"<br/>%d jobs in match queue.<br/>" % len(m_queue)
+    html += "<body><div>the robot is running.<br/><hr/>"
+    html += "<br/>%d jobs in match queue.<br/>" % len(m_queue)
     html += html_for_queue(m_queue)
-    html += u"<br/>%d jobs in split queue.<br/>" % len(s_queue)
+    html += "<br/>%d jobs in split queue.<br/>" % len(s_queue)
     html += html_for_queue(s_queue)
-    html += u"<br/>%(number_of_match_job)d match, %(number_of_split_job)d split since server start<br/>" % jobs
-    html += u'</div></body></html>'
+    html += "<br/>%(number_of_match_job)d match, %(number_of_split_job)d split since server start<br/>" % jobs
+    html += '</div></body></html>'
 
     return html
 

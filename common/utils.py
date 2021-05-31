@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 import cPickle
 import hashlib
@@ -191,7 +190,7 @@ def print_traceback(*kwargs):
         if len(kwargs):
             print >> sys.stderr, "arguments:",
             for f in kwargs:
-                if type(f) == type(u''):
+                if type(f) == type(''):
                     f = f.encode('utf-8')
                 print >> sys.stderr, str(f),
             print >> sys.stderr

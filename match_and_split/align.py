@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # text alignment program
 # author : thomasv1 at gmx dot de
 # author : phe at some dot where
@@ -16,7 +15,7 @@ def match_page(target, source):
     s = difflib.SequenceMatcher()
     text1 = source
     text2 = target
-    p = re.compile(ur'[\W]+')
+    p = re.compile(r'[\W]+')
     text1 = p.split(text1)
     text2 = p.split(text2)
     s.set_seqs(text1, text2)
@@ -25,21 +24,21 @@ def match_page(target, source):
 
 
 def unquote_text_from_djvu(text):
-    # text = text.replace(u'\\r', u'\r')
-    text = text.replace(u'\\n', u'\n')
-    text = text.replace(u'\\"', u'"')
-    text = text.replace(u'\\\\', u'\\')
-    text = text.replace(u'\\037', u'\n')
-    text = text.replace(u'\\035', u'')
-    text = text.replace(u'\\013', u'')
-    text = text.rstrip(u'\n')
+    #text = text.replace('\\r', '\r')
+    text = text.replace('\\n', '\n')
+    text = text.replace('\\"', '"')
+    text = text.replace('\\\\', '\\')
+    text = text.replace('\\037', '\n')
+    text = text.replace('\\035', '')
+    text = text.replace('\\013', '')
+    text = text.rstrip('\n')
     return text
 
 
 def extract_djvu_text(url, filename, sha1):
     print "extracting text layer"
 
-    if type(filename) == type(u''):
+    if type(filename) == type(''):
         filename = filename.encode('utf-8')
 
     utils.copy_file_from_url(url, filename, sha1)
@@ -51,10 +50,10 @@ def extract_djvu_text(url, filename, sha1):
     ls = subprocess.Popen(['djvutxt', filename, '--detail=page'], stdout=subprocess.PIPE, close_fds=True)
     text = ls.stdout.read()
     ls.wait()
-    for t in re.finditer(u'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
+    for t in re.finditer(r'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
         t = unicode(t.group(1), 'utf-8', 'replace')
-        t = re.sub(u'^page \d+ \d+ \d+ \d+[ \n]+"', u'', t)
-        t = re.sub(u'"[ ]*$', u'', t)
+        t = re.sub(r'^page \d+ \d+ \d+ \d+[ \n]+"', '', t)
+        t = re.sub('"[ ]*$', '', t)
         t = unquote_text_from_djvu(t)
         data.append(t)
 
@@ -96,8 +95,8 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
         text1 = page1 + page2
         text2 = target[offset:offset + int(1.5 * len(text1))]
 
-        p = re.compile(ur'[\W]+', re.U)
-        fp = re.compile(ur'([\W]+)', re.U)
+        p = re.compile(r'[\W]+', re.U)
+        fp = re.compile(r'([\W]+)', re.U)
         ftext1 = fp.split(text1)
         ftext2 = fp.split(text2)
 
@@ -119,7 +118,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
         if ratio < 0.1:
             print "low ratio", ratio
             break
-        mstr = u""
+        mstr = ''
         overflow = False
         for i in range(ccc[0] + ccc[2]):
             matched = False
@@ -132,7 +131,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             if not overflow:
                 ss = ftext1[2 * i]
                 if matched:
-                    ss = u"\033[1;32m%s\033[0;49m" % ss
+                    ss = "\033[1;32m%s\033[0;49m" % ss
                 if 2 * i + 1 < len(ftext1):
                     mstr = mstr + ss + ftext1[2 * i + 1]
         if verbose:
@@ -154,7 +153,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             if not overflow:
                 ss = ftext2[2 * i]
                 if matched:
-                    ss = u"\033[1;31m%s\033[0;49m" % ss
+                    ss = "\033[1;31m%s\033[0;49m" % ss
                 if 2 * i + 1 < len(ftext2):
                     mstr = mstr + ss + ftext2[2 * i + 1]
                     no_color = no_color + ftext2[2 * i] + ftext2[2 * i + 1]
@@ -163,38 +162,38 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             print "===================================="
 
         if is_poem:
-            sep = u"\n</poem>\n==[[" + prefix + ":%s/%d]]==\n<poem>\n" % (djvuname, pagenum)
+            sep = "\n</poem>\n==[[" + prefix + ":%s/%d]]==\n<poem>\n" % (djvuname, pagenum)
         else:
-            sep = u"\n==[[" + prefix + ":%s/%d]]==\n" % (djvuname, pagenum)
+            sep = "\n==[[" + prefix + ":%s/%d]]==\n" % (djvuname, pagenum)
 
         # Move the end of the last page to the start of the next page
         # if the end of the last page look like a paragraph start. 16 char
         # width to detect that is a guessed value.
         no_color = no_color.rstrip()
-        match = re.match(u"(?ms).*(\n\n.*)$", no_color)
+        match = re.match(r"(?ms).*(\n\n.*)$", no_color)
         if match and len(match.group(1)) <= 16:
             no_color = no_color[:-len(match.group(1))]
         else:
-            match = re.match(u"(?ms).*(\n\w+\W*)$", no_color)
+            match = re.match(r"(?ms).*(\n\w+\W*)$", no_color)
             if match:
                 no_color = no_color[:-(len(match.group(1)) - 1)]
 
         offset += len(no_color)
 
-        if no_color and no_color[0] == u'\n':
+        if no_color and no_color[0] == '\n':
             no_color = no_color[1:]
-        no_color = no_color.lstrip(u' ')
+        no_color = no_color.lstrip(' ')
         output += sep + no_color
 
-        if no_color.rfind(u"<poem>") > no_color.rfind(u"</poem>"):
+        if no_color.rfind("<poem>") > no_color.rfind("</poem>"):
             is_poem = True
-        elif no_color.rfind(u"<poem>") < no_color.rfind(u"</poem>"):
+        elif no_color.rfind("<poem>") < no_color.rfind("</poem>"):
             is_poem = False
 
     if offset != 0 and target[offset:]:
         if len(target) - offset >= 16:
-            output += u"\n=== no match ===\n"
-        output += target[offset:].lstrip(u' ')
+            output += "\n=== no match ===\n"
+        output += target[offset:].lstrip(' ')
 
     if offset == 0:
         output = ""

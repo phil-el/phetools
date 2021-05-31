@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ! /usr/bin/env python
 
 import os
@@ -27,7 +26,7 @@ import irclib
 import time
 
 
-class LogFile(object):
+class LogFile:
     def __init__(self, path, extention='.txt', constant_write=False, mode=3, new_folders=True):
         # path = path to store shit
         # extention = log extention
@@ -96,7 +95,7 @@ class LogFile(object):
         self.write('[IRC logfile - Started %s]' % time.ctime(), False)
 
 
-class LogFileManager(object):
+class LogFileManager:
     def __init__(self, values):
         # Values = list of keys for the LogFiles
         self.value = values

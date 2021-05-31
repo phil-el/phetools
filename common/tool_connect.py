@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file tool_connect.py
 #
@@ -35,11 +34,11 @@ class ToolConnect:
         home = os.path.expanduser('~/wikisource/')
         servername_filename = home + server_name + '.server'
         if os.path.exists(servername_filename):
-            os.chmod(servername_filename, 0644)
+            os.chmod(servername_filename, 0o644)
         fd = open(servername_filename, "w")
         fd.write(socket.gethostname() + ':' + str(port))
         fd.close()
-        os.chmod(servername_filename, 0444)
+        os.chmod(servername_filename, 0o444)
 
     def _ill_formed_request(self, conn, data):
         try:

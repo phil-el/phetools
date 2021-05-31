@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 # A simple lifo cache backing up object on disk, when starting ordering
 # of item is random. Doesn't support multiple reader/writer.

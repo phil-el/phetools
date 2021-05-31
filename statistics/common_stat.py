@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 disambiguations = {
     'old': 'Disambig',
     'ca': 'Desambiguació',

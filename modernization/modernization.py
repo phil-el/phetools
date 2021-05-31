@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file modernization.py
 #
@@ -37,7 +36,7 @@ dict_config = {}
 
 dict_config['pt'] = {
     'variant': ['BR', 'PT'],
-    'word_chars': u'a-zA-Z0-9áàâãçéêíñóôõúüÁÀÂÃÇÉÊÍÑÓÔÕÚ\'ºª\\-',
+    'word_chars': 'a-zA-Z0-9áàâãçéêíñóôõúüÁÀÂÃÇÉÊÍÑÓÔÕÚ\'ºª\\-',
     'max_seq': 3,
 }
 
@@ -47,8 +46,8 @@ dict_config['pt'] = {
 # only once (but it'll require two parsing anyway ?)
 
 dict_config['pt']['BR'] = {
-    'global_dict': u'Wikisource:Modernização/Dicionário/pt-BR',
-    'modernize_template': u'Predefinição:Modernização automática',
+    'global_dict': 'Wikisource:Modernização/Dicionário/pt-BR',
+    'modernize_template': 'Predefinição:Modernização automática',
     'modernize_div_id': 'dic-local-BR',
     'aspell_lang': 'pt_BR',
     'transform': [
@@ -57,8 +56,8 @@ dict_config['pt']['BR'] = {
 }
 
 dict_config['pt']['PT'] = {
-    'global_dict': u'Wikisource:Modernização/Dicionário/pt-PT',
-    'modernize_template': u'Predefinição:Modernização_automática',
+    'global_dict': 'Wikisource:Modernização/Dicionário/pt-PT',
+    'modernize_template': 'Predefinição:Modernização_automática',
     'modernize_div_id': 'dic-local-PT',
     # need to be changed depending on aspell version. This one is ok for
     # wmflabs actually
@@ -70,29 +69,29 @@ dict_config['pt']['PT'] = {
 
 dict_config['fr'] = {
     'variant': ['FR'],
-    'word_chars': u'a-zçâàäāãéèêẽëîïôöōõûùüÿœæA-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇŒÆ&ßẞĩq̃ĨQ̃',
+    'word_chars': 'a-zçâàäāãéèêẽëîïôöōõûùüÿœæA-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇŒÆ&ßẞĩq̃ĨQ̃',
     'max_seq': 3,
 }
 
 dict_config['fr']['FR'] = {
-    'global_dict': u'Wikisource:Dictionnaire',
-    'modernize_template': u'Template:Modernisation',
+    'global_dict': 'Wikisource:Dictionnaire',
+    'modernize_template': 'Template:Modernisation',
     'modernize_div_id': 'modernisations',
     'aspell_lang': 'fr',
     'transform': [
-        [u'ſ', 's'],
-        [u'ﬀ', 'ff'],
-        [u'ﬂ', 'fl'],
-        [u'ﬁ', 'fi'],
-        [u'ﬃ', 'ffi'],
-        [u'ﬄ', 'ffl'],
-        [u'ﬅ', 'st'],
-        [u'ﬆ', 'st'],
+        ['ſ', 's'],
+        ['ﬀ', 'ff'],
+        ['ﬂ', 'fl'],
+        ['ﬁ', 'fi'],
+        ['ﬃ', 'ffi'],
+        ['ﬄ', 'ffl'],
+        ['ﬅ', 'st'],
+        ['ﬆ', 'st'],
     ],
 }
 
-dict_config['fr']['FR']['global_dict'] = u'|'.join(
-    ['Wikisource:Dictionnaire/' + x for x in u'ABCDEFGHIJKLMNOPQRSTUVWXYZ'])
+dict_config['fr']['FR']['global_dict'] = '|'.join(
+    ['Wikisource:Dictionnaire/' + x for x in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'])
 
 
 class Modernization:
@@ -136,7 +135,7 @@ class Modernization:
     def save_blacklist(self, blacklist):
         result = self.load_blacklist()
         for s in blacklist:
-            result.add(s.split(u':')[0].strip())
+            result.add(s.split(':')[0].strip())
         filename = self.blacklist_filename()
         utils.save_obj(filename, result)
 
@@ -145,7 +144,7 @@ class Modernization:
         utils.save_obj(filename, cache)
 
     def get_page(self, title):
-        site = pywikibot.Site(self.lang, fam=u'wikisource')
+        site = pywikibot.Site(self.lang, fam='wikisource')
         return pywikibot.Page(site, title)
 
     def get_local_dict_list(self, variant):
@@ -156,37 +155,37 @@ class Modernization:
             yield p
 
     def get_etree_text(self, node, exclude):
-        result = u''
+        result = ''
         if node not in exclude:
             if node.text:
-                result += node.text + u' '
+                result += node.text + ' '
             for child in node:
                 result += self.get_etree_text(child, exclude)
             if node.tail:
-                result += node.tail + u' '
+                result += node.tail + ' '
         return result
 
     def parse_global_dict(self, html):
         result = self.default_cache()
 
-        html = common_html.get_head(u'TITLE') + u"\n<body>" + html + u'\n</body>\n</html>'
+        html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
         root = etree.fromstring(html.encode('utf-8'))
-        text = u''
-        for it in root.findall(".//{http://www.w3.org/1999/xhtml}li"):
+        text = ''
+        for it in root.findall(r".//{http://www.w3.org/1999/xhtml}li"):
             text += self.get_etree_text(it, set())
 
-        for line in text.split(u'\n'):
-            match = re.match(u'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
+        for line in text.split('\n'):
+            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
             if match:
                 result[match.group(1)] = match.group(2)
 
         return result
 
     def fixup_html(self, html):
-        html = html.replace(u'&nbsp;', u' ')
+        html = html.replace('&nbsp;', ' ')
         # mediawiki insert that in comment which prevent conversion to xml
-        html = html.replace(u'Modèle:---', u'Modèle:(mangled triple -)')
-        html = html.replace(u'Modèle:--', u'Modèle:(mangled double -)')
+        html = html.replace('Modèle:---', 'Modèle:(mangled triple -)')
+        html = html.replace('Modèle:--', 'Modèle:(mangled double -)')
 
         return html
 
@@ -194,14 +193,14 @@ class Modernization:
         result = self.default_cache()
         html_id = self.config[variant]['modernize_div_id']
 
-        html = common_html.get_head(u'TITLE') + u"\n<body>" + html + u'\n</body>\n</html>'
+        html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
         root = etree.fromstring(html.encode('utf-8'))
-        text = u''
+        text = ''
         for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
             text += self.get_etree_text(it, set())
 
-        for line in text.split(u'\n'):
-            match = re.match(u'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
+        for line in text.split('\n'):
+            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
             if match:
                 result[match.group(1)] = match.group(2)
 
@@ -216,7 +215,7 @@ class Modernization:
     def get_global_dict(self, variant):
         titles = self.config[variant]['global_dict']
         result = []
-        for title in titles.split(u'|'):
+        for title in titles.split('|'):
             result.append(self.get_page(title))
         return result
 
@@ -380,7 +379,7 @@ class Modernization:
     def check_useless_dict_entry(self, variant):
         cache = self.load_dicts(variant)
         transform = [x[0] for x in self.config[variant]['transform']]
-        regex = u'(' + u'|'.join(transform) + u')'
+        regex = '(' + '|'.join(transform) + ')'
         for key in cache:
             local_dict = cache[key][1]
             for word in local_dict:
@@ -408,12 +407,12 @@ class Modernization:
     def find_repl(self, words_list, i, local_dict, global_dict):
         repl = None
         glb = None
-        words = u''
+        words = ''
         for num in range(self.max_seq, 0, -1):
             if i + num >= len(words_list):
                 continue
 
-            words = u' '.join(words_list[i:i + num])
+            words = ' '.join(words_list[i:i + num])
 
             repl, glb = self.find_words(words, local_dict, global_dict)
 
@@ -446,7 +445,7 @@ class Modernization:
         p = self.get_page(title)
         html = self.get_html(p)
 
-        new_html = common_html.get_head(u'TITLE') + u"\n<body>" + html + u'\n</body>\n</html>'
+        new_html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
         root = etree.fromstring(new_html.encode('utf-8'))
 
         exclude = set()
@@ -505,7 +504,7 @@ class Modernization:
             # additionnal set of suggestion
             word_seen = set()
 
-            regex_split = re.compile(u'([' + self.word_chars + u']+)')
+            regex_split = re.compile('([' + self.word_chars + ']+)')
             words_list = regex_split.findall(text)
             i = 0
             while True:
@@ -576,7 +575,7 @@ class Modernization:
 
         if not os.path.exists(filename):
             html = self.get_html(p)
-            new_html = common_html.get_head(u'TITLE') + u"\n<body>" + html + u'\n</body>\n</html>'
+            new_html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
 
             root = etree.fromstring(new_html.encode('utf-8'))
             exclude = set()
@@ -601,13 +600,13 @@ class Modernization:
             for p in self.get_local_dict_list(variant):
                 text = self.load_text(p, variant)
 
-                regex_split = re.compile(u'([' + self.word_chars + u']+)')
+                regex_split = re.compile('([' + self.word_chars + ']+)')
                 words_list = regex_split.findall(text)
 
                 if p.latestRevision() in cache and word in cache[p.latestRevision()][1]:
                     continue
 
-                local_dict = {word: u'repl'}
+                local_dict = {word: 'repl'}
                 i = 0
                 while True:
                     if i >= len(words_list):
@@ -631,7 +630,7 @@ class Modernization:
         for p in self.get_local_dict_list(variant):
             if p.latestRevision() in cache:
                 text = self.load_text(p, variant)
-                regex_split = re.compile(u'([' + self.word_chars + u']+)')
+                regex_split = re.compile('([' + self.word_chars + ']+)')
                 words_list = regex_split.findall(text)
                 local_dict = cache[p.latestRevision()][1]
                 used_word = set()

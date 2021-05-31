@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file hocr.py
 #
@@ -21,7 +20,7 @@ import hocr
 def log(params):
     try:
         print >> sys.stderr, params
-    except IOError as e:
+    except OSError as e:
         sys.stderr = open(os.path.expanduser('~/log/hocr_cgi.err'), 'a')
         print >> sys.stderr, params
 

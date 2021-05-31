@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys
 import re
 import xml.etree.ElementTree as etree
@@ -249,7 +248,7 @@ class XmlFile:
             text += self.fd.read(8);
 
         # djvutoxml can produce invalid entity, just strip them.
-        text = re.sub("&#\d+;", "", text)
+        text = re.sub(r"&#\d+;", "", text)
         # bug in etree ?
         text = text.replace("&hl=", "")
         # Are text always in utf-8 ?
@@ -380,7 +379,7 @@ def has_word_bbox(filename):
     ls = subprocess.Popen([djvutxt, filename, '--detail=word'], stdout=subprocess.PIPE, preexec_fn=setrlimits,
                           close_fds=True)
     for line in ls.stdout:
-        if re.search('\(word \d+ \d+ \d+ \d+ ".*"', line):
+        if re.search(r'\(word \d+ \d+ \d+ \d+ ".*"', line):
             ls.kill()
             ls.wait()
             return True

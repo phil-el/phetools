@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 import sys
 import os
 import ocr
@@ -41,7 +40,7 @@ def image_size(page_nr, filename):
         print >> sys.stderr, "Error: djvused fail to exec", ls.returncode
         return None
 
-    match = re.search('width=(\d+) height=(\d+)', text)
+    match = re.search(r'width=(\d+) height=(\d+)', text)
     return int(match.group(1)), int(match.group(2))
 
 
@@ -108,7 +107,7 @@ def do_file(job_queue, opt, filename):
 
 
 def ocr_djvu(opt, filename, task_scheduler=None):
-    if type(filename) == type(u''):
+    if type(filename) == type(''):
         filename = filename.encode('utf-8')
 
     print "Starting to process:", filename

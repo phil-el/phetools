@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file db.py
 #
@@ -73,7 +72,7 @@ def create_conn(**kwargs):
 # for read/write use or the open/close method for read only use. Note than
 # close() doesn't do a commit(), either do it in your code or use the context
 # manager.
-class UserDb(object):
+class UserDb:
     def __init__(self, db_name):
         self.db_name = user_db_prefix() + db_name
         self.conn = self.cursor = None

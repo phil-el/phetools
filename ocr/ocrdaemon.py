@@ -23,7 +23,7 @@ E_ERROR = 1
 
 # url user lang t tools conn
 def html_for_queue(queue):
-    html = u''
+    html = ''
     for i in queue:
         url = i[0]
         html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " " + url + "<br />"
@@ -47,7 +47,7 @@ def next_pagename(match):
 
 
 def next_url(url):
-    return re.sub(u'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
+    return re.sub(r'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
 
 
 def bot_listening(queue, cache):

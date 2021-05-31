@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file queue_tidy_ocr.py
 #

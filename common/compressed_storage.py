@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file compressed_storage.py
 #

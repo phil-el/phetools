@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file sge_jobs.py
 #
@@ -206,7 +205,7 @@ class DbJob(db.UserDb):
         text = ls.stdout.read()
         ls.wait()
         try:
-            sge_job_nr = int(re.search('Your job (\d+) ', text).group(1))
+            sge_job_nr = int(re.search(r'Your job (\d+) ', text).group(1))
             new_state = 'running'
         except:
             utils.print_traceback("sge failure to exec job: %d" % r['job_id'], text)

@@ -34,7 +34,7 @@ def do_exec(title, cmd):
 
 # cmd title t tools conn
 def html_for_queue(queue):
-    html = u''
+    html = ''
     for i in queue:
         mtitle = i[1]
 
@@ -45,11 +45,11 @@ def html_for_queue(queue):
 def do_status(queue):
     queue = queue.copy_items(True)
 
-    html = common_html.get_head(u'Dummy robot')
-    html += u"<body><div>The robot is running.<br/><hr/>"
-    html += u"<br/>%d jobs in dummy robot queue.<br/>" % len(queue)
+    html = common_html.get_head('Dummy robot')
+    html += "<body><div>The robot is running.<br/><hr/>"
+    html += "<br/>%d jobs in dummy robot queue.<br/>" % len(queue)
     html += html_for_queue(queue)
-    html += u'</div></body></html>'
+    html += '</div></body></html>'
     return html
 
 

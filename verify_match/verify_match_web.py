@@ -32,7 +32,7 @@ def ret_val(error, text):
 def do_match(mysite, cached_diff, cached_text, maintitle, user):
     opt = verify_match.default_options()
     opt.site = mysite
-    maintitle = maintitle.replace(u'_', u' ')
+    maintitle = maintitle.replace('_', ' ')
 
     verify_match.main(maintitle, cached_diff, cached_text, opt)
 
@@ -41,7 +41,7 @@ def do_match(mysite, cached_diff, cached_text, maintitle, user):
 
 # title user lang t tools conn
 def html_for_queue(queue):
-    html = u''
+    html = ''
     for i in queue:
         mtitle = i[0]
         codelang = i[1]
@@ -61,11 +61,11 @@ def html_for_queue(queue):
 def do_status(queue):
     queue = queue.copy_items(True)
 
-    html = common_html.get_head(u'Verify match')
-    html += u"<body><div>The robot is running.<br/><hr/>"
-    html += u"<br/>%d jobs in verify match queue.<br/>" % len(queue)
+    html = common_html.get_head('Verify match')
+    html += "<body><div>The robot is running.<br/><hr/>"
+    html += "<br/>%d jobs in verify match queue.<br/>" % len(queue)
     html += html_for_queue(queue)
-    html += u'</div></body></html>'
+    html += '</div></body></html>'
     return html
 
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file hocr.py
 #
@@ -31,7 +30,7 @@ tmp_dir = os.path.expanduser('~/tmp/hocr/')
 
 
 def get_tmp_dir(lang):
-    if type(lang) == type(u''):
+    if type(lang) == type(''):
         lang = lang.encode('utf-8')
     return tmp_dir + lang + '/'
 
@@ -89,7 +88,7 @@ def db_sha1(domain, family, bookname):
 
 
 def get_sha1(lang, bookname):
-    if type(bookname) == type(u''):
+    if type(bookname) == type(''):
         bookname = bookname.encode('utf-8')
 
     url = None
@@ -264,7 +263,7 @@ def get_hocr(lang, title):
     if lang == 'nb':
         lang = 'no'
 
-    if type(title) == type(u''):
+    if type(title) == type(''):
         title = title.encode('utf-8')
 
     title = title.replace(' ', '_')
@@ -272,17 +271,17 @@ def get_hocr(lang, title):
     try:
         if lang == 'bn':
             title = unicode(title, 'utf-8')
-            page_nr = re.sub(u'^.*/([০-৯]+)$', '\\1', title)
-            book_name = re.sub(u'^(.*?)(/[০-৯]+)?$', '\\1', title)
+            page_nr = re.sub(r'^.*/([০-৯]+)$', r'\1', title)
+            book_name = re.sub(r'^(.*?)(/[০-৯]+)?$', r'\1', title)
             book_name = book_name.encode('utf-8')
-            result = ord(page_nr[0]) - ord(u'০')
+            result = ord(page_nr[0]) - ord('০')
             for ch in page_nr[1:]:
                 result *= 10
-                result += ord(ch) - ord(u'০')
+                result += ord(ch) - ord('০')
             page_nr = result
         else:
-            page_nr = re.sub('^.*/([0-9]+)$', '\\1', title)
-            book_name = re.sub('^(.*?)(/[0-9]+)?$', '\\1', title)
+            page_nr = re.sub(r'^.*/([0-9]+)$', r'\1', title)
+            book_name = re.sub(r'^(.*?)(/[0-9]+)?$', r'\1', title)
             page_nr = int(page_nr)
     except:
         return ret_val(1, "unable to extract page number from page: " + title)

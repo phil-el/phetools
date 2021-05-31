@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 # FIXME: this script has the same name as it's container directory
 # this is prone error as both "from ocr import ocr" and "import ocr"

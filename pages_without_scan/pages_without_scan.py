@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file modernization_cgy.py
 #
@@ -131,10 +130,9 @@ def handle_scan_query(params, start_response):
             text += prev_link + '&#160;' + next_link + '<br /><br />'
 
             for x in result:
-                text += u'<a href="//%s.wikisource.org/wiki/%s">' % (lang, x[0]) + x[0].replace('_', ' ') + u'</a>, ' \
-                        + str(x[1]) + u'<br />'
+                text += f'<a href="//{lang}.wikisource.org/wiki/{x[0]}">{x[0].replace("_", " ")}</a>, {x[1]}<br />'
 
-            text += u'<br />' + prev_link + '&#160;' + next_link
+            text += '<br />' + prev_link + '&#160;' + next_link
             cursor.close()
             conn.close()
             ret_code = '200 OK'

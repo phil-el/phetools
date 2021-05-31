@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file delete_hocr.py
 #
@@ -14,7 +13,7 @@ from common import db
 
 
 def delete(bookname, lang):
-    if type(bookname) == type(u''):
+    if type(bookname) == type(''):
         bookname = bookname.encode('utf-8')
     bookname = bookname.replace(' ', '_')
     path = hocr.cache_path(bookname, lang)

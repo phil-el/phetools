@@ -15,7 +15,7 @@ sys.path.append(os.path.expanduser('~/phe'))
 from common import db
 
 # The domain name we care.
-all_domain = set([
+all_domain = {
     # 'ang', CLOSED WIKI, DO NOT ENABLE
     'ar',
     'as',
@@ -88,11 +88,11 @@ all_domain = set([
     'yi',
     'zh',
     'zh-min-nan'
-])
+}
 
 
 def catreq(cat, ns):
-    return u"select /* SLOW_OK */ count(cl_from) as num from categorylinks where cl_to='%s' and cl_from in (select page_id from page where page_namespace=%d)" % (
+    return "select /* SLOW_OK */ count(cl_from) as num from categorylinks where cl_to='%s' and cl_from in (select page_id from page where page_namespace=%d)" % (
     cat, ns)
 
 
@@ -111,7 +111,7 @@ def get_stats(domains):
         cursor = db.use_db(conn, domain=dom, family='wikisource')
         ns = urls[dom][0]
 
-        q = u"select /* SLOW_OK */ count(page_id) as num from page where page_namespace=%d and page_is_redirect=0" % ns
+        q = "select /* SLOW_OK */ count(page_id) as num from page where page_namespace=%d and page_is_redirect=0" % ns
         cursor.execute(q)
         row = cursor.fetchone()
         num_pages = int(row[0])
@@ -142,32 +142,32 @@ def get_stats(domains):
             num_q0 = 0
             num_q2 = 0
 
-        q = u"select /* SLOW_OK */ count(distinct tl_from) as num from templatelinks left join page on page_id=tl_from where tl_namespace=%d and page_namespace=0;" % ns
+        q = "select /* SLOW_OK */ count(distinct tl_from) as num from templatelinks left join page on page_id=tl_from where tl_namespace=%d and page_namespace=0;" % ns
         cursor.execute(q)
         row = cursor.fetchone()
         num_trans = int(row[0])
 
         cursor.execute(
-            u"select /* SLOW_OK */ count(distinct page_id) from page where page_namespace=0 and page_is_redirect=0;")
+            "select /* SLOW_OK */ count(distinct page_id) from page where page_namespace=0 and page_is_redirect=0;")
         row = cursor.fetchone()
         num_texts = int(row[0])
 
         # disambiguation pages
         # first try the __DISAMBIG__ keyword
-        q_disamb = u"select count(page_title) from page where page_namespace = 0 and page_is_redirect = 0 and page_id in (select pp_page from page_props where pp_propname = 'disambiguation')"
+        q_disamb = "select count(page_title) from page where page_namespace = 0 and page_is_redirect = 0 and page_id in (select pp_page from page_props where pp_propname = 'disambiguation')"
         cursor.execute(q_disamb)
         row = cursor.fetchone()
         num_disambig = int(row[0])
 
         if num_disambig == 0:
             # then test if the message is a template...
-            q_disamb = u"select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title in ( select pl_title from page left join pagelinks on page_id=pl_from where pl_namespace=10 and page_namespace=8 and page_title='Disambiguationspage' )"
+            q_disamb = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title in ( select pl_title from page left join pagelinks on page_id=pl_from where pl_namespace=10 and page_namespace=8 and page_title='Disambiguationspage' )"
             cursor.execute(q_disamb)
             row = cursor.fetchone()
             num_disambig = int(row[0])
 
             if num_disambig == 0 and disambiguations.get(dom):
-                q_disamb = u"select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'" % disambiguations.get(
+                q_disamb = "select /* SLOW_OK */ count(page_title) from page left join templatelinks on page_id=tl_from where page_namespace=0 and tl_namespace=10 and tl_title='%s'" % disambiguations.get(
                     dom)
                 cursor.execute(q_disamb)
                 row = cursor.fetchone()
@@ -175,7 +175,7 @@ def get_stats(domains):
 
         if dom in []:  # ['no']:
             import pywikibot
-            qq = u"select /* SLOW_OK */ page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q_disamb.replace(
+            qq = "select /* SLOW_OK */ page_title from page where page_namespace=0 and page_is_redirect=0 and page_id not in ( select distinct tl_from from templatelinks left join page on page_id=tl_from where tl_namespace=104 and page_namespace=0 ) and page_id not in ( %s );" % q_disamb.replace(
                 "count(page_title)", "page_id")
             cursor.execute(qq)
             rows = cursor.fetchall()
@@ -190,7 +190,7 @@ def get_stats(domains):
                 page = pywikibot.Page(site, pagename.decode('utf8'))
                 page_path = site.nice_get_address(page.title(asUrl=True))
                 page_url = "http://" + dom + ".wikisource.org" + page_path
-                s = "<li><a href=\"%s\">%s</a></li>" % (page_url, page.title())
+                s = f"<li><a href=\"{page_url}\">{page.title()}</a></li>"
                 f.write(s)
             f.write("</ul>")
             f.write("</body>")
@@ -241,7 +241,7 @@ def write_templates(res):
 
 
 def read_stats(offset):
-    f = open(os.path.expanduser("~/public_html/data/new_stats.py"), "r")
+    f = open(os.path.expanduser("~/public_html/data/new_stats.py"))
     lines = f.readlines()
     f.close()
     t, oldres = eval(lines[offset])

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file modernization_cgy.py
 #

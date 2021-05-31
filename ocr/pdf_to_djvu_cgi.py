@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file pdf_to_djvu_cgi.py
 #

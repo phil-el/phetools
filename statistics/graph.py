@@ -260,7 +260,7 @@ def add_rev(line):
 
 
 def read_from_file(filename):
-    f = open(filename, "r")
+    f = open(filename)
     revs = f.readlines()
     f.close()
     for item in revs:

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file sge_submit.py
 #

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file pdf_to_djvu.py
 #
@@ -42,7 +41,7 @@ def exec_process(args):
 
 
 def pdf_to_djvu(in_file):
-    if type(in_file) == type(u''):
+    if type(in_file) == type(''):
         in_file = in_file.encode('utf-8')
 
     if gsdjvu:
