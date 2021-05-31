@@ -13,7 +13,7 @@ from common import tool_connect
 from common import lifo_cache
 from common import job_queue
 
-import thread
+import _thread
 import time
 
 from match_and_split import align
@@ -167,7 +167,7 @@ if __name__ == "__main__":
             os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
         cache = lifo_cache.LifoCache(cache_dir)
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, cache))
+        _thread.start_new_thread(job_thread, (queue, cache))
         bot_listening(queue)
     except KeyboardInterrupt:
         pywikibot.stopme()

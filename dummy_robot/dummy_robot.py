@@ -10,7 +10,7 @@ from common import tool_connect
 from common import common_html
 
 import os
-import thread
+import _thread
 import time
 from common import job_queue
 
@@ -121,7 +121,7 @@ def job_thread(queue, func):
 if __name__ == "__main__":
     try:
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, do_exec))
+        _thread.start_new_thread(job_thread, (queue, do_exec))
         bot_listening(queue)
     except KeyboardInterrupt:
         os._exit(1)

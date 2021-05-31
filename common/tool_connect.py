@@ -7,7 +7,7 @@
 # @author Philippe Elie
 
 import socket
-import thread
+import _thread
 import os
 import json
 import sys
@@ -23,7 +23,7 @@ class ToolConnect:
             self.sock.bind(('', port))
         except:
             print("could not start listener : socket already in use")
-            thread.interrupt_main()
+            _thread.interrupt_main()
             return
 
         self.sock.listen(1)

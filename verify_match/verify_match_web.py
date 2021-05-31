@@ -12,7 +12,7 @@ from common import lifo_cache
 from common import utils
 
 import os
-import thread
+import _thread
 import time
 
 import pywikibot
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         os.mkdir(os.path.expanduser('~/cache/' + cache_dir2))
     try:
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue,))
+        _thread.start_new_thread(job_thread, (queue,))
         bot_listening(queue)
     except KeyboardInterrupt:
         pywikibot.stopme()

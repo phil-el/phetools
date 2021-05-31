@@ -6,7 +6,7 @@ __module_version__ = "1.0"
 __module_description__ = "wikisource ocr bot"
 
 import os
-import thread
+import _thread
 import time
 import hashlib
 import re
@@ -187,7 +187,7 @@ if __name__ == "__main__":
             os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
         cache = lifo_cache.LifoCache(cache_dir)
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, cache))
+        _thread.start_new_thread(job_thread, (queue, cache))
         bot_listening(queue, cache)
     except KeyboardInterrupt:
         os._exit(1)

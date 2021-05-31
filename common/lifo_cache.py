@@ -3,7 +3,7 @@
 # A simple lifo cache backing up object on disk, when starting ordering
 # of item is random. Doesn't support multiple reader/writer.
 
-import thread
+import _thread
 from collections import OrderedDict
 import os
 import utils
@@ -13,7 +13,7 @@ import types
 
 class LifoCacheMem:
     def __init__(self, cache_size):
-        self._lock = thread.allocate_lock()
+        self._lock = _thread.allocate_lock()
         self.cache_size = cache_size
         self.cache = OrderedDict()
         self.read_count = 0
@@ -86,7 +86,7 @@ class LifoCache(LifoCacheMem):
         self.disk_read_hit = 0
         self.disk_read_count = 0
         self.disk_write_count = 0
-        self._disk_lock = thread.allocate_lock()
+        self._disk_lock = _thread.allocate_lock()
         for filename in os.listdir(self.disk_cache_dir):
             if len(self.disk_cache) == self.disk_cache_size:
                 os.unlink(self.disk_cache_dir + filename)

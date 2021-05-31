@@ -6,7 +6,7 @@
 #
 # @author Philippe Elie
 
-import thread
+import _thread
 import time
 from collections import deque
 import copy
@@ -23,7 +23,7 @@ import utils
 class JobQueue:
     def __init__(self, filename=None):
         # Deque has it's own lock but we need your own to copy item.
-        self._lock = thread.allocate_lock()
+        self._lock = _thread.allocate_lock()
         self._items = deque()
         if filename:
             self._load(filename)
@@ -122,8 +122,8 @@ if __name__ == "__main__":
                 jobs.get()
 
         jobs = JobQueue()
-        thread.start_new_thread(thread1, (jobs,))
-        thread.start_new_thread(thread2, (jobs,))
+        _thread.start_new_thread(thread1, (jobs, ))
+        _thread.start_new_thread(thread2, (jobs, ))
 
         jobs.get()
         while not jobs.empty():

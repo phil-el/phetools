@@ -13,7 +13,7 @@ import os
 sys.path.append(os.path.expanduser('~/wikisource'))
 from ws_namespaces import page as page_prefixes
 import re
-import thread
+import _thread
 import time
 import align
 from common import common_html
@@ -526,8 +526,8 @@ if __name__ == "__main__":
         except:
             jobs = default_jobs()
 
-        thread.start_new_thread(job_thread, (jobs['match_queue'], do_match))
-        thread.start_new_thread(job_thread, (jobs['split_queue'], do_split))
+        _thread.start_new_thread(job_thread, (jobs['match_queue'], do_match))
+        _thread.start_new_thread(job_thread, (jobs['split_queue'], do_split))
         bot_listening()
     except KeyboardInterrupt:
         pywikibot.stopme()
