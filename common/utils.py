@@ -58,7 +58,7 @@ def write_sha1(sha1, filename):
 
 
 def url_opener():
-    opener = urllib.URLopener()
+    opener = urllib.request.URLopener()
     opener.addheaders = [('User-agent', 'MW_phetools')]
     return opener
 
@@ -89,9 +89,9 @@ def copy_file_from_url(url, out_file, expect_sha1=None, max_retry=4):
                     ok = True
             else:
                 ok = True
-        except IOError, e:
+        except OSError as e:
             if e[0] == 'http error' and e[1] == 302:
-                new_url = e[3]['Location']
+                new_url = e[3]['Location']  # todo: getting by index is deprecated and will raise error
                 return copy_file_from_url(new_url, out_file, expect_sha1, max_retry - 1)
             raise
         except Exception:
@@ -168,7 +168,7 @@ def _retry_on_eintr(func, *args):
     while True:
         try:
             return func(*args)
-        except (IOError, OSError) as e:
+        except OSError as e:
             # print("EINTR, retrying")
             if e.errno != errno.EINTR:
                 raise

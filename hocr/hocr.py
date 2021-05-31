@@ -133,7 +133,7 @@ def is_uptodate(lang, book):
     if not os.path.exists(temp_dir):
         try:
             os.makedirs(temp_dir)
-        except OSError, e:
+        except OSError as e:
             import errno
             if e.errno != errno.EEXIST:
                 raise

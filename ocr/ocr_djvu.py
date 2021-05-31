@@ -154,7 +154,7 @@ def ocr_djvu(opt, filename, task_scheduler=None):
                 try:
                     thread_array[i].join()
                     del thread_array[i]
-                except OSError, ose:
+                except OSError as ose:
                     if ose.errno != errno.EINTR:
                         raise ose
 

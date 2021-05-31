@@ -277,7 +277,7 @@ def begin_elem(page, e):
         page.start_char(e)
     else:
         print("unsuported tag", tag, file=sys.stderr)
-        raise 'unsuported tag'
+        raise RuntimeError('unsuported tag')
 
 
 def end_elem(page, e):
@@ -298,7 +298,7 @@ def end_elem(page, e):
         page.end_char(e)
     else:
         print("unsuported tag", tag, file=sys.stderr)
-        raise 'unsuported tag'
+        raise RuntimeError('unsuported tag')
 
 
 def parse_page_recursive(page, elem):

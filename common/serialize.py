@@ -38,7 +38,7 @@ def serialize_php_none(var):
 
 # Special case for none as dict index
 def serialize_php_none_as_zero(var):
-    return serialize_php_int(0);
+    return serialize_php_int(0)
 
 
 def serialize_php_array_key(var):
@@ -49,7 +49,7 @@ def serialize_php_array_key(var):
         types.StringType: serialize_php_string,
         types.NoneType: serialize_php_none_as_zero,
     }
-    return serializer.get(type(var), serialize_php_error)(var);
+    return serializer.get(type(var), serialize_php_error)(var)
 
 
 def serialize_php_array(var):
@@ -79,7 +79,7 @@ def serialize_php(var):
         types.TupleType: serialize_php_array,
         types.DictType: serialize_php_dict,
     }
-    return serializer.get(type(var), serialize_php_error)(var);
+    return serializer.get(type(var), serialize_php_error)(var)
 
 
 class SerializerBase:
