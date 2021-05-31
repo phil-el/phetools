@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # GPL V2, author thomasv1 at gmx dot de, phe at nowhere
 
 __module_name__ = "wikisourceocr"

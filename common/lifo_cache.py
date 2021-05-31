@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # A simple lifo cache backing up object on disk, when starting ordering
 # of item is random. Doesn't support multiple reader/writer.

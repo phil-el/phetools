@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 from flup.server.fcgi_fork import WSGIServer
 from pdf_to_djvu_cgi import myapp
 import os

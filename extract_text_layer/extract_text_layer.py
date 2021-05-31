@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # GPL V2, author phe                                                            
 __module_name__ = "extract_text_layer_daemon"
 __module_version__ = "1.0"

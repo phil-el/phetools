@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # GPL V2, author phe
 
 __module_name__ = "dummy_robot"

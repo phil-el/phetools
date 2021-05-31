@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 from flup.server.fcgi_fork import WSGIServer
 from pages_without_scan import myapp
 import os

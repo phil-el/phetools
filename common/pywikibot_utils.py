@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # GPL V2, author phe                                                            
 import pywikibot
 from pywikibot.data import api

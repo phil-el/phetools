@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # GPL V2, author thomasv1 at gmx dot de, phe
 
 __module_name__ = "match_and_split_daemon"
