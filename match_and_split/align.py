@@ -24,7 +24,7 @@ def match_page(target, source):
 
 
 def unquote_text_from_djvu(text):
-    #text = text.replace('\\r', '\r')
+    # text = text.replace('\\r', '\r')
     text = text.replace('\\n', '\n')
     text = text.replace('\\"', '"')
     text = text.replace('\\\\', '\\')
@@ -35,31 +35,32 @@ def unquote_text_from_djvu(text):
     return text
 
 
-def extract_djvu_text(url, filename, sha1):
+def extract_pdf_text(filename):
+    # t_pdftotext = textract.parsers.process(filename, method='pdftotext', encoding='utf-8').decode(encoding='utf-8')
+    pipe = subprocess.Popen(['pdftotext', filename, '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  # '-layout' not needed
+    text, errors = pipe.communicate()
+    text = text.decode(encoding='utf-8', errors='replace')
+    text_pages = text.split('\f')
+    text_pages = [unquote_text_from_djvu(t) for t in text_pages]
+    return text_pages
+
+
+def extract_djvu_text(filename):
     print("extracting text layer")
 
-    if type(filename) == type(''):
-        filename = filename.encode('utf-8')
-
-    utils.copy_file_from_url(url, filename, sha1)
-
-    data = []
     # GTK app are very touchy
     os.environ['LANG'] = 'en_US.UTF8'
     # FIXME: check return code
     ls = subprocess.Popen(['djvutxt', filename, '--detail=page'], stdout=subprocess.PIPE, close_fds=True)
     text = ls.stdout.read()
     ls.wait()
-    for t in re.finditer(r'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
-        t = unicode(t.group(1), 'utf-8', 'replace')
-        t = re.sub(r'^page \d+ \d+ \d+ \d+[ \n]+"', '', t)
-        t = re.sub('"[ ]*$', '', t)
+
+    text_pages = []
+    for m in re.finditer(rb'\((page -?\d+ -?\d+ -?\d+ -?\d+[ \n]+"(.*)"[ ]*|)\)\n', text):
+        t = m.group(2).decode('utf-8', errors='replace') if m.group(2) else ''  # '' if the page is empty
         t = unquote_text_from_djvu(t)
-        data.append(t)
-
-    os.remove(filename)
-
-    return sha1, data
+        text_pages.append(t)
+    return text_pages
 
 
 def ret_val(error, text):
@@ -210,42 +211,47 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
 # file with the same name but different contents. In this case the cache will
 # be ineffective but no wrong data can be used as we check its sha1.
 def get_djvu(cache, mysite, djvuname, check_timestamp=False):
+    """
+    If there is already the text of the file in the cache, then use it.
+    Otherwise, download the file and extract the text into the cache.
+    If `check_timestamp` then check SHA1 of the latest version of the file and download only if it is different.
+
+    Return: text_pages: list, or None
+    """
+
     print("get_djvu", djvuname)
 
     djvuname = djvuname.replace(" ", "_")
     cache_filename = djvuname + '.dat'
 
     obj = cache.get(cache_filename)
-    if not obj:
-        print("CACHE MISS")
-        filepage = copy_File.get_filepage(mysite, djvuname)
-        if not filepage:
-            # can occur if File: has been deleted
-            return None
-        try:
-            url = filepage.fileUrl()
-            obj = extract_djvu_text(url, djvuname, filepage.getFileSHA1Sum())
-        except:
-            utils.print_traceback("extract_djvu_text() fail")
-            obj = None
-        if obj:
-            cache.set(cache_filename, obj)
-        else:
-            return None
+    if obj:
+        cache_sha1, text_pages = obj
+        if not check_timestamp:
+            return text_pages
     else:
-        if check_timestamp:
-            filepage = copy_File.get_filepage(mysite, djvuname)
-            if not filepage:
-                # can occur if File: has been deleted
-                return None
-            sha1 = filepage.getFileSHA1Sum()
-            if sha1 != obj[0]:
-                print("OUTDATED FILE")
-                url = filepage.fileUrl()
-                try:
-                    obj = extract_djvu_text(url, djvuname, sha1)
-                    cache.set(cache_filename, obj)
-                except:
-                    return None
+        print("CACHE MISS")
 
-    return obj[1]
+    filepage = copy_File.get_filepage(mysite, djvuname)
+    if not filepage:
+        # can occur if File: has been deleted
+        return None
+    sha1 = filepage.latest_file_info.sha1
+
+    if obj and check_timestamp:
+        if sha1 == cache_sha1:
+            return text_pages
+        print("OUTDATED FILE")
+
+    # Download the file, extract text and update cache, remove the file
+    try:
+        url = filepage.get_file_url()
+        utils.copy_file_from_url(url, djvuname, sha1)
+        # Recognizing PDF by the file extension. It may be better to determine the type of file by its content.
+        text_pages = extract_pdf_text(djvuname) if djvuname.endswith('.pdf') else extract_djvu_text(djvuname)  # '.djvu'
+        os.remove(djvuname)
+        if text_pages:
+            cache.set(cache_filename, (sha1, text_pages))
+            return text_pages
+    except:
+        utils.print_traceback("extract_djvu_text() fail")
