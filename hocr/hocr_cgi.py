@@ -127,7 +127,7 @@ accounting_table_field = [
 def query_params(environ):
     # import cgi
     # field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
-    from urlparse import parse_qsl
+    from urllib.parse import parse_qsl
     rdict = {
         'format': 'html',
         'cmd': 'status',

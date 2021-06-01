@@ -72,8 +72,9 @@ E_ERROR = 1
 E_OK = 0
 
 
-# returns result, status
 def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
+    """ returns result, status"""
+
     s = difflib.SequenceMatcher()
     offset = 0
     output = ""
@@ -169,13 +170,15 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
         # if the end of the last page look like a paragraph start. 16 char
         # width to detect that is a guessed value.
         no_color = no_color.rstrip()
-        match = re.match(r"(?ms).*(\n\n.*)$", no_color)
-        if match and len(match.group(1)) <= 16:
-            no_color = no_color[:-len(match.group(1))]
+        m = re.match(r"(?ms).*(\n\n.*)$", no_color)
+        if m and len(m.group(1)) <= 16:
+            no_color = no_color[:m.start(1)]
         else:
-            match = re.match(r"(?ms).*(\n\w+\W*)$", no_color)
-            if match:
-                no_color = no_color[:-(len(match.group(1)) - 1)]
+            m = re.match(r"(?ms).*(\n\w+\W*)$", no_color)
+            if m:
+                no_color = no_color[:m.start(1) + 1]
+        # todo: TO FIX: The first line of the page text is mistakenly placing on the previous page.
+        #  Because of this, have to manually move each the page border tags in the resulting text.
 
         offset += len(no_color)
 

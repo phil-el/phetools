@@ -17,8 +17,7 @@ import hashlib
 import MySQLdb
 
 # FIXME: some other lang can be supported.
-supported_lang = set(
-    [
+supported_lang = {
         'be',
         'bn',
         'ca',
@@ -43,8 +42,7 @@ supported_lang = set(
         'pt',
         'ru',
         'sv',
-    ]
-)
+}
 
 
 # FIXME: move that to db.py

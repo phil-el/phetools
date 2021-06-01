@@ -46,10 +46,8 @@ def cache_path(book_name, lang):
 
 
 def read_sha1(path):
-    fd = open(path + 'sha1.sum')
-    sha1 = fd.read()
-    fd.close()
-
+    with open(path + 'sha1.sum') as f:
+        sha1 = f.read()
     return sha1
 
 

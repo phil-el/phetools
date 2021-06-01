@@ -384,7 +384,7 @@ class Modernization:
             local_dict = cache[key][1]
             for word in local_dict:
                 if re.search(regex, word) or re.search(regex, local_dict[word]):
-                    if type(cache[key][0]) == type(3):
+                    if isinstance(cache[key][0], int):
                         print('global_dict')
                     else:
                         print(cache[key][0])
@@ -561,7 +561,7 @@ class Modernization:
         cache = self.load_dicts(variant)
         for key in cache:
             if cache[key][1].has_key(word):
-                if type(cache[key][0]) == type(3):
+                if isinstance(cache[key][0], int):
                     print('global_dict')
                 else:
                     print(cache[key][0])

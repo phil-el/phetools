@@ -5,9 +5,8 @@
 # @remark Read the file COPYING
 #
 # @author Philippe Elie
-
-import utils
 import pywikibot
+from common import utils
 
 
 def get_filepage(site, djvuname):

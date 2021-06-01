@@ -6,10 +6,10 @@
 import _thread
 from collections import OrderedDict
 import os
-import utils
 import sys
 import types
 
+from common import utils
 
 class LifoCacheMem:
     def __init__(self, cache_size):

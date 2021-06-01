@@ -5,7 +5,7 @@ from pywikibot.data import api
 import time
 import re
 import types
-import utils
+from common import utils
 import sys
 
 

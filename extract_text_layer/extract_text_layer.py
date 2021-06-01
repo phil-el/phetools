@@ -129,10 +129,9 @@ def bot_listening(queue):
         print("STOP", file=sys.stderr)
 
 
-
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
+    return time.strftime('[%d/%m/%Y:%H:%M:%S]', t)
 
 
 def job_thread(queue, cache):

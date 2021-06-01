@@ -25,7 +25,7 @@ def query_params(environ):
         'lang': ''
     }
     for name in field:
-        if type(field[name]) == types.ListType:
+        if isinstance(field[name], list):
             rdict[name] = field[name][-1].value
         else:
             rdict[name] = field[name].value

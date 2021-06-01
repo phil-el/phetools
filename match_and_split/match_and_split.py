@@ -6,23 +6,23 @@ __module_version__ = "1.0"
 __module_description__ = "match and split daemon"
 
 import sys
-from common import tool_connect
-from common import lifo_cache
 import os
-
-sys.path.append(os.path.expanduser('~/wikisource'))
-from ws_namespaces import page as page_prefixes
 import re
 import _thread
 import time
-import align
-from common import common_html
-from common import utils
-from common import job_queue
 
 import pywikibot
 
+from common import tool_connect
+from common import lifo_cache
+from common import common_html
+from common import utils
+from common import job_queue
 from common.pywikibot_utils import safe_put
+import align
+from ws_namespaces import page as page_prefixes
+
+sys.path.append(os.path.expanduser('~/wikisource'))
 
 E_ERROR = 1
 E_OK = 0
@@ -36,10 +36,11 @@ def rddm_name(year, volume):
 
 
 def get_pl(year, vol):
+    """ Get <pagelist /> numbers, sorted by scan pages order. Update `pl_dict` with '{year},{vol}' key. """
     global pl_dict
     key = f'{year},{vol}'
     pl = pl_dict.get(key)
-    if pl != None:
+    if pl is not None:
         return pl
 
     site = pywikibot.Site('fr', 'wikisource')
@@ -53,9 +54,7 @@ def get_pl(year, vol):
             mm = re.match(r'(\d+)=(\d+)', item)
             if mm:
                 l.append((int(mm.group(1)), int(mm.group(2))))
-
-        # FIXME: default sort function should be enough
-        l.sort(lambda x, y: cmp(x[0], y[0]))
+        l.sort()
         pl_dict[key] = l
     else:
         pl_dict[key] = {}
@@ -98,7 +97,7 @@ def do_match(mysite, maintitle, user, codelang):
         utils.print_traceback("failed to get page")
         return ret_val(E_ERROR, "failed to get page")
 
-    if text.find("{{R2Mondes") != -1:
+    if "{{R2Mondes" in text:
         global pl_dict
         pl_dict = {}
         p0 = re.compile(r'{{R2Mondes\|(\d+)\|(\d+)\|(\d+)}}\s*\n')
@@ -474,7 +473,7 @@ def bot_listening():
 
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]" % (t[2], t[1], t[0], t[3], t[4], t[5])
+    return time.strftime('[%d/%m/%Y:%H:%M:%S]', t)
 
 
 def job_thread(queue, func):
