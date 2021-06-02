@@ -16,7 +16,7 @@ def site_matrix():
 
 
 def proofread_info(lang):
-    req = api.Request(site=pywikibot.getSite(lang, 'wikisource'),
+    req = api.Request(site=pywikibot.Site(lang, 'wikisource'),
                       action='query', meta='proofreadinfo')
     data = req.submit()
     return data['query']
@@ -45,30 +45,30 @@ def safe_put(page, text, comment):
     retry_count = 0
     while retry_count < max_retry:
         retry_count += 1
-        title = page.title(asUrl=True)
+        title = page.title(as_url=True)
         try:
-            page.put(text, comment=comment)
+            page.put(text, summary=comment)
             break
-        except pywikibot.LockedPage:
+        except pywikibot.exceptions.LockedPageError:
             print(f"put error : Page", title, "is locked?!", file=sys.stderr)
             utils.print_traceback()
             break
-        except pywikibot.NoPage:
+        except pywikibot.exceptions.NoPageError:
             print("put error : Page does not exist", title, file=sys.stderr)
             utils.print_traceback()
             break
-        except pywikibot.NoUsername:
+        except pywikibot.exceptions.NoUsernameError:
             print("put error : No user name on wiki", title, file=sys.stderr)
             utils.print_traceback()
             break
-        except pywikibot.PageSaveRelatedError:
+        except pywikibot.exceptions.PageSaveRelatedError:
             print("put error : Page not saved", title, file=sys.stderr)
             print("text len: ", len(text), file=sys.stderr)
             utils.print_traceback()
             print("sleeping for:", 10 * retry_count, file=sys.stderr)
             time.sleep(10 * retry_count)
             continue
-        except pywikibot.OtherPageSaveError:
+        except pywikibot.exceptions.OtherPageSaveError:
             # this can occur for read-only DB because slave lag, so retry
             # a few time
             print("put error : Page not saved", title, file=sys.stderr)

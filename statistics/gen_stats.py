@@ -179,7 +179,7 @@ def get_stats(domains):
                 "count(page_title)", "page_id")
             cursor.execute(qq)
             rows = cursor.fetchall()
-            site = pywikibot.getSite(dom, fam='wikisource')
+            site = pywikibot.Site(dom, fam='wikisource')
             f = codecs.open(os.path.expanduser('~/public_html/data/nakedtexts_') + dom + '.html', 'w', "utf-8")
             f.write("<html><head></head><body>")
             f.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />")
@@ -227,7 +227,7 @@ def write_templates(res):
         percent = num_tr * 100. // (num_texts - num_disambig)
         num_q1 = num - (num_q0 + num_q2 + num_q3 + num_q4)
 
-        site = pywikibot.getSite(dom, fam='wikisource')
+        site = pywikibot.Site(dom, fam='wikisource')
         page = pywikibot.Page(site, "Template:PAGES_NOT_PROOFREAD")
         safe_put(page, spaced_int(num_q1, sep), "")
         page = pywikibot.Page(site, "Template:ALL_PAGES")

@@ -20,7 +20,7 @@ def gen_all_lang():
 
 
 def name_from_ns(namespaces, ns):
-    return namespaces[ns][0]
+    return namespaces[ns].custom_name
 
 
 def gen_namespace(lang):

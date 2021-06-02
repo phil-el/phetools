@@ -20,7 +20,6 @@ from common import utils
 from common import job_queue
 from common.pywikibot_utils import safe_put
 import align
-from ws_namespaces import page as page_prefixes
 
 sys.path.append(os.path.expanduser('~/wikisource'))
 
@@ -86,8 +85,9 @@ def ret_val(error, text):
 # FIXME, here and everywhere, can't we use mysite.lang and mysite.family.name
 # to remove some parameters, does this work for old wikisource?
 def do_match(mysite, maintitle, user, codelang):
-    prefix = page_prefixes['wikisource'].get(codelang)
-    if not prefix:
+    prefix_canonical = mysite.proofread_page_ns.canonical_name
+    prefix_local = mysite.proofread_page_ns.custom_name
+    if not prefix_local:
         return ret_val(E_ERROR, "no prefix")
 
     page = pywikibot.Page(mysite, maintitle)
@@ -173,37 +173,23 @@ def do_match(mysite, maintitle, user, codelang):
         # FIXME: that's an abuse of E_ERROR
         return ret_val(E_ERROR, "ok : transfert en cours.")
 
-    prefix = prefix.decode('utf-8')
-    p = re.compile(r"==__MATCH__:\[\[" + prefix + r":(.*?)/(\d+)(\|step=(\d+))?\]\]==")
-    m = re.search(p, text)
-    if m:
-        djvuname = m.group(1)
-        number = m.group(2)
-        pos = text.find(m.group(0))
-        head = text[:pos]
-        text = text[pos + len(m.group(0)):]
-        if m.group(4):
-            try:
-                step = int(m.group(4))
-            except:
-                return ret_val(E_ERROR, "match tag invalid")
-        else:
-            step = 1
-    else:
-        return ret_val(E_ERROR, "match tag not found")
-
-    pywikibot.output(djvuname + " " + number + " " + str(step))
-    try:
-        number = int(number)
-    except:
-        return ret_val(E_ERROR, "illformed __MATCH__: no page number ?")
+    prefixes = '(?:%s|%s)' % (prefix_local, prefix_canonical)
+    m = re.search(r'== *__MATCH__:\[\[' + prefixes + r':(.*?)/(\d+)(?:\|step=(\d+)?)?]] *==', text)
+    if not m:
+        return ret_val(E_ERROR, "match tag not found or invalid")
+    djvuname = m.group(1)
+    number = int(m.group(2))
+    # head = ptext[:m.start()]
+    text = text[m.end():]
+    step = int(m.group(3)) if m.group(3) else 1
+    pywikibot.output(f'{djvuname} {number} {step}')
 
     cache = lifo_cache.LifoCache('match_and_split_text_layer')
     cached_text = align.get_djvu(cache, mysite, djvuname, True)
     if not cached_text:
         return ret_val(E_ERROR, "unable to read djvu, if the File: exists, please retry")
 
-    data = align.do_match(text, cached_text, djvuname, number, verbose=False, prefix=prefix, step=step)
+    data = align.do_match(text, cached_text, djvuname, number, verbose=False, prefix=prefix_local, step=step)
     if not data['error']:
         safe_put(page, head + data['text'], user + ": match")
         data['text'] = ""
@@ -212,8 +198,9 @@ def do_match(mysite, maintitle, user, codelang):
 
 
 def do_split(mysite, rootname, user, codelang):
-    prefix = page_prefixes['wikisource'].get(codelang)
-    if not prefix:
+    prefix_canonical = mysite.proofread_page_ns.canonical_name
+    prefix_local = mysite.proofread_page_ns.custom_name
+    if not prefix_local:
         return ret_val(E_ERROR, "no Page: prefix")
 
     try:
@@ -222,8 +209,8 @@ def do_split(mysite, rootname, user, codelang):
     except:
         return ret_val(E_ERROR, "unable to read page")
 
-    p = re.compile(r'==\[\[(' + prefix + r':[^=]+)\]\]==\n')
-    bl = p.split(text)
+    prefixes = '(?:%s|%s)' % (prefix_local, prefix_canonical)
+    bl = re.split(r'==\[\[(' + prefixes + r':[^=]+)]]==\n', text)
     titles = '\n'
 
     group = ""
@@ -248,7 +235,7 @@ def do_split(mysite, rootname, user, codelang):
 
         pl = pywikibot.Page(mysite, pagetitle)
 
-        m = re.match(prefix + r':(.*?)/(\d+)', pagetitle)
+        m = re.match(prefixes + r':(.*?)/(\d+)', pagetitle)
         if m:
             filename = m.group(1)
             pagenum = int(m.group(2))
@@ -282,7 +269,7 @@ def do_split(mysite, rootname, user, codelang):
 
         if pl.exists():
             old_text = pl.get()
-            refs = pl.getReferences(onlyTemplateInclusion=True)
+            refs = pl.getReferences(only_template_inclusion=True)
             numrefs = 0
             for ref in refs:
                 numrefs += 1
@@ -376,7 +363,7 @@ def html_for_queue(queue):
         try:
             msite = pywikibot.Site(codelang, 'wikisource')
             page = pywikibot.Page(msite, mtitle)
-            path = msite.nice_get_address(page.title(asUrl=True))
+            path = msite.nice_get_address(page.title(as_url=True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
         except:
             url = ""

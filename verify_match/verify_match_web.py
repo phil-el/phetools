@@ -46,7 +46,7 @@ def html_for_queue(queue):
         mtitle = i[0]
         codelang = i[1]
         try:
-            msite = pywikibot.getSite(codelang, 'wikisource')
+            msite = pywikibot.Site(codelang, 'wikisource')
             page = pywikibot.Page(msite, mtitle)
             path = msite.nice_get_address(page.title(asUrl=True))
             url = '%s://%s%s' % (msite.protocol(), msite.hostname(), path)
@@ -130,7 +130,7 @@ def job_thread(queue):
         time1 = time.time()
         out = ''
         try:
-            mysite = pywikibot.getSite(codelang, 'wikisource')
+            mysite = pywikibot.Site(codelang, 'wikisource')
         except:
             out = ret_val(E_ERROR, "site error: " + repr(codelang))
             mysite = False

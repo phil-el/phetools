@@ -6,21 +6,19 @@ __module_description__ = "extract text layer daemon"
 
 import sys
 import os
-
-sys.path.append(os.path.expanduser('~/wikisource'))
-from ws_namespaces import page as page_prefixes, index as index_prefixes
-from common import tool_connect
-from common import lifo_cache
-from common import job_queue
-
 import _thread
 import time
 
-from match_and_split import align
 import pywikibot
-from common import common_html
 
+from common import tool_connect
+from common import lifo_cache
+from common import job_queue
+from common import common_html
 from common.pywikibot_utils import safe_put
+from match_and_split import align
+
+sys.path.append(os.path.expanduser('~/wikisource'))
 
 E_ERROR = 1
 E_OK = 0
@@ -33,7 +31,7 @@ def ret_val(error, text):
 
 
 def do_extract(mysite, maintitle, user, codelang, cache):
-    prefix = unicode(page_prefixes['wikisource'].get(codelang), 'utf-8')
+    prefix = mysite.proofread_page_ns.custom_name
     if not prefix:
         return ret_val(E_ERROR, "no prefix")
 
@@ -62,8 +60,8 @@ def html_for_queue(queue):
         mtitle = i[0]
         codelang = i[1]
         try:
-            msite = pywikibot.getSite(codelang, 'wikisource')
-            index_prefix = unicode(index_prefixes['wikisource'].get(codelang), 'utf-8')
+            msite = pywikibot.Site(codelang, 'wikisource')
+            index_prefix = msite.proofread_index_ns.custom_name
             page = pywikibot.Page(msite, index_prefix + ':' + mtitle)
             path = msite.nice_get_address(page.title(asUrl=True))
             url = f'{msite.protocol()}://{msite.hostname()}{path}'
@@ -141,7 +139,7 @@ def job_thread(queue, cache):
         time1 = time.time()
         out = ''
         try:
-            mysite = pywikibot.getSite(codelang, 'wikisource')
+            mysite = pywikibot.Site(codelang, 'wikisource')
         except:
             out = ret_val(E_ERROR, f'site error: {codelang}')
             mysite = False

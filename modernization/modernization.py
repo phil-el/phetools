@@ -224,13 +224,13 @@ class Modernization:
         new_cache = self.default_cache()
         count = 0
         for p in self.get_local_dict_list(variant):
-            if p.latestRevision() in old_cache:
-                new_cache[p.latestRevision()] = old_cache[p.latestRevision()]
+            if p.latest_revision_id in old_cache:
+                new_cache[p.latest_revision_id] = old_cache[p.latest_revision_id]
                 count += 1
             else:
                 html = self.get_html(p)
                 result = self.parse_local_dict(variant, html)
-                new_cache[p.latestRevision()] = (p.title(), result)
+                new_cache[p.latest_revision_id] = (p.title(), result)
                 count += 1
 
             print(count, '\r', end = ' ', file=sys.stderr)
@@ -238,7 +238,7 @@ class Modernization:
         pages = self.get_global_dict(variant)
         md5 = hashlib.md5()
         for p in pages:
-            md5.update(str(p.latestRevision()))
+            md5.update(str(p.latest_revision_id))
         key = md5.digest()
 
         if 'global_dict' in old_cache and old_cache['global_dict'][0] == key:
@@ -334,8 +334,8 @@ class Modernization:
         page = self.get_page(title)
 
         try:
-            last_rev = page.latestRevision()
-        except pywikibot.exceptions.NoPage:
+            last_rev = page.latest_revision_id
+        except pywikibot.exceptions.NoPageError:
             print('Page does not exist')
             return
 
@@ -439,7 +439,7 @@ class Modernization:
             if repl:
                 break
 
-        return repl, glb, words, num
+        return repl, glb, words, num  # todo: `num` is not defined.  Should here be the line indent under the `for` loop?
 
     def suggest_dict(self, title):
         p = self.get_page(title)
@@ -571,7 +571,7 @@ class Modernization:
             self.locate_dict(variant, word)
 
     def load_text(self, p, variant):
-        filename = self.cache_dir + self.lang + '/' + str(p.latestRevision())
+        filename = self.cache_dir + self.lang + '/' + str(p.latest_revision_id)
 
         if not os.path.exists(filename):
             html = self.get_html(p)
@@ -603,7 +603,7 @@ class Modernization:
                 regex_split = re.compile('([' + self.word_chars + ']+)')
                 words_list = regex_split.findall(text)
 
-                if p.latestRevision() in cache and word in cache[p.latestRevision()][1]:
+                if p.latest_revision_id in cache and word in cache[p.latest_revision_id][1]:
                     continue
 
                 local_dict = {word: 'repl'}
@@ -628,11 +628,11 @@ class Modernization:
     def useless_dict_entry_variant(self, variant):
         cache = self.load_dicts(variant)
         for p in self.get_local_dict_list(variant):
-            if p.latestRevision() in cache:
+            if p.latest_revision_id in cache:
                 text = self.load_text(p, variant)
                 regex_split = re.compile('([' + self.word_chars + ']+)')
                 words_list = regex_split.findall(text)
-                local_dict = cache[p.latestRevision()][1]
+                local_dict = cache[p.latest_revision_id][1]
                 used_word = set()
 
                 # print(text.encode('utf-8'))
@@ -656,7 +656,7 @@ class Modernization:
                 for key in local_dict:
                     if not key in used_word:
                         if first:
-                            print(cache[p.latestRevision()][0])
+                            print(cache[p.latest_revision_id][0])
                             first = False
                         print('* ' + key)
 
@@ -688,7 +688,7 @@ class Modernization:
     def test_local_dict_config(self):
         for variant in self.variants:
             for p in self.get_local_dict_list(variant):
-                print(p.latestRevision())
+                print(p.latest_revision_id)
 
     def test_cache(self, variant):
         cache = self.load_dicts(variant)
