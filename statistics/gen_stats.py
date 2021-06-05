@@ -224,7 +224,7 @@ def write_templates(res):
             sep = ''
 
         num, num_q0, num_q2, num_q3, num_q4, num_tr, num_texts, num_disambig = decode_res(res[dom])
-        percent = num_tr * 100. / (num_texts - num_disambig)
+        percent = num_tr * 100. // (num_texts - num_disambig)
         num_q1 = num - (num_q0 + num_q2 + num_q3 + num_q4)
 
         site = pywikibot.getSite(dom, fam='wikisource')
@@ -333,11 +333,11 @@ if __name__ == "__main__":
             # all, pages_q0, pages_q2, proofread, validated, num_tr, num_good, percent = res[dom]
             if opt_diff:
                 num, num_q0, num_q2, num_q3, num_q4, num_tr, num_texts, num_disambig = diffs[dom]
-                percent = res[dom][5] * 100. / (res[dom][6] - res[dom][7]) - oldres[dom][5] * 100. / (
+                percent = res[dom][5] * 100. // (res[dom][6] - res[dom][7]) - oldres[dom][5] * 100. // (
                             oldres[dom][6] - oldres[dom][7])
             else:
                 num, num_q0, num_q2, num_q3, num_q4, num_tr, num_texts, num_disambig = res[dom]
-                percent = num_tr * 100. / (num_texts - num_disambig)
+                percent = num_tr * 100. // (num_texts - num_disambig)
 
             num_q1 = num - (num_q0 + num_q2 + num_q3 + num_q4)
             num_naked = num_texts - num_tr - num_disambig

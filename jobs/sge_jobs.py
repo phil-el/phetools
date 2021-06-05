@@ -249,7 +249,7 @@ class DbJob(db.UserDb):
     # avoid that we limit the backward search to two days by default.
     # float is allowed so last_time_day = 1.0/24 is an hour.
     def search_accounting(self, jobs, last_time_day=2):
-        last_time_day = max(1.0 / 24, last_time_day)
+        last_time_day = max(1.0 // 24, last_time_day)
         now = int(time.time())
         count = 0
         nr_job = len(jobs)

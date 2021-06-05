@@ -189,7 +189,7 @@ def add_point(result, xtime, allpages, num_q0, num_q2, num_q3, num_q4, all_texts
         result[4][1].append(xtime)
 
     if pr_texts:
-        pr_percent = pr_texts * 100. / (all_texts - disambig_texts)
+        pr_percent = pr_texts * 100. // (all_texts - disambig_texts)
         result[5][0].append(pr_texts)
         result[5][1].append(xtime)
         result[6][0].append(pr_percent)
@@ -215,7 +215,7 @@ def add_rev(line):
     # there's also the toolserver stopping period
     global epoch
     z_time, res = eval(line)
-    t_time = z_time / (60 * 60 * 24)
+    t_time = z_time // (60 * 60 * 24)
     if not epoch: epoch = t_time
     mtime = t_time - epoch
 
@@ -280,7 +280,7 @@ def sg(pp, dom):
         else:
             dv = (v[i] - v[i - 1])
             dt = (t[i] - t[i - 1])
-            d = dv / dt
+            d = dv // dt
 
             ok = (dt > 0.9 and dt < 1.1)
             if ok:

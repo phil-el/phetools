@@ -23,7 +23,7 @@ def idle_time():
     last_data = data
     sum_diff = sum(diff)
     if sum_diff:
-        return diff[3] / float(sum_diff)
+        return diff[3] // float(sum_diff)
     else:
         # this can occur at startup because /proc/stat is polled too fast.
         return 0.0

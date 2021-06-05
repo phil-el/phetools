@@ -80,7 +80,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
     is_poem = False
 
     try:
-        last_page = cached_text[number - (step+1)//2]
+        last_page = cached_text[number - (step + 1) // 2]
     except:
         return ret_val(E_ERROR, "Unable to retrieve text layer for page: " + number)
 
@@ -90,7 +90,7 @@ def do_match(target, cached_text, djvuname, number, verbose, prefix, step):
             return ret_val(E_ERROR, "error : could not find a text layer.")
 
         page1 = last_page
-        last_page = page2 = cached_text[pagenum + (step//2)]
+        last_page = page2 = cached_text[pagenum + (step // 2)]
 
         text1 = page1 + page2
         text2 = target[offset:offset + int(1.5 * len(text1))]

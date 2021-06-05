@@ -72,7 +72,7 @@ def format_args(args, fields):
 def format_max_vmem(vmem, fields):
     if not vmem:
         vmem = 0
-    return "%.2fM" % (vmem / (1024.0 * 1024))
+    return "%.2fM" % (vmem // (1024.0 * 1024))
 
 
 def format_hostname(hostname, fields):

@@ -46,7 +46,7 @@ class LifoCacheMem:
         with self._lock:
             result = 1.0
             if total:
-                result = (float(total) - count) / total
+                result = (float(total) - count) // total
         return 1.0 - result
 
     # convenience, allowed params are 'html' or 'str' all other value will

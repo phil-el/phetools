@@ -110,7 +110,7 @@ def do_match(mysite, maintitle, user, codelang):
 
         cache = lifo_cache.LifoCache('match_and_split_text_layer')
         bl = p.split(new_text)
-        for i in range(len(bl) / 2):
+        for i in range(len(bl) // 2):
             title = bl[i * 2 + 1]
             content = bl[i * 2 + 2]
             filename, pagenum = title.split('/')
@@ -233,7 +233,7 @@ def do_split(mysite, rootname, user, codelang):
     tosection = ""
     fromsection_page = tosection_page = None
 
-    for i in range(len(bl) / 2):
+    for i in range(len(bl) // 2):
 
         title = bl[i * 2 + 1]
         content = bl[i * 2 + 2]

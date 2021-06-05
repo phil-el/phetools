@@ -119,7 +119,7 @@ def fetch_file_sha1_block(lang, titles):
 
 def fetch_file_sha1(lang, titles):
     result = {}
-    for i in range(0, (len(titles) + 999) / 1000):
+    for i in range(0, (len(titles) + 999) // 1000):
         temp = fetch_file_sha1_block(lang, titles[i * 1000:(i + 1) * 1000])
         result.update(temp)
 

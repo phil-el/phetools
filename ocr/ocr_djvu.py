@@ -49,7 +49,7 @@ def extract_image(opt, page_nr, filename):
         width, height = image_size(page_nr, filename)
 
         subsample = 1
-        while (width * height) / subsample > (1 << 20) * 50:
+        while (width * height) // subsample > (1 << 20) * 50:
             subsample += 1
 
         subsample = min(subsample, 12)
@@ -120,7 +120,7 @@ def ocr_djvu(opt, filename, task_scheduler=None):
     if opt.num_thread == -1:
         opt.num_thread = multiprocessing.cpu_count()
         if not task_scheduler:
-            opt.num_thread = max(int(opt.num_thread / 2), 1)
+            opt.num_thread = max(int(opt.num_thread // 2), 1)
 
     if opt.num_thread == 1:
         for nr in range(1, nr_pages + 1):
