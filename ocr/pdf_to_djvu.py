@@ -120,7 +120,7 @@ def add_text_layer(nr_pages, out_file):
 def read_pdf_text(in_file):
     args = ['pdftotext', '%s' % in_file, '-']
     text = exec_process(args)
-    if text == None:
+    if text is None:
         return None
     text = text.split('')
     # pdftotext end the last page with a  marker, remove it

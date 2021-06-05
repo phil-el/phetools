@@ -98,8 +98,8 @@ def do_one_page(opt, page_nr, filename):
 def do_file(job_queue, opt, filename):
     while True:
         page_nr = job_queue.get()
-        if page_nr == None:
-            print "Stopping thread"
+        if page_nr is None:
+            print("Stopping thread")
             return
         try:
             do_one_page(opt, page_nr, filename)
@@ -117,8 +117,8 @@ def ocr_djvu(opt, filename, task_scheduler=None):
         opt.out_dir += '/'
 
     nr_pages = get_nr_pages_djvu(filename)
-    if nr_pages == None:
-        print >> sys.stderr, "unable to get_nr_pages for file:", filename
+    if nr_pages is None:
+        print("unable to get_nr_pages for file:", filename, file=sys.stderr)
         return False
 
     if opt.num_thread == -1:

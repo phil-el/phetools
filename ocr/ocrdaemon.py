@@ -153,7 +153,7 @@ def ocr_image(cache, url, codelang):
         return ret_val(1, "could not download url: %s" % url)
 
     text = ocr.ocr(image_filename, basename, lang)
-    if text == None:
+    if text is None:
         return ret_val(2, "ocr failed")
 
     os.remove(image_filename)

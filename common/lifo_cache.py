@@ -42,7 +42,7 @@ class LifoCacheMem(object):
         self.cache[key] = data
 
     def stat_ratio(self, count, total=None):
-        if total == None:
+        if total is None:
             total = self.read_count
         with self._lock:
             result = 1.0

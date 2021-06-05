@@ -57,7 +57,7 @@ class LogFile(object):
         self.file = None
 
     def write(self, message, prefix=True):
-        if self.file == None:
+        if self.file is None:
             raise Exception('File has been closed, oh noes!')
         if not self.keep_open:
             self.file = open(self._total_name, 'a+')

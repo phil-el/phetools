@@ -19,7 +19,7 @@ _db_prefix = None
 
 def user_db_prefix():
     global _db_prefix
-    if _db_prefix == None:
+    if _db_prefix is None:
         text = utils.read_file(replica_cnf)
         _db_prefix = re.search(".*user='(.*)'.*", text).group(1) + '__'
     return _db_prefix

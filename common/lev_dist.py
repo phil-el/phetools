@@ -8,7 +8,7 @@ def distance(a, b, cost_replace=None):
         # Make sure n <= m, to use O(min(n,m)) space
         a, b, n, m = b, a, m, n
 
-    if cost_replace == None:
+    if cost_replace is None:
         cost_replace = {}
 
     current = range(n + 1)
