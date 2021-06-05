@@ -286,9 +286,14 @@ def get_hocr(lang, title):
             hocr_request.add_hocr_request(lang, book_name, True)
         return ret_val(1, "unable to locate file %s for page %s lang %s" % (filename, book_name, lang))
 
-    # work-around https://code.google.com/p/tesseract-ocr/issues/detail?id=690&can=1&q=utf-8 a simple patch exists: https://code.google.com/p/tesseract-ocr/source/detail?r=736# but it's easier to do a double conversion to remove invalid utf8 rather than to maintain a patched version of tesseract.
-    text = unicode(text, 'utf-8', 'ignore')
-    text = text.encode('utf-8', 'ignore')
+    # work-around https://code.google.com/p/tesseract-ocr/issues/detail?id=690&can=1&q=utf-8
+    # a simple patch exists: https://code.google.com/p/tesseract-ocr/source/detail?r=736#
+    # but it's easier to do a double conversion to remove invalid utf8
+    # rather than to maintain a patched version of tesseract.
+    # text = text.decode('utf-8', 'ignore')
+    # text = text.encode('utf-8', 'ignore')
+    # todo: Is it still need in Python 3? The urls was deleted long ago.
+    text = text.encode("utf-8", "replace").decode("utf-8", "replace")
 
     return ret_val(0, text)
 

@@ -253,8 +253,10 @@ class XmlFile:
         text = text.replace("&hl=", "")
         # Are text always in utf-8 ?
         # some djvu contains invalid sequence like (octal) \275 \276
-        text = unicode(text, "utf-8", "replace")
-        text = text.encode("utf-8")
+        # text = text.decode("utf-8", "replace")
+        # text = text.encode("utf-8")
+        # todo: Is it still need in Python 3?
+        text = text.encode("utf-8", "replace").decode("utf-8", "replace")
 
         return text
 
