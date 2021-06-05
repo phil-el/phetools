@@ -53,12 +53,9 @@ def do_extract(mysite, maintitle, user, codelang, cache):
     return ret_val(E_OK, "")
 
 
-# title user lang t tools conn
 def html_for_queue(queue):
     html = ''
-    for i in queue:
-        mtitle = i[0]
-        codelang = i[1]
+    for mtitle, codelang, user, _time, tools, conn in queue:
         try:
             msite = pywikibot.Site(codelang, 'wikisource')
             index_prefix = msite.proofread_index_ns.custom_name
@@ -66,8 +63,8 @@ def html_for_queue(queue):
             path = msite.nice_get_address(page.title(asUrl=True))
             url = f'{msite.protocol()}://{msite.hostname()}{path}'
         except:
-            url = ""
-        html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " <a href=\"" + url + "\">" + i[0] + "</a><br/>"
+            url = ''
+        html += f'{date_s(_time)} {user} {codelang} <a href="{url}">{mtitle}</a><br/>'
     return html
 
 

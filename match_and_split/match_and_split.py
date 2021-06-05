@@ -10,6 +10,7 @@ import os
 import re
 import _thread
 import time
+from collections import namedtuple
 
 import pywikibot
 
@@ -22,6 +23,7 @@ from common.pywikibot_utils import safe_put
 import align
 
 sys.path.append(os.path.expanduser('~/wikisource'))
+Job = namedtuple('Job', 'title lang user t tools server conn')
 
 E_ERROR = 1
 E_OK = 0
@@ -391,10 +393,11 @@ def do_status():
 def stop_queue(queue):
     new_queue = job_queue.JobQueue()
     items = queue.copy_items()
-    for title, lang, user, t, tools, server, conn in items:
-        new_queue.put(title, lang, user, t, None, server, None)
-        if conn:
-            conn.close()
+    for j in items:
+        job = Job(j.title, j.lang, j.user, j.t, None, j.server, None)
+        new_queue.put(job)
+        if j.conn:
+            j.conn.close()
     return new_queue
 
 
@@ -434,6 +437,7 @@ def bot_listening():
             t = time.time()
             user = user.replace(' ', '_')
 
+            job = Job(title, lang, user, t, tools, server, conn)
             print(f'{date_s(t)} REQUEST {user} {lang} {cmd} {title} {server}')
 
             if cmd == "status":
@@ -442,10 +446,10 @@ def bot_listening():
                 conn.close()
             elif cmd == "match":
                 jobs['number_of_match_job'] += 1
-                jobs['match_queue'].put(title, lang, user, t, tools, server, conn)
+                jobs['match_queue'].put(job)
             elif cmd == "split":
                 jobs['number_of_split_job'] += 1
-                jobs['split_queue'].put(title, lang, user, t, tools, server, conn)
+                jobs['split_queue'].put(job)
             elif cmd == 'ping':
                 tools.send_reply(conn, ret_val(E_OK, 'pong'))
                 conn.close()
