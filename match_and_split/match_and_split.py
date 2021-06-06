@@ -302,16 +302,9 @@ def do_split(mysite, rootname, user, codelang):
                 m = re.match(r'<noinclude><pagequality level="1" user="(.*?)" />(.*?)</noinclude>'
                              r'(.*)<noinclude>(.*?)</noinclude>', old_text, flags=re.MULTILINE | re.DOTALL)
                 if m:
-                    print("ok, quality 1, first try")
+                    print("ok, quality 1")
                     content = f'<noinclude><pagequality level="1" user="{m.group(1)}" />{m.group(2)}</noinclude>' \
                               f'{content}<noinclude>{m.group(4)}</noinclude>'
-                    m2 = re.match(r'<noinclude>\{\{PageQuality\|1\|(.*?)}}(.*?)</noinclude>'
-                                  r'(.*)<noinclude>(.*?)</noinclude>', old_text, flags=re.MULTILINE | re.DOTALL)
-                    if m2:
-                        # FIXME: shouldn't use an hardcoded name here
-                        print("ok, quality 1, second try")
-                        content = f'<noinclude><pagequality level="1" user="Phe-bot" />{m2.group(2)}</noinclude>' \
-                                  f'{content}<noinclude>{m2.group(4)}</noinclude>'
 
         else:
             header = '<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
