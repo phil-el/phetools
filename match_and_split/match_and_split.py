@@ -13,6 +13,7 @@ import time
 from collections import namedtuple
 
 import pywikibot
+from pywikibot.proofreadpage import ProofreadPage
 
 from common import tool_connect
 from common import lifo_cache
@@ -45,7 +46,7 @@ def get_pl(year, vol):
         return pl
 
     site = pywikibot.Site('fr', 'wikisource')
-    indexpage = pywikibot.Page(site, "Livre:" + rddm_name(year, vol))
+    indexpage = pywikibot.proofreadpage.IndexPage(site, rddm_name(year, vol))
     text = indexpage.get()
     m = re.search(r'(?ms)<pagelist\s+(.*?)/>', text)
     if m:
@@ -215,10 +216,10 @@ def do_split(mysite, rootname, user, codelang):
     bl = re.split(r'==\[\[(' + prefixes + r':[^=]+)]]==\n', text)
     titles = '\n'
 
-    group = ""
+    filename2 = None  # todo: Why is this variable needed? Only to initial first `pagenum`? This is an unnecessarily complicated way....
 
-    fromsection = ""
-    tosection = ""
+    fromsection = ''
+    tosection = ''
     fromsection_page = tosection_page = None
 
     for i in range(len(bl) // 2):
@@ -235,28 +236,27 @@ def do_split(mysite, rootname, user, codelang):
 
         content = content.rstrip("\n ")
 
-        pl = pywikibot.Page(mysite, pagetitle)
+        pl = ProofreadPage(mysite, pagetitle)
+        pl.user = 'Phe-bot'
 
         m = re.match(prefixes + r':(.*?)/(\d+)', pagetitle)
         if m:
             filename = m.group(1)
             pagenum = int(m.group(2))
-            if not group:
-                group = filename
-                pfrom = pagenum
-                pto = pfrom
+            if not filename2:
+                filename2 = filename
+                pfrom = pto = pagenum
             else:
-                if filename != group or pagenum != pto + 1:
-                    titles = titles + "<pages index=\"%s\" from=%d to=%d />\n"%(group,pfrom,pto)
-                    group = filename
-                    pfrom = pagenum
-                    pto = pfrom
+                if filename != filename2 or pagenum != pto + 1:  # todo: seems `pagenum != pto + 1`  alway False
+                    titles = f'{titles}<pages index="{filename2}" from={pfrom} to={pto} />\n'
+                    filename2 = filename
+                    pfrom = pto = pagenum
                 else:
                     pto = pagenum
         else:
-            if group:
-                titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} />\n'
-                group = False
+            if filename2:
+                titles = f'{titles}<pages index="{filename2}" from={pfrom} to={pto} />\n'
+                filename2 = None
 
             titles = titles + "{{" + pagetitle + "}}\n"
 
@@ -265,68 +265,62 @@ def do_split(mysite, rootname, user, codelang):
             content = '<nowiki />\n' + content
 
         if pl.exists():
-            old_text = pl.get()
+            old_text = pl.body
             refs = pl.getReferences(only_template_inclusion=True)
             numrefs = 0
             for ref in refs:
                 numrefs += 1
 
             # first and last pages : check if they are transcluded
+            # numrefs == 1 even when only an Index page exists where that page is listed in <pagelist>.
             if numrefs > 0:
-                m = re.match(r'<noinclude>(.*?)</noinclude>(.*)<noinclude>(.*?)</noinclude>', old_text,
-                             re.MULTILINE | re.DOTALL)
-                if m and (i == 0 or i == (len(bl) / 2 - 1)):
+                if i == 0 or i == (len(bl) // 2 - 1):
                     print("creating sections")
-                    old_text = m.group(2)
                     if i == 0:
                         first_part = old_text
                         second_part = content
-                        fromsection = "fromsection=s2 "
+                        fromsection = 'fromsection="s2" '
                         fromsection_page = ref
                     else:
                         first_part = content
                         second_part = old_text
-                        tosection = "tosection=s1 "
+                        tosection = 'tosection="s1" '
                         tosection_page = ref
 
-                    content = "<noinclude>" + m.group(
-                        1) + "</noinclude><section begin=s1/>" + first_part + "<section end=s1/>\n----\n" \
-                              + "<section begin=s2/>" + second_part + "<section end=s2/><noinclude>" + m.group(
-                        3) + "</noinclude>"
+                    pl.body = f'<section begin="s1"/>{first_part}<section end="s1"/>\n' \
+                              '----\n' \
+                              f'<section begin="s2"/>{second_part}<section end="s2"/>'
             else:
-                pass
+                pl.body = content
 
         else:
-            header = '<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
-            footer = '<noinclude>\n<references/></noinclude>'
-            content = header + content + footer
+            pl.body = content
 
         do_put = True
         if pl.exists():
-            if hasattr(pl, '_quality') and pl._quality != 1:
+            if pl.quality_level != 1:
                 print("quality != 1, not saved")
                 do_put = False
-            else:
-                print("can't get quality level")
-        if do_put:
-            safe_put(pl, content, user + ": split")
 
-    if group:
-        titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} {fromsection}{tosection}/>\n'
+        if do_put:
+            safe_put(pl, pl.text, user + ": split")
+
+    if filename2:
+        titles = f'{titles}<pages index="{filename2}" from={pfrom} to={pto} {fromsection}{tosection}/>\n'
 
     if fromsection and fromsection_page:
         rtext = fromsection_page.get()
-        m = re.search(r'<pages index="(.*?)" from=(.*?) to=(.*?) (fromsection=s2 |)/>', rtext)
-        if m and m.group(1) == group:
-            rtext = rtext.replace(m.group(0), m.group(0)[:-2] + "tosection=s1 />")
+        m = re.search(r'<pages index="(.*?)" from=(.*?) to=(.*?) (fromsection="?s2"? *|)/>', rtext)
+        if m and m.group(1) == filename2:
+            rtext = rtext.replace(m.group(0), m.group(0)[:-2] + 'tosection="s1" />')
             print("new rtext")
             safe_put(fromsection_page, rtext, user + ": split")
 
     if tosection and tosection_page:
         rtext = tosection_page.get()
-        m = re.search(r'<pages index="(.*?)" from=(.*?) to=(.*?) (tosection=s1 |)/>', rtext)
-        if m and m.group(1) == group:
-            rtext = rtext.replace(m.group(0), m.group(0)[:-2] + "fromsection=s2 />")
+        m = re.search(r'<pages index="(.*?)" from=(.*?) to=(.*?) (tosection="?s1"? *|)/>', rtext)
+        if m and m.group(1) == filename2:
+            rtext = rtext.replace(m.group(0), m.group(0)[:-2] + 'fromsection="s2" />')
             print("new rtext")
             safe_put(tosection_page, rtext, user + ": split")
 
