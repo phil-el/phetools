@@ -299,12 +299,7 @@ def do_split(mysite, rootname, user, codelang):
                               + "<section begin=s2/>" + second_part + "<section end=s2/><noinclude>" + m.group(
                         3) + "</noinclude>"
             else:
-                m = re.match(r'<noinclude><pagequality level="1" user="(.*?)" />(.*?)</noinclude>'
-                             r'(.*)<noinclude>(.*?)</noinclude>', old_text, flags=re.MULTILINE | re.DOTALL)
-                if m:
-                    print("ok, quality 1")
-                    content = f'<noinclude><pagequality level="1" user="{m.group(1)}" />{m.group(2)}</noinclude>' \
-                              f'{content}<noinclude>{m.group(4)}</noinclude>'
+                pass
 
         else:
             header = '<noinclude><pagequality level="1" user="Phe-bot" />\n\n\n</noinclude>'
