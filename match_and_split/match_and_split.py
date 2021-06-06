@@ -246,13 +246,8 @@ def do_split(mysite, rootname, user, codelang):
                 pfrom = pagenum
                 pto = pfrom
             else:
-                if filename != group:
-                    titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} />\n'
-                    group = filename
-                    pfrom = pagenum
-                    pto = pfrom
-                elif pagenum != pto + 1:
-                    titles = f'{titles}<pages index="{group}" from={pfrom} to={pto} />\n'
+                if filename != group or pagenum != pto + 1:
+                    titles = titles + "<pages index=\"%s\" from=%d to=%d />\n"%(group,pfrom,pto)
                     group = filename
                     pfrom = pagenum
                     pto = pfrom
