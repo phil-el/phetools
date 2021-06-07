@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import sys
 import json
 import os
 from common import serialize
 import random
 from get_credit import get_credit
+
 
 class SerializerHtml(serialize.SerializerBase):
     def __init__(self, serializer_type):
@@ -23,46 +22,50 @@ class SerializerHtml(serialize.SerializerBase):
             html += str(r) + ': ' + str(result[r]) + '<br />'
         return html + "</body></html>"
 
+
 def get_serializer(serializer_type):
-    html_serializer = { 'html' : SerializerHtml }
+    html_serializer = {'html': SerializerHtml}
     return serialize.get_serializer(serializer_type, html_serializer)
+
 
 def split_param(params):
     if params:
         return params.split('|')
     return []
 
+
 def query_params(environ):
     import cgi
-    field = cgi.FieldStorage(fp = environ['wsgi.input'], environ = environ)
-    rdict = { 'format' : 'text',
-              'cmd' : 'history',
-              'book' : '',
-              'page' : '',
-              'image' : '',
-              'lang' : '' }
+    field = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ)
+    rdict = {'format': 'text',
+             'cmd': 'history',
+             'book': '',
+             'page': '',
+             'image': '',
+             'lang': ''}
     for name in field:
         rdict[name] = field[name].value
     rdict['book'] = split_param(rdict['book'])
     rdict['page'] = split_param(rdict['page'])
     rdict['image'] = split_param(rdict['image'])
 
-    if rdict['lang'] in [ 'www', '' ]:
+    if rdict['lang'] in ['www', '']:
         rdict['lang'] = 'old'
 
     return rdict
 
+
 def handle_query(params, start_response):
     # Avoid to flood log.
     if not random.randint(0, 100) % 100:
-        print >> sys.stderr, params
+        print(params, file=sys.stderr)
 
     # FIXME: handle ill formed request (400)
-    result = get_credit(domain = params['lang'],
-                        family = 'wikisource',
-                        books = params['book'],
-                        pages = params['page'],
-                        images = params['image'])
+    result = get_credit(domain=params['lang'],
+                        family='wikisource',
+                        books=params['book'],
+                        pages=params['page'],
+                        images=params['image'])
 
     serializer = get_serializer(params['format'])
     text = serializer.serialize(result)
@@ -70,21 +73,23 @@ def handle_query(params, start_response):
                                serializer.content_type() + '; charset=UTF-8'),
                               ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
-    return [ text ]
+    return [text]
+
 
 def handle_status(start_response):
     # pseudo ping, as we run on the web server, we always return 1 ms.
-    text = json.dumps( { 'error' : 0,
-                         'text' : 'pong',
-                         'server' : 'history_credit', 
-                         'ping' : 0.001
-                        } )
+    text = json.dumps({'error': 0,
+                       'text': 'pong',
+                       'server': 'history_credit',
+                       'ping': 0.001
+                       })
 
     start_response('200 OK', [('Content-Type',
                                'text/plain; charset=UTF-8'),
                               ('Content-Length', str(len(text))),
                               ('Access-Control-Allow-Origin', '*')])
-    return [ text ]
+    return [text]
+
 
 def myapp(environ, start_response):
     params = query_params(environ)
@@ -97,12 +102,15 @@ def myapp(environ, start_response):
     else:
         return handle_status(start_response)
 
+
 if __name__ == "__main__":
     sys.stderr = open(os.path.expanduser('~/log/credits.err'), 'a')
 
     from flup.server.cgi import WSGIServer
+
     try:
         WSGIServer(myapp).run()
     except BaseException:
         import traceback
+
         traceback.print_exc()

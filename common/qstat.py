@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file sge_submit.py
 #
@@ -14,12 +13,13 @@ import sys
 
 qstat = '/usr/bin/qstat'
 
+
 # Return an empty set if qstat fail.
 def running_jobs(job_base_name):
     jobs = set()
     try:
-        ls = subprocess.Popen([ qstat, '-xml' ], stdout=subprocess.PIPE,
-                              close_fds = True)
+        ls = subprocess.Popen([qstat, '-xml'], stdout=subprocess.PIPE,
+                              close_fds=True)
         for event, elem in etree.iterparse(ls.stdout):
             if event == 'end' and elem.tag == 'job_list':
                 job_id = elem.find('JB_job_number').text
@@ -30,15 +30,17 @@ def running_jobs(job_base_name):
 
         ls.wait()
         if ls.returncode:
-            print >> sys.stderr, 'qstat failed', ls.returncode
-            print >> sys.stderr, 'RECOVER'
+            print('qstat failed', ls.returncode, file=sys.stderr)
+            print('RECOVER', file=sys.stderr)
+
             jobs = set()
     except:
         utils.print_traceback()
-        print >> sys.stderr, 'RECOVER'
+        print('RECOVER', file=sys.stderr)
         jobs = set()
 
     return jobs
 
+
 if __name__ == "__main__":
-    print running_jobs('')
+    print(running_jobs(''))

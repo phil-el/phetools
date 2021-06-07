@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys
 import re
 import xml.etree.ElementTree as etree
@@ -37,7 +36,7 @@ hocr_end = """ </body>
 hocr_page_begin = """  <div class='ocr_page' id='page_%(logical_page_id)d' title='image "%(image_title)s"; bbox %(page_bbox)s; ppageno %(physical_page_id)d'>
 """
 
-hocr_page_end ="""  </div>
+hocr_page_end = """  </div>
 """
 
 # carea are called PAGECOLUMN in xml output
@@ -62,8 +61,9 @@ hocr_word_begin = """<span class='ocrx_word' id='word_%(word_id)d' title="bbox %
 
 hocr_word_end = """</span> """
 
+
 class Bbox:
-    def __init__(self, x1 = None, y1 = None, x2 = None, y2 = None):
+    def __init__(self, x1=None, y1=None, x2=None, y2=None):
         self.x1 = x1
         self.x2 = x2
         self.y1 = y1
@@ -88,6 +88,7 @@ class Bbox:
     # compatible with hocr bbox string
     def __str__(self):
         return str(self.x1) + " " + str(self.y1) + " " + str(self.x2) + " " + str(self.y2)
+
 
 class OcrPage:
     def __init__(self):
@@ -121,11 +122,11 @@ class OcrPage:
 
     def end_page(self, e):
         data = {
-            'page_bbox' : '0 0 %d %d'  % (self.width, self.height),
-            'image_title' : self.page_name,
-            'logical_page_id' : self.logical_page_id,
-            'physical_page_id' : self.physical_page_id
-            }
+            'page_bbox': '0 0 %d %d' % (self.width, self.height),
+            'image_title': self.page_name,
+            'logical_page_id': self.logical_page_id,
+            'physical_page_id': self.physical_page_id
+        }
         self.page_buffer += hocr_page_begin % data + self.column_buffer + hocr_page_end
         self.logical_page_id += 1
         self.physical_page_id += 1
@@ -138,9 +139,9 @@ class OcrPage:
 
     def end_column(self, e):
         data = {
-            'column_bbox' : str(self.column_box),
-            'column_id' : self.column_id
-            }
+            'column_bbox': str(self.column_box),
+            'column_id': self.column_id
+        }
         self.column_buffer += hocr_carea_begin % data + self.para_buffer + hocr_carea_end
         self.column_id += 1
 
@@ -166,9 +167,9 @@ class OcrPage:
         self.grow_bbox(self.region_box, self.para_box)
         self.grow_bbox(self.column_box, self.para_box)
         data = {
-            'para_bbox' : str(self.para_box),
-            'para_id' : self.para_id
-            }
+            'para_bbox': str(self.para_box),
+            'para_id': self.para_id
+        }
         self.para_buffer += hocr_para_begin % data + self.line_buffer + hocr_para_end
         self.para_id += 1
 
@@ -183,9 +184,9 @@ class OcrPage:
         self.grow_bbox(self.region_box, self.line_box)
         self.grow_bbox(self.column_box, self.line_box)
         data = {
-            'line_bbox' : str(self.line_box),
-            'line_id' : self.line_id
-            }
+            'line_bbox': str(self.line_box),
+            'line_id': self.line_id
+        }
         self.line_buffer += hocr_line_begin % data + self.word_buffer + hocr_line_end
         self.line_id += 1
 
@@ -203,9 +204,9 @@ class OcrPage:
         # this can occur for empty words after input sanitization.
         if self.word_text != None:
             data = {
-                'word_bbox' : str(self.word_box),
-                'word_id' : self.word_id
-                }
+                'word_bbox': str(self.word_box),
+                'word_id': self.word_id
+            }
             self.word_buffer += hocr_word_begin % data + self.word_text + hocr_word_end
             self.word_id += 1
 
@@ -231,6 +232,7 @@ class OcrPage:
     def __str__(self):
         return str(self.width) + ' ' + str(self.height) + ' ' + self.page_name
 
+
 # FIX a bug in djvutoxml, some control char are outside any tag and are
 # invalid xml entity
 class XmlFile:
@@ -246,15 +248,18 @@ class XmlFile:
             text += self.fd.read(8);
 
         # djvutoxml can produce invalid entity, just strip them.
-        text = re.sub("&#\d+;", "", text)
+        text = re.sub(r"&#\d+;", "", text)
         # bug in etree ?
         text = text.replace("&hl=", "")
         # Are text always in utf-8 ?
         # some djvu contains invalid sequence like (octal) \275 \276
-        text = unicode(text, "utf-8", "replace")
-        text = text.encode("utf-8")
+        # text = text.decode("utf-8", "replace")
+        # text = text.encode("utf-8")
+        # todo: Is it still need in Python 3?
+        text = text.encode("utf-8", "replace").decode("utf-8", "replace")
 
         return text
+
 
 def begin_elem(page, e):
     tag = e.tag.lower()
@@ -273,8 +278,9 @@ def begin_elem(page, e):
     elif tag == 'char':
         page.start_char(e)
     else:
-        print >> sys.stderr, "unsuported tag", tag
-        raise 'unsuported tag'
+        print("unsuported tag", tag, file=sys.stderr)
+        raise RuntimeError('unsuported tag')
+
 
 def end_elem(page, e):
     tag = e.tag.lower()
@@ -293,8 +299,9 @@ def end_elem(page, e):
     elif tag == 'char':
         page.end_char(e)
     else:
-        print >> sys.stderr, "unsuported tag", tag
-        raise 'unsuported tag'
+        print("unsuported tag", tag, file=sys.stderr)
+        raise RuntimeError('unsuported tag')
+
 
 def parse_page_recursive(page, elem):
     for e in elem:
@@ -302,26 +309,28 @@ def parse_page_recursive(page, elem):
         parse_page_recursive(page, e)
         end_elem(page, e)
 
+
 def parse_page(page, elem, page_nr):
     parse_page_recursive(page, elem)
 
+
 def setrlimits():
     mega = 1 << 20
-    resource.setrlimit(resource.RLIMIT_AS, (1024*mega, 1024*mega))
-    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
-    resource.setrlimit(resource.RLIMIT_CPU, (1*60*60, 1*60*60))
+    resource.setrlimit(resource.RLIMIT_AS, (1024 * mega, 1024 * mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128 * mega, 128 * mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (1 * 60 * 60, 1 * 60 * 60))
+
 
 def do_parse(opt, filename):
-
     try:
-        ls = subprocess.Popen([ djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+        ls = subprocess.Popen([djvutoxml, filename], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds=True)
 
         page_nr = 1
         for event, elem in etree.iterparse(XmlFile(ls.stdout)):
             if elem.tag.lower() == 'object':
                 page = OcrPage()
                 if not opt.silent:
-                    print >> sys.stderr, page_nr, '\r',
+                    print(page_nr, '\r', end=' ', file=sys.stderr)
                 page.start_page(elem)
                 parse_page(page, elem, page_nr)
                 page.end_page(elem)
@@ -329,7 +338,7 @@ def do_parse(opt, filename):
                 filename = opt.out_dir + 'page_%04d.hocr' % page_nr
 
                 if opt.compress:
-                    text = page.get_hocr_html().encode('utf-8')
+                    text = page.get_hocr_html()
                     utils.compress_file_data(filename, text, opt.compress)
                 else:
                     utils.write_file(filename, text)
@@ -339,12 +348,13 @@ def do_parse(opt, filename):
 
     finally:
         if not opt.silent:
-            print >> sys.stderr
+            print('', file=sys.stderr)
 
         ls.stdout.read()
         ls.wait()
 
     return ls.returncode
+
 
 def parse(opt, filename):
     try:
@@ -355,6 +365,7 @@ def parse(opt, filename):
 
     return ret_code
 
+
 def default_options():
     class Options:
         def __init__(self):
@@ -364,22 +375,25 @@ def default_options():
 
     return Options()
 
+
 # Kludgy.
 def has_word_bbox(filename):
-    ls = subprocess.Popen([ djvutxt, filename, '--detail=word'], stdout=subprocess.PIPE, preexec_fn=setrlimits, close_fds = True)
+    ls = subprocess.Popen([djvutxt, filename, '--detail=word'], stdout=subprocess.PIPE, preexec_fn=setrlimits,
+                          close_fds=True)
     for line in ls.stdout:
-        if re.search('\(word \d+ \d+ \d+ \d+ ".*"', line):
+        if re.search(r'\(word \d+ \d+ \d+ \d+ ".*"', line):
             ls.kill()
             ls.wait()
             return True
     ls.wait()
     return False
 
+
 if __name__ == "__main__":
     options = default_options()
     for arg in sys.argv[1:]:
         if arg == '-help':
-            print sys.argv[0], "-help -compress: -out_dir:dir -silent"
+            print(sys.argv[0], "-help -compress: -out_dir:dir -silent")
             sys.exit(1)
         elif arg.startswith('-compress:'):
             options.compress = arg[len('-compress'):]
@@ -393,7 +407,7 @@ if __name__ == "__main__":
             filename = arg
 
     if not os.path.exists(filename):
-        print "file:", filename, "doesn't exist"
+        print(f"file: {filename} doesn't exist")
         sys.exit(1)
 
     parse(options, filename)

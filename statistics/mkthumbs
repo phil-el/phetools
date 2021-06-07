@@ -2,8 +2,8 @@
 cd ~/public_html/graphs
 for i in Wikisource*.png; do convert -thumbnail 400 $i thumb/$i ; done
 cd ~/phe/statistics
-./gen_stats.py -y > ~/public_html/data/stats.txt
-./gen_stats.py -y -d > ~/public_html/data/stats_diff_1.txt
-./gen_stats.py -y -d7 > ~/public_html/data/stats_diff_7.txt
-./gen_stats.py -y -d30 > ~/public_html/data/stats_diff_30.txt
-./gen_stats.py -y -d365 > ~/public_html/data/stats_diff_365.txt
+python3 gen_stats.py -y > ~/public_html/data/stats.txt
+python3 gen_stats.py -y -d > ~/public_html/data/stats_diff_1.txt
+python3 gen_stats.py -y -d7 > ~/public_html/data/stats_diff_7.txt
+python3 gen_stats.py -y -d30 > ~/public_html/data/stats_diff_30.txt
+python3 gen_stats.py -y -d365 > ~/public_html/data/stats_diff_365.txt

@@ -1,7 +1,22 @@
 #!/bin/bash
 
-PYTHONPATH=$HOME/phe:$HOME/wikisource:/data/project/phetools/pywikibot-core:/data/project/phetools/pywikibot-core/externals/httplib2:/data/project/phetools/pywikibot-core/scripts
+#
+# Tweaked by Xover 5 November 2020:
+#
+# The local pywikibot is now >= 4.0 which requires Python 3.x, and phetools
+# requires Python 2.x. As a workaround, use the Toolforge shared pywikibot
+# that's pegged to the last Python 2.x-compatible version. This ends up
+# mixing and matching different versions due to the httplib2 dep, so try to
+# use the system-provided version of that too.
+#
+# Phabricator: T265640
+#
+#PYTHONPATH=$HOME/phe:$HOME/wikisource:/data/project/phetools/pywikibot-core:/data/project/phetools/pywikibot-core/externals/httplib2:/data/project/phetools/pywikibot-core/scripts
+PYTHONPATH=$HOME/phe:$HOME/wikisource:/shared/pywikibot/core_python2:/shared/pywikibot/core_python2/scripts
+# END: Xover's meddling
+
 LOG_DIR=/data/project/phetools/log/ # + service_name(.out|.err)
+
 # Some host don't define $LANG
 UTF8_LANG=en_US.UTF8
 

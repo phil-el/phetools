@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file pdf_to_djvu.py
 #
@@ -21,28 +20,27 @@ import shutil
 djvulibre_path = ''
 gsdjvu = os.path.expanduser('~/root/gsdjvu/bin/gs')
 
+
 def setrlimits():
     mega = 1 << 20
-    resource.setrlimit(resource.RLIMIT_AS, (1536*mega, 1536*mega))
-    resource.setrlimit(resource.RLIMIT_CORE, (128*mega, 128*mega))
-    resource.setrlimit(resource.RLIMIT_CPU, (5*60*60, 5*60*60))
+    resource.setrlimit(resource.RLIMIT_AS, (1536 * mega, 1536 * mega))
+    resource.setrlimit(resource.RLIMIT_CORE, (128 * mega, 128 * mega))
+    resource.setrlimit(resource.RLIMIT_CPU, (5 * 60 * 60, 5 * 60 * 60))
+
 
 def exec_process(args):
     ls = subprocess.Popen(args, stdout=subprocess.PIPE, preexec_fn=setrlimits,
-                          close_fds = True)
+                          close_fds=True)
     text = ls.stdout.read()
     ls.wait()
     if ls.returncode != 0:
-        print >> sys.stderr, "process fail: ", ls.returncode, args
+        print("process fail: ", ls.returncode, args, file=sys.stderr)
         # FIXME: raise something and fix caller
         return None
     return "Success:" if not text else text
 
+
 def pdf_to_djvu(in_file):
-
-    if type(in_file) == type(u''):
-        in_file = in_file.encode('utf-8')
-
     if gsdjvu:
         os.environ['GSDJVU'] = gsdjvu
 
@@ -52,10 +50,10 @@ def pdf_to_djvu(in_file):
     # from many pdf. I've not yet see a pdf where djvudigital is able
     # to extract text layer and anyway it is likely to do the same inaccurate
     # text extraction as pdftotext.
-    args = [ djvulibre_path + 'djvudigital',  "--dpi=300", in_file, out_file ]
+    args = [djvulibre_path + 'djvudigital', "--dpi=300", in_file, out_file]
     text = exec_process(args)
     if text:
-        print text
+        print(text)
     else:
         out_file = None
 
@@ -64,23 +62,25 @@ def pdf_to_djvu(in_file):
 
     return out_file
 
+
 def quote_text_for_djvu(text):
     new_text = text
 
     # Some tools has trouble with (" and ") in text layer as they are also
     # used to mark begin/end of pages, we scratch them as they are very rare
     # anyway
-    new_text = new_text.replace('("',  '( ')
-    new_text = new_text.replace('")',  ' )')
+    new_text = new_text.replace('("', '( ')
+    new_text = new_text.replace('")', ' )')
     new_text = new_text.replace('( "', '( ')
     new_text = new_text.replace('" )', ' )')
 
     new_text = new_text.replace('\\', '\\\\')
-    new_text = new_text.replace('"',  '\\"')
+    new_text = new_text.replace('"', '\\"')
     new_text = new_text.replace('\n', '\\n')
     new_text = new_text.replace('\r', '\\r')
 
     return '"' + new_text + '"'
+
 
 def write_page_text(page, text):
     new_text = quote_text_for_djvu(text)
@@ -91,8 +91,9 @@ def write_page_text(page, text):
     fd.write(new_text)
     fd.close()
 
+
 def add_text_layer(nr_pages, out_file):
-    args = [ 'djvused', out_file, '-e' ]
+    args = ['djvused', out_file, '-e']
 
     cmdline = ''
     for page in range(1, nr_pages + 1):
@@ -101,20 +102,21 @@ def add_text_layer(nr_pages, out_file):
 
     cmdline += 'save;'
 
-    args += [ cmdline ]
+    args += [cmdline]
 
     text = exec_process(args)
     if text:
-        print text
-        print "JOB DONE"
+        print(text)
+        print("JOB DONE")
         return True
     else:
         return False
 
+
 def read_pdf_text(in_file):
-    args = [ 'pdftotext', '%s' % in_file, '-' ]
+    args = ['pdftotext', '%s' % in_file, '-']
     text = exec_process(args)
-    if text == None:
+    if text is None:
         return None
     text = text.split('')
     # pdftotext end the last page with a  marker, remove it
@@ -127,6 +129,7 @@ def read_pdf_text(in_file):
 
     return len(text)
 
+
 # This use pdftotext but result are not really accurate ;(
 # pdftotext tends to add way too much line feed if the
 # baseline of words are not exactly identical on the same line
@@ -135,7 +138,7 @@ def pdf_text_to_djvu(in_file, out_file):
     if not nr_pages:
         return
 
-    print "NR PAGES", nr_pages
+    print("NR PAGES", nr_pages)
 
     for page in range(1, nr_pages + 1):
         fd = open('page_%04d.txt' % page)
@@ -151,17 +154,19 @@ def pdf_text_to_djvu(in_file, out_file):
 
     return ret
 
+
 def pdf_with_text_layer_to_djvu(in_file):
     temp_dir = tempfile.mkdtemp()
-    print "temp_dir", temp_dir
+    print("temp_dir", temp_dir)
     os.chdir(temp_dir)
 
     out_file = pdf_to_djvu(in_file)
-    print out_file
+    print(out_file)
     if out_file:
         pdf_text_to_djvu(in_file, out_file)
     os.rmdir(temp_dir)
-    print out_file
+    print(out_file)
+
 
 def get_deep_text(element):
     text = element.text or ''
@@ -169,6 +174,7 @@ def get_deep_text(element):
         text += get_deep_text(subelement)
     text += element.tail or ''
     return text[:-1] + ' '
+
 
 # This is much more accurate than using pdftotext
 def pdf_text_to_djvu_with_xml(xml_file, out_file):
@@ -182,7 +188,7 @@ def pdf_text_to_djvu_with_xml(xml_file, out_file):
             elif elem.tag.lower() == 'paragraph':
                 last_text += '\n'
             elif elem.tag.lower() == 'object':
-                write_page_text(page_nr, last_text.encode('utf-8'))
+                write_page_text(page_nr, last_text)
                 page_nr += 1
                 last_text = ''
                 elem.clear()
@@ -195,10 +201,11 @@ def pdf_text_to_djvu_with_xml(xml_file, out_file):
 
     return ret_code
 
+
 def get_ia_files(ia_id):
     result = {
-        'pdf' : None,
-        'xml' : None
+        'pdf': None,
+        'xml': None
     }
 
     url = 'https://archive.org/metadata/' + ia_id + '/files'
@@ -210,30 +217,32 @@ def get_ia_files(ia_id):
     for d in data['result']:
         # this one exists in old and new items
         if d['format'] == 'Djvu XML':
-            result['xml'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
+            result['xml'] = {'name': d['name'], 'sha1': d['sha1']}
         # 'Additional Text PDF' format exists only in new items but in old
         # items the .djvu must exist and should be used directly. For older
         # item format is "Text PDF".
         elif d['format'] == 'Additional Text PDF':
-            result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
+            result['pdf'] = {'name': d['name'], 'sha1': d['sha1']}
 
     if not result['pdf']:
         # No 'Additional Text PDF' format, try with format == 'Text PDF'
         for d in data['result']:
             if d['format'] == 'Text PDF':
-                result['pdf'] = { 'name' : d['name'], 'sha1' : d['sha1'] }
+                result['pdf'] = {'name': d['name'], 'sha1': d['sha1']}
     return result
+
 
 def copy_ia_file(ia_id, metadata):
     base_url = 'https://archive.org/download/%s/' % ia_id
 
     utils.copy_file_from_url(base_url + metadata['name'], metadata['name'],
-                             expect_sha1 = metadata['sha1'])
+                             expect_sha1=metadata['sha1'])
+
 
 # externally visible through an api
 def pdf_to_djvu_from_ia(ia_id):
     temp_dir = tempfile.mkdtemp()
-    print "temp_dir", temp_dir
+    print("temp_dir", temp_dir)
     os.chdir(temp_dir)
 
     files = get_ia_files(ia_id)

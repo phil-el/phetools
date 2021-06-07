@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file modernization.py
 #
@@ -9,9 +8,19 @@
 
 import re
 import sys
-sys.path.append('/shared/pywikipedia/core')
-sys.path.append('/shared/pywikipedia/core/externals/httplib2')
-sys.path.append('/shared/pywikipedia/core/scripts')
+
+#
+# Modified by Xover 6 November 2020:
+#
+# Pywikibot main is Python 3.x now, so change these imports
+# to point at the version pegged at Python 2.x.
+# sys.path.append('/shared/pywikipedia/core')
+# sys.path.append('/shared/pywikipedia/core/externals/httplib2')
+# sys.path.append('/shared/pywikipedia/core/scripts')
+sys.path.append('/shared/pywikibot/core_python2')
+sys.path.append('/shared/pywikibot/core_python2/externals/httplib2')
+sys.path.append('/shared/pywikibot/core_python2/scripts')
+# END: Xover's meddling
 import pywikibot
 import pywikibot.pagegenerators as pagegen
 from pywikibot.data import api
@@ -26,9 +35,9 @@ import hashlib
 dict_config = {}
 
 dict_config['pt'] = {
-    'variant' : [ 'BR', 'PT' ],
-    'word_chars' : u'a-zA-Z0-9áàâãçéêíñóôõúüÁÀÂÃÇÉÊÍÑÓÔÕÚ\'ºª\\-',
-    'max_seq' : 3,
+    'variant': ['BR', 'PT'],
+    'word_chars': 'a-zA-Z0-9áàâãçéêíñóôõúüÁÀÂÃÇÉÊÍÑÓÔÕÚ\'ºª\\-',
+    'max_seq': 3,
 }
 
 # FIXME: inneficient as we load local dict multiple time for each variant but
@@ -37,51 +46,53 @@ dict_config['pt'] = {
 # only once (but it'll require two parsing anyway ?)
 
 dict_config['pt']['BR'] = {
-    'global_dict' : u'Wikisource:Modernização/Dicionário/pt-BR',
-    'modernize_template' : u'Predefinição:Modernização automática',
-    'modernize_div_id' : 'dic-local-BR',
-    'aspell_lang' : 'pt_BR',
-    'transform' : [
+    'global_dict': 'Wikisource:Modernização/Dicionário/pt-BR',
+    'modernize_template': 'Predefinição:Modernização automática',
+    'modernize_div_id': 'dic-local-BR',
+    'aspell_lang': 'pt_BR',
+    'transform': [
         # FIXME: https://pt.wikipedia.org/wiki/MediaWiki:Gadget-LanguageConverter.js
-        ],
-    }
+    ],
+}
 
 dict_config['pt']['PT'] = {
-    'global_dict' : u'Wikisource:Modernização/Dicionário/pt-PT',
-    'modernize_template' : u'Predefinição:Modernização_automática',
-    'modernize_div_id' : 'dic-local-PT',
+    'global_dict': 'Wikisource:Modernização/Dicionário/pt-PT',
+    'modernize_template': 'Predefinição:Modernização_automática',
+    'modernize_div_id': 'dic-local-PT',
     # need to be changed depending on aspell version. This one is ok for
     # wmflabs actually
-    'aspell_lang' : 'pt',
-    'transform' : [
+    'aspell_lang': 'pt',
+    'transform': [
         # FIXME: https://pt.wikipedia.org/wiki/MediaWiki:Gadget-LanguageConverter.js
-        ],
+    ],
 }
 
 dict_config['fr'] = {
-    'variant' : [ 'FR' ],
-    'word_chars' : u'a-zçâàäāãéèêẽëîïôöōõûùüÿœæA-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇŒÆ&ßẞĩq̃ĨQ̃',
-    'max_seq' : 3,
+    'variant': ['FR'],
+    'word_chars': 'a-zçâàäāãéèêẽëîïôöōõûùüÿœæA-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇŒÆ&ßẞĩq̃ĨQ̃',
+    'max_seq': 3,
 }
 
 dict_config['fr']['FR'] = {
-    'global_dict' : u'Wikisource:Dictionnaire',
-    'modernize_template' : u'Template:Modernisation',
-    'modernize_div_id' : 'modernisations',
-    'aspell_lang' : 'fr',
-    'transform' : [
-        [ u'ſ', 's' ],
-        [ u'ﬀ', 'ff' ],
-        [ u'ﬂ', 'fl' ],
-        [ u'ﬁ', 'fi' ],
-        [ u'ﬃ', 'ffi' ],
-        [ u'ﬄ', 'ffl' ],
-        [ u'ﬅ', 'st' ],
-        [ u'ﬆ', 'st' ],
-        ],
+    'global_dict': 'Wikisource:Dictionnaire',
+    'modernize_template': 'Template:Modernisation',
+    'modernize_div_id': 'modernisations',
+    'aspell_lang': 'fr',
+    'transform': [
+        ['ſ', 's'],
+        ['ﬀ', 'ff'],
+        ['ﬂ', 'fl'],
+        ['ﬁ', 'fi'],
+        ['ﬃ', 'ffi'],
+        ['ﬄ', 'ffl'],
+        ['ﬅ', 'st'],
+        ['ﬆ', 'st'],
+    ],
 }
 
-dict_config['fr']['FR']['global_dict'] = u'|'.join( [ 'Wikisource:Dictionnaire/' + x for x in u'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ])
+dict_config['fr']['FR']['global_dict'] = '|'.join(
+    ['Wikisource:Dictionnaire/' + x for x in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'])
+
 
 class Modernization:
     def __init__(self, lang):
@@ -124,7 +135,7 @@ class Modernization:
     def save_blacklist(self, blacklist):
         result = self.load_blacklist()
         for s in blacklist:
-            result.add(s.split(u':')[0].strip())
+            result.add(s.split(':')[0].strip())
         filename = self.blacklist_filename()
         utils.save_obj(filename, result)
 
@@ -133,48 +144,48 @@ class Modernization:
         utils.save_obj(filename, cache)
 
     def get_page(self, title):
-        site = pywikibot.Site(self.lang, fam = u'wikisource')
+        site = pywikibot.Site(self.lang, fam='wikisource')
         return pywikibot.Page(site, title)
 
     def get_local_dict_list(self, variant):
         title = self.config[variant]['modernize_template']
         page = self.get_page(title)
-        for p in pagegen.ReferringPageGenerator(page, followRedirects = True,
-                                                onlyTemplateInclusion = True):
+        for p in pagegen.ReferringPageGenerator(page, followRedirects=True,
+                                                onlyTemplateInclusion=True):
             yield p
 
     def get_etree_text(self, node, exclude):
-        result = u''
+        result = ''
         if node not in exclude:
             if node.text:
-                result += node.text + u' '
+                result += node.text + ' '
             for child in node:
                 result += self.get_etree_text(child, exclude)
             if node.tail:
-                result += node.tail + u' '
+                result += node.tail + ' '
         return result
 
     def parse_global_dict(self, html):
         result = self.default_cache()
 
-        html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
-        root = etree.fromstring(html.encode('utf-8'))
-        text = u''
-        for it in root.findall(".//{http://www.w3.org/1999/xhtml}li"):
+        html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
+        root = etree.fromstring(html)
+        text = ''
+        for it in root.findall(r".//{http://www.w3.org/1999/xhtml}li"):
             text += self.get_etree_text(it, set())
 
-        for line in text.split(u'\n'):
-            match = re.match(u'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
+        for line in text.split('\n'):
+            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?://.*?)?$', line, re.UNICODE)
             if match:
                 result[match.group(1)] = match.group(2)
 
         return result
 
     def fixup_html(self, html):
-        html = html.replace(u'&nbsp;', u' ')
+        html = html.replace('&nbsp;', ' ')
         # mediawiki insert that in comment which prevent conversion to xml
-        html = html.replace(u'Modèle:---', u'Modèle:(mangled triple -)')
-        html = html.replace(u'Modèle:--', u'Modèle:(mangled double -)')
+        html = html.replace('Modèle:---', 'Modèle:(mangled triple -)')
+        html = html.replace('Modèle:--', 'Modèle:(mangled double -)')
 
         return html
 
@@ -182,14 +193,14 @@ class Modernization:
         result = self.default_cache()
         html_id = self.config[variant]['modernize_div_id']
 
-        html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
-        root = etree.fromstring(html.encode('utf-8'))
-        text = u''
+        html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
+        root = etree.fromstring(html)
+        text = ''
         for it in root.findall(".//{http://www.w3.org/1999/xhtml}div[@id='%s']" % html_id):
             text += self.get_etree_text(it, set())
 
-        for line in text.split(u'\n'):
-            match = re.match(u'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?:\/\/.*?)?$', line, re.UNICODE)
+        for line in text.split('\n'):
+            match = re.match(r'^\s*(\S[^: ]*?)(?:\s|&#160;|&nbsp;| )*:\s*([\S].+?)\s*(?://.*?)?$', line, re.UNICODE)
             if match:
                 result[match.group(1)] = match.group(2)
 
@@ -197,14 +208,14 @@ class Modernization:
 
     def get_html(self, page):
         req = api.Request(site=page.site, page=page.title(),
-                          action='parse', prop = 'text')
+                          action='parse', prop='text')
         data = req.submit()
         return self.fixup_html(data['parse']['text']['*'])
 
     def get_global_dict(self, variant):
         titles = self.config[variant]['global_dict']
         result = []
-        for title in titles.split(u'|'):
+        for title in titles.split('|'):
             result.append(self.get_page(title))
         return result
 
@@ -213,21 +224,21 @@ class Modernization:
         new_cache = self.default_cache()
         count = 0
         for p in self.get_local_dict_list(variant):
-            if p.latestRevision() in old_cache:
-                new_cache[p.latestRevision()] = old_cache[p.latestRevision()]
+            if p.latest_revision_id in old_cache:
+                new_cache[p.latest_revision_id] = old_cache[p.latest_revision_id]
                 count += 1
             else:
                 html = self.get_html(p)
                 result = self.parse_local_dict(variant, html)
-                new_cache[p.latestRevision()] = (p.title(), result)
+                new_cache[p.latest_revision_id] = (p.title(), result)
                 count += 1
 
-            print >> sys.stderr, count, '\r',
+            print(count, '\r', end = ' ', file=sys.stderr)
 
         pages = self.get_global_dict(variant)
         md5 = hashlib.md5()
         for p in pages:
-            md5.update(str(p.latestRevision()))
+            md5.update(str(p.latest_revision_id))
         key = md5.digest()
 
         if 'global_dict' in old_cache and old_cache['global_dict'][0] == key:
@@ -243,7 +254,7 @@ class Modernization:
 
         self.save_dicts(variant, new_cache)
 
-        print '\ncache nr items', count
+        print('\ncache nr items', count)
 
     def update_cache(self):
         for variant in self.variants:
@@ -257,23 +268,23 @@ class Modernization:
         return result
 
     def dump_dict_entry(self, key, dictionary):
-        print '*' + key.encode('utf-8') + ' : ' + dictionary[key].encode('utf-8')
+        print('*' + key + ' : ' + dictionary[key])
 
     def dump_redundant_words(self, title, redundant_words):
         if len(redundant_words):
-            print title.encode('utf-8')
+            print(title)
             for word in redundant_words:
                 self.dump_dict_entry(word, redundant_words)
 
     def dump_non_redundant_words(self, title, local_dict, global_dict):
-       redundant_words = self.get_dict_redundancy(global_dict, local_dict)
-       if not len(redundant_words):
-           return
+        redundant_words = self.get_dict_redundancy(global_dict, local_dict)
+        if not len(redundant_words):
+            return
 
-       print '*[[' + title.encode('utf-8') + ']]'
-       for key in local_dict:
-           if not key in redundant_words:
-               self.dump_dict_entry(key, local_dict)
+        print(f'*[[{title}]]')
+        for key in local_dict:
+            if not key in redundant_words:
+                self.dump_dict_entry(key, local_dict)
 
     def gen_non_redundant_words(self, variant):
         cache = self.load_dicts(variant)
@@ -303,16 +314,16 @@ class Modernization:
             if key != 'global_dict':
                 for word in cache[key][1]:
                     if not word in global_dict:
-                        replace.setdefault( (word, cache[key][1][word]), 0)
+                        replace.setdefault((word, cache[key][1][word]), 0)
                         replace[(word, cache[key][1][word])] += 1
 
-        replace = [ (replace[key], key[0], key[1]) for key in replace ]
+        replace = [(replace[key], key[0], key[1]) for key in replace]
 
-        replace.sort(reverse = True)
+        replace.sort(reverse=True)
 
         for data in replace:
             if data[0] >= 5:
-                print data[1].encode('utf-8'), data[2].encode('utf-8'), data[0]
+                print(data[1], data[2], data[0])
 
     def optimize_all_global_dict(self):
         for variant in self.variants:
@@ -323,15 +334,15 @@ class Modernization:
         page = self.get_page(title)
 
         try:
-            last_rev = page.latestRevision()
-        except pywikibot.exceptions.NoPage:
-            print 'Page does not exist'
+            last_rev = page.latest_revision_id
+        except pywikibot.exceptions.NoPageError:
+            print('Page does not exist')
             return
 
         if last_rev in cache:
-            print 'Found'
+            print('Found')
             local_dict = cache[last_rev][1]
-            print local_dict
+            print(local_dict)
             if 'global_dict' in cache:
                 global_dict = cache['global_dict'][1]
             else:
@@ -340,7 +351,7 @@ class Modernization:
             redundant_words = self.get_dict_redundancy(global_dict, local_dict)
             self.dump_redundant_words(title, redundant_words)
         else:
-            print 'Not found'
+            print('Not found')
 
     def check_title(self, title):
         for variant in self.variants:
@@ -358,25 +369,25 @@ class Modernization:
             global_dict = self.default_cache()
 
         for key in cache:
-           if key != 'global_dict':
+            if key != 'global_dict':
                 self.check_cache(cache[key][0], cache[key][1], global_dict)
 
     def check_all(self):
         for variant in self.variants:
-                self.check_all_title_variant(variant)
+            self.check_all_title_variant(variant)
 
     def check_useless_dict_entry(self, variant):
         cache = self.load_dicts(variant)
-        transform = [ x[0] for x in self.config[variant]['transform'] ]
-        regex = u'(' + u'|'.join(transform) + u')'
+        transform = [x[0] for x in self.config[variant]['transform']]
+        regex = '(' + '|'.join(transform) + ')'
         for key in cache:
             local_dict = cache[key][1]
             for word in local_dict:
                 if re.search(regex, word) or re.search(regex, local_dict[word]):
-                    if type(cache[key][0]) == type(3):
-                        print 'global_dict'
+                    if isinstance(cache[key][0], int):
+                        print('global_dict')
                     else:
-                        print cache[key][0].encode('utf-8')
+                        print(cache[key][0])
                     self.dump_dict_entry(word, local_dict)
 
     def get_useless_char(self):
@@ -396,12 +407,12 @@ class Modernization:
     def find_repl(self, words_list, i, local_dict, global_dict):
         repl = None
         glb = None
-        words = u''
+        words = ''
         for num in range(self.max_seq, 0, -1):
             if i + num >= len(words_list):
                 continue
 
-            words = u' '.join(words_list[i:i + num])
+            words = ' '.join(words_list[i:i + num])
 
             repl, glb = self.find_words(words, local_dict, global_dict)
 
@@ -428,14 +439,14 @@ class Modernization:
             if repl:
                 break
 
-        return repl, glb, words, num
+        return repl, glb, words, num  # todo: `num` is not defined.  Should here be the line indent under the `for` loop?
 
     def suggest_dict(self, title):
         p = self.get_page(title)
         html = self.get_html(p)
 
-        new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
-        root = etree.fromstring(new_html.encode('utf-8'))
+        new_html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
+        root = etree.fromstring(new_html)
 
         exclude = set()
 
@@ -474,7 +485,6 @@ class Modernization:
                     for words in d:
                         other_local_dict[words] = d[words]
 
-
             local_dict = self.parse_local_dict(variant, html)
 
             text = html_text
@@ -494,7 +504,7 @@ class Modernization:
             # additionnal set of suggestion
             word_seen = set()
 
-            regex_split = re.compile(u'([' + self.word_chars + u']+)')
+            regex_split = re.compile('([' + self.word_chars + ']+)')
             words_list = regex_split.findall(text)
             i = 0
             while True:
@@ -516,8 +526,8 @@ class Modernization:
                     # not found in global or local dict, try in all other
                     # local dict to get suggestion.
                     repl, glb, new_words, num = self.find_repl(words_list, i,
-                                                           other_local_dict,
-                                                           {})
+                                                               other_local_dict,
+                                                               {})
                     if repl:
                         # don't do any suggest for one letter
                         if num > 1 or len(words_list[i]) > 1:
@@ -535,7 +545,7 @@ class Modernization:
             # local dict is an ordered dict, so we can put words in the same
             # order as the local_dict, this allow better wiki diff when a local
             # dict is updated.
-            local_dict_used = [ (x, local_dict[x]) for x in local_dict if x in used_local_dict ]
+            local_dict_used = [(x, local_dict[x]) for x in local_dict if x in used_local_dict]
 
             # FIXME: for suggest_local_dict, must we remove suggested words
             # from other local dict but working word for the check speller?
@@ -551,23 +561,23 @@ class Modernization:
         cache = self.load_dicts(variant)
         for key in cache:
             if cache[key][1].has_key(word):
-                if type(cache[key][0]) == type(3):
-                    print 'global_dict'
+                if isinstance(cache[key][0], int):
+                    print('global_dict')
                 else:
-                    print cache[key][0].encode('utf-8')
+                    print(cache[key][0])
 
     def locate_all_dict(self, word):
         for variant in self.variants:
             self.locate_dict(variant, word)
 
     def load_text(self, p, variant):
-        filename = self.cache_dir + self.lang + '/' + str(p.latestRevision())
+        filename = self.cache_dir + self.lang + '/' + str(p.latest_revision_id)
 
         if not os.path.exists(filename):
             html = self.get_html(p)
-            new_html = common_html.get_head(u'TITLE') + u"\n<body>"  + html + u'\n</body>\n</html>'
+            new_html = common_html.get_head('TITLE') + "\n<body>" + html + '\n</body>\n</html>'
 
-            root = etree.fromstring(new_html.encode('utf-8'))
+            root = etree.fromstring(new_html)
             exclude = set()
             html_id = self.config[variant]['modernize_div_id']
 
@@ -586,17 +596,17 @@ class Modernization:
 
     def locate_all_html(self, word):
         for variant in self.variants:
-            cache  = self.load_dicts(variant)
+            cache = self.load_dicts(variant)
             for p in self.get_local_dict_list(variant):
                 text = self.load_text(p, variant)
 
-                regex_split = re.compile(u'([' + self.word_chars + u']+)')
+                regex_split = re.compile('([' + self.word_chars + ']+)')
                 words_list = regex_split.findall(text)
 
-                if p.latestRevision() in cache and word in cache[p.latestRevision()][1]:
+                if p.latest_revision_id in cache and word in cache[p.latest_revision_id][1]:
                     continue
 
-                local_dict = { word : u'repl' }
+                local_dict = {word: 'repl'}
                 i = 0
                 while True:
                     if i >= len(words_list):
@@ -606,7 +616,7 @@ class Modernization:
                                                                {})
 
                     if repl:
-                        print p.title().encode('utf-8')
+                        print(p.title())
                         break
                     else:
                         i += 1
@@ -618,14 +628,14 @@ class Modernization:
     def useless_dict_entry_variant(self, variant):
         cache = self.load_dicts(variant)
         for p in self.get_local_dict_list(variant):
-            if p.latestRevision() in cache:
+            if p.latest_revision_id in cache:
                 text = self.load_text(p, variant)
-                regex_split = re.compile(u'([' + self.word_chars + u']+)')
+                regex_split = re.compile('([' + self.word_chars + ']+)')
                 words_list = regex_split.findall(text)
-                local_dict = cache[p.latestRevision()][1]
+                local_dict = cache[p.latest_revision_id][1]
                 used_word = set()
 
-                #print text.encode('utf-8')
+                # print(text.encode('utf-8'))
 
                 i = 0
                 while True:
@@ -646,9 +656,9 @@ class Modernization:
                 for key in local_dict:
                     if not key in used_word:
                         if first:
-                            print cache[p.latestRevision()][0].encode('utf-8')
+                            print(cache[p.latest_revision_id][0])
                             first = False
-                        print '* ' + key.encode('utf-8')
+                        print('* ' + key)
 
     def useless_dict_entry(self):
         for variant in self.variants:
@@ -658,18 +668,18 @@ class Modernization:
         pages = self.get_global_dict(variant)
         result = {}
         for p in pages:
-            print p.title().encode('utf-8')
+            print(p.title())
             html = self.get_html(p)
             result.update(self.parse_global_dict(html))
         for key in result:
-            print key.encode('utf-8'), result[key].encode('utf-8')
+            print(key, result[key])
 
     def test_suggest_dict(self, title):
         result = self.suggest_dict(title)
         for variant in result:
-            print variant
+            print(variant)
             for key in result[variant]:
-                print key, result[variant][key]
+                print(key, result[variant][key])
 
     def test_global_dict_config(self):
         for variant in self.variants:
@@ -678,7 +688,7 @@ class Modernization:
     def test_local_dict_config(self):
         for variant in self.variants:
             for p in self.get_local_dict_list(variant):
-                print p.latestRevision()
+                print(p.latest_revision_id)
 
     def test_cache(self, variant):
         cache = self.load_dicts(variant)
@@ -700,11 +710,11 @@ if __name__ == '__main__':
         elif arg.startswith('-cmd:'):
             cmd = arg[len('-cmd:'):]
         elif arg.startswith('-title:'):
-            title = unicode(arg[len('-title:'):], 'utf-8')
+            title = arg[len('-title:'):]
         elif arg.startswith('-word:'):
-            word = unicode(arg[len('-word:'):], 'utf-8')
+            word = arg[len('-word:'):]
         else:
-            print >> sys.stderr, "unknown arg:", arg
+            print("unknown arg:", arg, file=sys.stderr)
             exit(1)
 
     modernization = Modernization(lang)
@@ -734,4 +744,4 @@ if __name__ == '__main__':
     elif cmd == 'useless_dict_entry':
         modernization.useless_dict_entry()
     else:
-        print "unknown -cmd:", cmd
+        print("unknown -cmd:", cmd)

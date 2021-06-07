@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # GPL V2, author thomasv1 at gmx dot de, phe at nowhere
 
 __module_name__ = "wikisourceocr"
@@ -6,7 +6,7 @@ __module_version__ = "1.0"
 __module_description__ = "wikisource ocr bot"
 
 import os
-import thread
+import _thread
 import time
 import hashlib
 import re
@@ -20,13 +20,15 @@ from common import tool_connect
 E_OK = 0
 E_ERROR = 1
 
+
 # url user lang t tools conn
 def html_for_queue(queue):
-    html = u''
+    html = ''
     for i in queue:
         url = i[0]
-        html += date_s(i[3])+' '+i[2]+" "+i[1]+" "+url+"<br />"
+        html += date_s(i[3]) + ' ' + i[2] + " " + i[1] + " " + url + "<br />"
     return html
+
 
 def do_status(queue):
     queue = queue.copy_items(True)
@@ -39,15 +41,17 @@ def do_status(queue):
 
     return html
 
+
 def next_pagename(match):
     return '%s/page%d-%spx-%s' % (match.group(1), int(match.group(2)) + 1, match.group(3), match.group(4))
 
+
 def next_url(url):
-    return re.sub(u'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
+    return re.sub(r'^(.*)/page(\d+)-(\d+)px-(.*)$', next_pagename, url)
+
 
 def bot_listening(queue, cache):
-
-    print date_s(time.time()) + " START"
+    print(date_s(time.time()) + " START")
 
     tools = tool_connect.ToolConnect('ws_ocr_daemon', 45133)
 
@@ -67,7 +71,7 @@ def bot_listening(queue, cache):
                 continue
 
             t = time.time()
-            print (date_s(t) + " REQUEST " + user + ' ' + lang + ' ' + cmd + ' ' + url).encode('utf-8')
+            print(f'{date_s(t)} REQUEST {user} {lang} {cmd} {url}')
 
             if cmd == "ocr":
                 # bypass the job queue if the ocr is cached to ensure a cached
@@ -93,17 +97,19 @@ def bot_listening(queue, cache):
                 tools.send_reply(conn, ret_val(E_ERROR, "unknown command: " + cmd))
                 conn.close()
     finally:
-	tools.close()
+        tools.close()
 
 
 def date_s(at):
     t = time.gmtime(at)
-    return "[%02d/%02d/%d:%02d:%02d:%02d]"%(t[2],t[1],t[0],t[3],t[4],t[5])
+    return time.strftime("%d/%m/%Y:%H:%M:%S", t)
+
 
 def ret_val(error, text):
     if error:
-        print "Error: %d, %s" % (error, text)
-    return  {'error' : error, 'text' : text }
+        print("Error: %d, %s" % (error, text))
+    return {'error': error, 'text': text}
+
 
 def image_key(url):
     # FIXME: it'll better to use the sha1 of the image itself or rather the
@@ -112,12 +118,12 @@ def image_key(url):
     m.update(url)
     return m.hexdigest()
 
-def get_from_cache(cache, url, codelang):
-    url = url.encode('utf-8')
 
+def get_from_cache(cache, url, codelang):
     cache_key = image_key(url)
 
     return cache.get(cache_key)
+
 
 def ocr_image(cache, url, codelang):
     # This is checked in bot_listening but must be redone here, so if
@@ -126,8 +132,6 @@ def ocr_image(cache, url, codelang):
     text = get_from_cache(cache, url, codelang)
     if text:
         return ret_val(0, text)
-
-    url = url.encode('utf-8')
 
     cache_key = image_key(url)
 
@@ -145,7 +149,7 @@ def ocr_image(cache, url, codelang):
         return ret_val(1, "could not download url: %s" % url)
 
     text = ocr.ocr(image_filename, basename, lang)
-    if text == None:
+    if text is None:
         return ret_val(2, "ocr failed")
 
     os.remove(image_filename)
@@ -155,6 +159,7 @@ def ocr_image(cache, url, codelang):
     cache.set(cache_key, text)
 
     return ret_val(0, text)
+
 
 def job_thread(queue, cache):
     while True:
@@ -170,9 +175,10 @@ def job_thread(queue, cache):
             conn.close()
 
         time2 = time.time()
-        print (date_s(time2) + ' ' + url + ' ' + user + " " + codelang + " (%.2f)" % (time2-time1)).encode('utf-8')
+        print(f'{date_s(time2)} {url} {user} {codelang} ({time2 - time1}:.2f)')
 
         queue.remove()
+
 
 if __name__ == "__main__":
     try:
@@ -181,7 +187,7 @@ if __name__ == "__main__":
             os.mkdir(os.path.expanduser('~/cache/' + cache_dir))
         cache = lifo_cache.LifoCache(cache_dir)
         queue = job_queue.JobQueue()
-        thread.start_new_thread(job_thread, (queue, cache))
+        _thread.start_new_thread(job_thread, (queue, cache))
         bot_listening(queue, cache)
     except KeyboardInterrupt:
         os._exit(1)

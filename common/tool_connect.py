@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # @file tool_connect.py
 #
@@ -8,11 +7,13 @@
 # @author Philippe Elie
 
 import socket
-import thread
+import _thread
 import os
 import json
 import sys
-import urllib
+import urllib.parse
+
+
 
 class ToolConnect:
     def __init__(self, server_name, port):
@@ -21,8 +22,8 @@ class ToolConnect:
         try:
             self.sock.bind(('', port))
         except:
-            print "could not start listener : socket already in use"
-            thread.interrupt_main()
+            print("could not start listener : socket already in use")
+            _thread.interrupt_main()
             return
 
         self.sock.listen(1)
@@ -34,18 +35,18 @@ class ToolConnect:
         home = os.path.expanduser('~/wikisource/')
         servername_filename = home + server_name + '.server'
         if os.path.exists(servername_filename):
-            os.chmod(servername_filename, 0644)
+            os.chmod(servername_filename, 0o644)
         fd = open(servername_filename, "w")
         fd.write(socket.gethostname() + ':' + str(port))
         fd.close()
-        os.chmod(servername_filename, 0444)
+        os.chmod(servername_filename, 0o444)
 
     def _ill_formed_request(self, conn, data):
         try:
-            print >> sys.stderr, "ill formed request", data.encode('utf-8')
+            print("ill formed request", data, file=sys.stderr)
         except:
             pass
-        self.send_reply(conn, { 'error' : 4, 'text' : 'Ill formed request' })
+        self.send_reply(conn, {'error': 4, 'text': 'Ill formed request'})
         conn.close()
 
     def wait_request(self):
@@ -63,8 +64,8 @@ class ToolConnect:
             if request:
                 for key in request:
                     try:
-                        value = urllib.unquote(request[key].encode('utf-8'))
-                        request[key] = unicode(value, 'utf-8')
+                        value = urllib.parse.unquote(request[key])
+                        request[key] = value
                     except:
                         self._ill_formed_request(conn, data)
                         request = None
@@ -76,7 +77,7 @@ class ToolConnect:
 
     def send_text_reply(self, conn, data):
         if conn:
-            conn.sendall(data.encode('utf-8'))
+            conn.sendall(data)
 
     def send_reply(self, conn, data):
         if conn:
@@ -87,5 +88,6 @@ class ToolConnect:
         if self.sock:
             self.sock.close()
 
+
 if __name__ == "__main__":
-	pass
+    pass
